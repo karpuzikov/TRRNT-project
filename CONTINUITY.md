@@ -3,6 +3,14 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Music Library Organizer v0.2.0 - eliminate review gate - 2026-10-13
+
+- User rejected the 94 release / 0 ready / 94 REVIEW blocker and instructed: **take the input folder and output organized files**. The organizer is no longer a review-management program.
+- New standalone `tools/Music Library Organizer v0.2.0.pyw` with **Input / Output / ALAC-or-FLAC -> Organize** workflow. No Select Ready, Scan-only, or separate Apply; exceptions do not prevent other releases from processing. Missing WEB `audiochecker.log` becomes a warning. Existing input files are not modified, output collisions are skipped, and genuine processing errors are logged release by release. Previous Undo manifests archived; current SHA-256 Undo retained.
+- Corrected short title-tag overwrite of file descriptors (e.g. `OK (Extended Version)`) by preferring a richer existing filename where a short tag would discard a known version. State/result counters and last-run JSON report under isolated program data.
+- Current GUI based on MCC dark WebView2 patterns. UXDT reference consulted, one-click controls documented in product `UI_UX_CONTROL_CONTRACT.md`. JS parse check PASS (syntax only). Windows GUI, Python compile/regression tests, audio round-trip, screenshot and filesystem tests: **NOT RUN**. Do not mark stable.
+- Regression tests updated in `tools/music-library-organizer/test_organizer.py` for missing-log nonblocking, per-release failures continuing, and preserved version title. External catalog/date/country research remains unimplemented; auto processing conservatively retains unverified release folder name rather than fabricating provenance.
+
 ## Music Library Organizer v0.1.2 prototype - 2026-10-13
 
 - User requested a **new standalone file/folder organization program using MCC's UI as the base**, potentially to be merged into MCC later. Built isolated `tools/Music Library Organizer v0.1.2.pyw`, using MCC's pywebview / WebView2 dark UI visual tokens and independently scoped app data. Earlier v0.1.0 and v0.1.1 snapshots remain on `main`.
