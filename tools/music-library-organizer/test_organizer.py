@@ -185,13 +185,13 @@ class CheckerArchiveRegression(unittest.TestCase):
                 (source / f"{number:02d} Track {number}.flac").write_bytes(
                     b"source-must-survive-" + str(number).encode())
             (source / "INNA.cue").write_text(
-                'FILE "Missing Album Image.wav" WAVE\\n'
-                '  TRACK 01 AUDIO\\n'
-                '    TITLE "Track 1"\\n'
-                '    INDEX 01 00:00:00\\n'
-                '  TRACK 02 AUDIO\\n'
-                '    TITLE "Track 2"\\n'
-                '    INDEX 01 03:00:00\\n', encoding="utf-8")
+                'FILE "Missing Album Image.wav" WAVE\n'
+                '  TRACK 01 AUDIO\n'
+                '    TITLE "Track 1"\n'
+                '    INDEX 01 00:00:00\n'
+                '  TRACK 02 AUDIO\n'
+                '    TITLE "Track 2"\n'
+                '    INDEX 01 03:00:00\n', encoding="utf-8")
             app = mlo.Organizer()
             app._current_identity = {"physical": True,
                                      "catalog": "", "barcode": "",
