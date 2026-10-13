@@ -146,6 +146,13 @@ class OriginalCheckerRegression(unittest.TestCase):
         self.assertFalse(hasattr(mlo, "_integrated_checker_job"))
         self.assertTrue(callable(mlo.native_check_web_release))
 
+    def test_existing_fake_fft_log_is_detected_and_not_overwritten(self):
+        import inspect
+        code = inspect.getsource(mlo.Organizer._organize)
+        self.assertIn("INVALID custom-FFT AudioChecker report(s)", code)
+        self.assertIn('prefix.startswith(b"MLO Integrated AudioChecker v0.3.")', code)
+        self.assertIn("no originals or outputs changed", code)
+
     def test_no_proprietary_binary_provisioning_from_untrusted_mirror(self):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as td:
