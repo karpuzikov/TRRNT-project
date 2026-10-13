@@ -1,6 +1,18 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.3 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.4 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.4 startup/reconnect controls and states
+
+| Control/state | Purpose / pointer / keyboard / native side-effects / acceptance |
+| --- | --- |
+| Window initialization | Immediately show dark full interface with **Connecting to desktop...** status. No false 'Ready' prior to state retrieval; no modal waiting loop or frozen worker. `Organize` initially disabled. |
+| Desktop bridge | Subscribe to `pywebviewready`; isolate only allowed API methods with a separate `DesktopBridge`. Retrying after delayed injection never corrupts input/settings. One status-poll in flight, deadline + bounded retry intervals; no spurious duplicate work. |
+| Retry connection button (`#reconnect`) | Hidden under normal conditions; appears only when desktop connection is unavailable after initial grace interval. Click/Enter/Space retries the bridge immediately without launching a second app or job. Cleared after state returns. |
+| Disconnected controls | Browse, folder-open, Open log, Organize, Cancel and Undo disabled until connectivity restores; connection state and next action visible. After recovery restore correct idle/running/undo states rather than leaving folder/log actions disabled. |
+| Startup telemetry/profile recovery | Fresh isolated WebView2 session per app launch, no shared profile with MCC, and single-instance Windows mutex. `webview-startup.log` records load/shown/closed/errors; `startup-error.log` captures exceptions; app data outside shared common directory. Old locked profiles are not force-deleted from live renderer processes. |
+
+**Tests:** V8 JS syntax and delayed-bridge mock UI **PASS** (not real Windows acceptance). New source-level Python startup tests committed but NOT RUN. Real Windows screenshot/black-window and keyboard/button acceptance **NOT RUN**.
 
 ## v0.3.3 encoding backend requirement
 
