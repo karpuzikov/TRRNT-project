@@ -219,6 +219,7 @@ def cue_read(path: Path):
 
 
 def cue_image_plan(cue_path: Path, cue):
+    """Detect real whole-album images; use INDEX00 boundaries where present."""
     groups = {}
     for rec in cue["records"]:
         if rec["file"]:
@@ -228,23 +229,30 @@ def cue_image_plan(cue_path: Path, cue):
         if len(group) < 2:
             continue
         src = cue_path.parent / group[0]["file"].replace("\\", os.sep)
-        if not src.is_file() or src.is_symlink():
-            raise ValueError("CUE image is missing or unsafe: " + str(src))
-        if src.suffix.lower() not in AUDIO:
-            raise ValueError("Unsupported audio image codec: " + str(src))
+        if not src.is_file():
+            # Legacy CUE references an absent WAV; do not misclassify the
+            # already split lossless tracks as a missing whole-album image.
+            continue
+        if src.is_symlink() or src.suffix.lower() not in AUDIO:
+            raise ValueError("Unsafe or unsupported CUE album image: " + str(src))
         ticks = []
         for rec in group:
-            if 0 not in rec["index"] and any(i > 1 for i in rec["index"]):
-                raise ValueError("Unsupported CUE indexes - manual review required.")
-            if 0 in rec["index"] or 1 not in rec["index"] or any(i > 1 for i in rec["index"]):
-                raise ValueError("INDEX 00/extra indexes require manual review to preserve pregaps.")
-            if not rec["title"]:
-                raise ValueError("Image CUE track has no TITLE: " + str(rec["number"]))
-            ticks.append(rec["index"][1])
-        if ticks != sorted(set(ticks)) or ticks[0] != 0:
-            raise ValueError("Unusual CUE first index/HTOA or repeated index - review required.")
+            idx = rec["index"]
+            if 1 not in idx or not rec["title"]:
+                raise ValueError("Image CUE lacks INDEX 01 or TITLE.")
+            if 0 in idx and idx[0] > idx[1]:
+                raise ValueError("INDEX00 occurs after INDEX01.")
+            if any(value < idx[1] for num, value in idx.items() if num > 1):
+                raise ValueError("Invalid additional CUE index.")
+            ticks.append(idx.get(0, idx[1]))
+        if ticks[0] > 0 and 0 not in group[0]["index"]:
+            # First-track hidden audio before INDEX01 is kept with track 01.
+            ticks[0] = 0
+        if ticks[0] != 0 or ticks != sorted(set(ticks)):
+            raise ValueError("CUE image has an unsafe or overlapping index layout.")
         images.append((src, group, ticks))
     return images
+
 
 
 def image_cue_text(cue, new_names):
