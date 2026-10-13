@@ -3,6 +3,16 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Latest folder-organization clarifications - 2026-10-13
+
+- Earliest **worldwide initial release date** regardless of country, format, edition; use maximum known date precision (`YYYY-MM-DD`, `YYYY-MM`, or `YYYY`).
+- CD physical edition country slot: Discogs/physical disc/case pressing and manufacturing evidence first (`Made in`, `Manufactured in`, `Printed in`, `Pressed By`). **NEW explicit exception superseding earlier absolute ban:** when pressing country is unknowable, fall back to MusicBrainz/Discogs **release country or region**, and record it as **fallback**, not verified manufacturing.
+- Catalog number over barcode, `none` only when both absent. Physical CD lookup requirement: MusicBrainz **DiscID/TOC -> candidate concrete release -> catalog number**, with Discogs fallback, explicit choice on ambiguity. Digital catalog sources include MusicBrainz, Beatport, BPTopTracker. **No store IDs**.
+- Folder hierarchy: all releases directly inside `Artist Name ALAC` or `Brand Name ALAC`; release-type folders `Albums`, `Singles`, `EPs` are deprecated. Preserve multi-disc subfolders belonging to a release.
+- Ordinary single and EP folder suffixes required: ` - Single` and ` - EP`. Remix-focused releases: up to 3 tracks **may** use ` - Single`; greater than 3 use ` (Remixes)`.
+- Retain prior exact ` - ` separator rule and the physical-CD reissue year suffix only if the reissue year differs from the earliest worldwide initial release year.
+- Applied rule consolidation to `RULES.md` and `PROJECT.md`. **Only documentation updated**; standalone DiscID-based folder organizer is not yet implemented or tested.
+
 ## File organization naming clarification - 2026-10-13
 
 - The user explicitly corrected the meaning of country codes inside ALAC physical-CD release folder names: `[US - ...]` indicates **country of manufacture/pressing of the physical CD**, NOT MusicBrainz release country or sales/distribution region. `EU` is not a country. For physical CDs with unverified pressing location, flag for review rather than guessing or relabeling the physical CD as digital.
