@@ -647,7 +647,27 @@ def _lossless_pcm_format(ffprobe, input_path):
     return "pcm_s" + str(bits) + "le", bits, rate
 
 
-def _copy_audio_metadata(src_path, dst_path, fmt, title, number):
+def _update_copied_track_tags(path, title, artist, number):
+    """Change staged COPY only. Never mutate source, never re-encode audio."""
+    from mutagen import File as MutagenFile
+    tags = MutagenFile(str(path), easy=True)
+    if tags is None:
+        raise RuntimeError("Cannot update tags in organized audio: " + str(path))
+    if tags.tags is None:
+        tags.add_tags()
+    tags["title"] = [title]
+    if artist:
+        tags["artist"] = [artist]
+    tags["tracknumber"] = [str(number)]
+    tags.save()
+    check = MutagenFile(str(path), easy=True)
+    if str(check.get("title", [""])[0]) != title:
+        raise RuntimeError("Track TITLE was not saved correctly.")
+    if artist and str(check.get("artist", [""])[0]) != artist:
+        raise RuntimeError("Track ARTIST was not saved correctly.")
+
+
+def _copy_audio_metadata(src_path, dst_path, fmt, title, number, artist=""):
     """Carry standard and custom metadata through an untagged WAV intermediate."""
     from mutagen import File as MutagenFile
     from mutagen.flac import FLAC, Picture
@@ -660,6 +680,8 @@ def _copy_audio_metadata(src_path, dst_path, fmt, title, number):
         raise RuntimeError("Cannot inspect source metadata: " + str(exc))
     if title:
         metadata["title"] = [title]
+    if artist:
+        metadata["artist"] = [artist]
     if number:
         metadata["tracknumber"] = [str(number)]
     destination = MutagenFile(str(dst_path), easy=True)
@@ -724,6 +746,8 @@ def _copy_audio_metadata(src_path, dst_path, fmt, title, number):
     if number and (not check or
                    str(check.get("tracknumber", [""])[0]).split("/")[0] != str(number)):
         raise RuntimeError("Output track-number tag verification failed.")
+    if artist and (not check or str(check.get("artist", [""])[0]) != artist):
+        raise RuntimeError("Output artist tag verification failed.")
     if artworks:
         output_raw = MutagenFile(str(dst_path))
         stored = ([p.data for p in output_raw.pictures]
@@ -736,7 +760,7 @@ def _copy_audio_metadata(src_path, dst_path, fmt, title, number):
 
 
 def convert(ff, input_path, output_path, fmt, start=None, end=None,
-            title="", number=0, ffprobe=None):
+            title="", number=0, artist="", ffprobe=None):
     """Decode to PCM WAV, encode *only* with refalac64 or official FLAC CLI."""
     if fmt not in ("ALAC", "FLAC"):
         raise ValueError("ALAC or FLAC format required.")
@@ -792,7 +816,7 @@ def convert(ff, input_path, output_path, fmt, start=None, end=None,
                 raise RuntimeError(f"Native encoder changed bit depth: {bits} -> {actual_bits}.")
             if pcm_hash(ff, input_path, start, end) != pcm_hash(ff, output_path):
                 raise RuntimeError("Source and encoded decoded-PCM SHA-256 differ.")
-            _copy_audio_metadata(input_path, output_path, fmt, title, number)
+            _copy_audio_metadata(input_path, output_path, fmt, title, number, artist)
             return output_path
         except Exception:
             output_path.unlink(missing_ok=True)
@@ -1857,7 +1881,12 @@ class Organizer:
             staging_root.mkdir()
             ff = ffprobe = None
             seen = set()
-            checker = setup_checker()
+            artist_main = re.sub(
+                r"(?i)(?:\s+-\s+UPDATED.*|\s+(?:ALAC|FLAC))$", "", source.name).strip()
+            self._artist_root = artist_main
+            self.status = "Analyzing source artist credits..."
+            self._credit_consensus = collection_credit_consensus(releases, artist_main)
+            checker = setup_checker(self.checker_zip)
             if not checker:
                 self.info("Provided Audio_Checker_UTF8_Multicore ZIP not detected. Save it beside this .pyw or in Downloads; digital output will be PARTIAL.")
             for index, folder in enumerate(releases, 1):
@@ -1909,9 +1938,11 @@ class Organizer:
                         tmp = staging_root / (str(index) + "-" + uuid.uuid4().hex)
                         tmp.mkdir()
                         self._current_identity = info
+                        self._export_warnings = []
                         try:
                             self.status = f"Organizing {index}/{len(releases)}: {out_name}"
                             self._export_release(folder, tmp, fmt, ff, ffprobe)
+                            result["warnings"].extend(self._export_warnings)
                             # Actual AudioChecker is performed before finalizing the release.
                             if not info["physical"]:
                                 try:
@@ -1947,7 +1978,7 @@ class Organizer:
                             manifest["created"].append(rec)
                             manifest["pending"] = None
                             write_json(UNDO, manifest)
-                            incomplete = bool(not info["metadata_verified"] or
+                            incomplete = bool(self._export_warnings or not info["metadata_verified"] or
                                 any("unresolved" in n.lower() or "not auto-selected" in n.lower() for n in info["notes"]) or
                                 (info["physical"] and info["country_provenance"] != "verified-pressing") or
                                 (not info["physical"] and not info.get("catalog")) or
@@ -2076,19 +2107,21 @@ class Organizer:
                 raise InterruptedError("Encoding cancelled.")
             if fp.resolve() in source_images or fp.suffix.lower() not in AUDIO:
                 continue
-            number, title, _ = extract_number_title(fp)
+            number, title, artist = extract_number_title(
+                fp, getattr(self, "_artist_root", ""),
+                getattr(self, "_credit_consensus", None))
             if number <= 0 or not title:
                 raise RuntimeError("Track has no valid number/title: " + str(fp))
             dst = dest / fp.parent.relative_to(source) / track_filename(number, title, extension)
             audio_jobs.setdefault(str(dst).casefold(), (dst, []) )[1].append(
-                (fp, number, title))
+                (fp, number, title, artist))
         jobs = list(audio_jobs.values())
 
         def encode_normal(entry):
             dst, variants = entry
             if os.path.lexists(dst):
                 raise RuntimeError("Audio target exists: " + str(dst))
-            src, number, title = variants[0]
+            src, number, title, artist = variants[0]
             dst.parent.mkdir(parents=True, exist_ok=True)
             source_info = probe(ffprobe, src)
             codec = str(source_info.get("codec_name", "")).lower()
@@ -2098,11 +2131,14 @@ class Organizer:
                 shutil.copy2(src, dst)
                 if sha(src) != sha(dst):
                     raise RuntimeError("Source copy hash mismatch: " + str(src))
+                # Normalize tags on staged output, even without transcoding.
+                _update_copied_track_tags(dst, title, artist, number)
             else:
-                convert(ff, src, dst, fmt, title=title, number=number, ffprobe=ffprobe)
+                convert(ff, src, dst, fmt, title=title, number=number,
+                        artist=artist, ffprobe=ffprobe)
             # Additional files mapping to this name are discarded ONLY when
             # the decoded PCM equals the successfully verified first copy.
-            for variant, _, _ in variants[1:]:
+            for variant, _, _, _ in variants[1:]:
                 if pcm_hash(ff, variant) != pcm_hash(ff, dst):
                     raise RuntimeError("Distinct tracks collide: " + str(variant) + " -> " + str(dst))
             return dst, [x[0].resolve() for x in variants]
