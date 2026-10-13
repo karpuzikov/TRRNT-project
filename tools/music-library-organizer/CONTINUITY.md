@@ -1,9 +1,18 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.4 - Under construction ⚠️**
+Current version: **0.3.5 - Under construction ⚠️**
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Current source: [`tools/Music Library Organizer v0.3.4.pyw`](../Music%20Library%20Organizer%20v0.3.4.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Current source: [`tools/Music Library Organizer v0.3.5.pyw`](../Music%20Library%20Organizer%20v0.3.5.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Latest checkpoint - v0.3.5 INNA 94-release naming/metadata/checker correction (2026-10-14)
+
+- Input: user-supplied `Pasted text(4).txt`, **0 DONE, 93 PARTIAL, 1 FAILED**. All WEB outputs missing authentic AudioChecker because ZIP discovery failed; specific physical 16-track `Party Never Ends 2013 (FLAC)` failed on shared missing WAV image and its MusicBrainz DiscID was falsely treated as 2-way ambiguous despite one candidate having two CDs. Full observed problems and remediation in `AUDIT_INNA_2026-10-14.md`.
+- Mandatory new rules in root `RULES.md` and `MUSIC_GLOSSARY.md`: NO featured artists in release folder name, only track title; (Extended Mix)/(Remix) proper case; normalize Diggy Down to `Diggy Down (ft. Marian Hill) [Radio Edit]` and `[Extended Version]` in **BOTH** actual file basename and embedded TITLE. Parse Bob Taylor ft. INNA as credited artist and feature; for same song, preserve user-requested majority INNA ft Bob Taylor orientation only if actual source collection supports it; do not hard-code example mix names or override distinct recordings.
+- New `tools/Music Library Organizer v0.3.5.pyw`: release title source cleanup (artist prefix/old date/media/promo/catalog blocks), MusicBrainz concrete CD media/track-count/DiscID filtering, feature ordering and collection votes, same-codec staged tag update / native encoded tag update; CUE old shared absent WAV preserved as explicitly unresolved sidecar without failing otherwise valid audio; log folder button, selectable/copyable result table; persisted manual AudioChecker ZIP chooser and automatic check of other drives' Downloads.
+- **No fake CUE repair.** When CUE FILE points to absent shared image and exact sample/pregap alignment is unknowable, keep actual audio and original CUE in marked unresolved form, report PARTIAL; do NOT claim verified CUE output. Physical CD never receives an AudioChecker report. Ambiguous physical catalog/pressing evidence remains PARTIAL.
+- Unchanged native encoder exclusivity, UI WebView2 startup recovery and separate program state. No GitHub Actions modifications or MCC edits.
+- **Verification**: full file checked on GitHub; embedded JS passes V8 syntax test; source-only Python regression suite expanded with exactly stated user examples and discarded two-CD DiscID fixture. **Python compile/tests, Windows GUI/WebView2, native MusicBrainz/AudioChecker, actual tag/artwork audit and whole 94 release run NOT RUN**. Must not mark stable. Next: run test source under Windows with user files, use new blank output folder; check results and current log. Avoid redundant old success claims.
 
 ## Latest checkpoint - v0.3.4 WebView2 race/hang/black-screen fix (2026-10-13)
 
