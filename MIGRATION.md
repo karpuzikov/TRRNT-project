@@ -5,7 +5,7 @@ Migrated 2026-10-13 from `karpuzikov/userscripts` (`main`, source commit `dfff49
 ## Scope
 
 - All **20 files** formerly under `audio-tools/discography-torrent-project/` migrated to the root of this repository, keeping their relative `tools/` and `workflow/` directories.
-- Every tool/workflow source file and `RULES.md` is a byte-identical copy (same Git blob SHA). `README.md`, `PROJECT.md`, and `CONTINUITY.md` were updated only to identify the new canonical repository and preserve the migration record.
+- Every tool/workflow source file is a byte-identical copy (same Git blob SHA). At the initial migration, `RULES.md` was also byte-identical, while `README.md`, `PROJECT.md`, and `CONTINUITY.md` were updated to identify the new canonical repository. On 2026-10-13, `RULES.md` was subsequently updated to record repository ownership; **all original tool/workflow blobs remain unchanged**.
 - Shared global `SOFTWARE_RULES.md`, `UI_UX_RULES.md`, and `UI_UX_ACCEPTANCE.md` were copied from `userscripts`. They remain global standards and should be kept in sync with canonical policies.
 - The former DEA GitHub Actions YAML files were copied **unchanged** into `archived-workflows/` (outside `.github/workflows/`). This deliberately disables automatic workflows and notification spam. Their original paths refer to `userscripts` and must be revised if the user explicitly requests activation.
 - Legacy DEA Windows EXE releases/assets remain hosted in `karpuzikov/userscripts/releases`. A repository-file move does not move GitHub Release assets or past commit/issue history. Historical references to the old repository/paths remain intentionally in historical sections.
@@ -14,7 +14,7 @@ Migrated 2026-10-13 from `karpuzikov/userscripts` (`main`, source commit `dfff49
 
 ## Verified original project file hashes
 
-The following Git blob SHAs represent the **source-side originals** and allow lossless migration checks. Only the three migration-adjusted Markdown files intentionally differ in the new repo.
+The following Git blob SHAs represent the **source-side originals** and allow lossless migration checks. At the initial migration, only three project Markdown files differed. Following the 2026-10-13 handoff, root `RULES.md` also differs intentionally to reflect repository ownership. The original blob SHAs below remain valid as historical source-side checksums.
 
 | New relative path | Old source blob SHA |
 | --- | --- |
