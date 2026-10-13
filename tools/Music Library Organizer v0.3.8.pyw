@@ -334,7 +334,8 @@ def extract_number_title(path: Path, main_artist="", consensus=None):
     if file_title and (not title or (
         file_title.casefold().startswith(title.casefold()) and
         len(file_title) > len(title) and
-        _VERSION_HINT.search(file_title[len(title):])
+        (_VERSION_HINT.search(file_title[len(title):]) or
+         (_song_parts(file_title)[3] and not _song_parts(title)[3]))
     )):
         title = file_title
     title, artist = normalize_artist_title(title, artist, main_artist, consensus)
@@ -495,6 +496,74 @@ def image_cue_text(cue, new_names):
                 out.append(line)
     return "\n".join(out).rstrip() + "\n"
 
+
+
+
+def reconstruct_missing_image_cue(cue, cue_path, mapping):
+    """Build a playable track-per-file CUE only after exact sector verification.
+
+    This is separate from DiscID edition matching. A 16-track match never
+    establishes how an obsolete shared-image CUE represented index-00 audio.
+    If per-file PCM lengths agree with original INDEX 01 sector deltas and
+    there are no hidden/pregap indexes, the remap is sample-exact.
+    """
+    records = cue.get("records") or []
+    tracks = {}
+    for original, output in mapping.items():
+        if original.parent != cue_path.parent:
+            continue
+        parsed = TRACK.match(original.stem)
+        if not parsed:
+            continue
+        number = int(parsed.group(1))
+        if number in tracks:
+            return None, "Multiple audio files have the same track number"
+        tracks[number] = (original, output)
+    if not records or len(tracks) != len(records):
+        return None, (f"Original CUE lists {len(records)} tracks but only "
+                      f"{len(tracks)} separately numbered audio tracks were mapped")
+    if any(not rec.get("file") or 1 not in rec.get("index", {})
+           for rec in records):
+        return None, "Original CUE has missing FILE or INDEX 01 entries"
+    names = [rec["number"] for rec in records]
+    if sorted(names) != sorted(tracks):
+        return None, "CUE and surviving audio track numbers do not match"
+    refs = {str(rec["file"]).casefold() for rec in records}
+    if len(refs) != 1:
+        return None, "Original CUE does not describe one shared image"
+    if any(0 in rec["index"] or len(rec["index"]) != 1 or
+           any(re.match(r"(?i)^\s*(?:PREGAP|POSTGAP)\b", line)
+               for line in rec["lines"]) for rec in records):
+        return None, "INDEX 00, hidden audio or explicit pregap requires original image evidence"
+    starts = [rec["index"][1] for rec in records]
+    if starts[0] != 0 or starts != sorted(set(starts)):
+        return None, "Original CUE has a nonzero initial index or non-monotonic INDEX 01 positions"
+    try:
+        for index, rec in enumerate(records[:-1]):
+            expected = starts[index + 1] - starts[index]
+            actual = _exact_cd_sectors(tracks[rec["number"]][0])
+            if actual != expected:
+                return None, (f"Track {rec['number']:02d} has {actual} sectors "
+                              f"but original CUE specifies {expected}; pregap alignment unproven")
+        _exact_cd_sectors(tracks[records[-1]["number"]][0])
+    except (ValueError, OSError, KeyError) as exc:
+        return None, "Sample-exact verification unavailable: " + str(exc)
+    output = []
+    for line in cue["lines"]:
+        if FILE.match(line) or re.match(r"^\s*TRACK\b", line, re.I):
+            break
+        output.append(line)
+    for rec in records:
+        new_audio = tracks[rec["number"]][1]
+        target = os.path.relpath(new_audio, new_audio.parent)
+        output.append('FILE "' + target + '" WAVE')
+        output.extend(rec["lines"][:1])
+        for line in rec["lines"][1:]:
+            if INDEX.match(line):
+                output.append("    INDEX 01 00:00:00")
+            else:
+                output.append(line)
+    return "\n".join(output).rstrip() + "\n", ""
 
 
 def normal_cue_text(cue, names):
@@ -2247,6 +2316,14 @@ class Organizer:
                         not (fp.parent / x.replace(chr(92), os.sep)).is_file()
                         for x in original_refs)
                     if is_shared and is_absent:
+                        rewritten, reason = reconstruct_missing_image_cue(cue, fp, mapping)
+                        if rewritten:
+                            target.write_text(rewritten, encoding="utf-8",
+                                              newline="\r\n" if IS_WIN else "\n")
+                            self.info(fp.name + ": original shared-image CUE replaced in "
+                                      "organized output by verified sample-exact per-file CUE; "
+                                      "original source CUE remains untouched.")
+                            continue
                         if not any(path.parent == fp.parent for path in mapping):
                             raise RuntimeError(
                                 "Original shared CUE WAV missing and no surviving split tracks.")
@@ -2258,9 +2335,9 @@ class Organizer:
                         if sha(fp) != sha(fallback):
                             raise RuntimeError("CUE evidence copy differs from original.")
                         getattr(self, "_export_warnings", []).append(
-                            fp.name + ": shared source album image missing; "
-                            "original CUE preserved as unresolved because pregap "
-                            "alignment cannot be safely reconstructed.")
+                            fp.name + ": old full-image WAV absent; cannot safely rewrite "
+                            "CUE for individual tracks: " + reason +
+                            ". Original is retained as documentary CUE only.")
                         continue
                     refs = {}
                     unresolved_reason = None
