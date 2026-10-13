@@ -256,7 +256,7 @@ class UserCorrections20261014(unittest.TestCase):
             info = mlo.release_identity(release, mlo.collect_files(release),
                                         default_artist="INNA", allow_network=False)
             self.assertEqual(info["release_type"], "Single")
-            self.assertEqual(mlo.release_folder_target(info), "Déjá Vu - Single")
+            self.assertEqual(mlo.release_folder_target(info), "Déjà Vu - Single")
 
     def test_unknown_cd_legacy_names_are_cleaned_not_retained(self):
         example = {"folder": "Inna - Déjá Vu (Maxi CD Single) (Promo)",
@@ -264,7 +264,7 @@ class UserCorrections20261014(unittest.TestCase):
                    "date": "", "physical": True, "catalog": "", "barcode": "",
                    "country": "", "root_artist": "INNA", "notes": [],
                    "release_type": ""}
-        self.assertEqual(mlo.release_folder_target(example), "Déjá Vu")
+        self.assertEqual(mlo.release_folder_target(example), "Déjà Vu")
         self.assertIn("unverified", " ".join(example["notes"]))
         example = {"folder": "Inna - Party Never Ends (Part 2) (2013) [WPCR-15062]",
                    "title": "Party Never Ends (Part 2): Japan",
