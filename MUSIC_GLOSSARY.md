@@ -33,7 +33,51 @@ Last updated: 2026-10-13
 | `01 Girlfriend (Dr. Luke Remix) [ft. Lil Mama] (Extended Version).m4a` | Version of the named Remix recording root | Lil Mama | Extended Version remains inside the Remix parent root |
 | `01 Girlfriend (Radio Edit).m4a` | Radio Edit of eligible base root | Not in filename | A replaceable Version only when acoustic evidence supports it |
 
-**Separator/markup caution:** The supplied `[ft. ...]` example encodes a feature credit in square brackets and `(Remix)` encodes the remix descriptor in parentheses. They are **different semantic fields**, not interchangeable spellings. MCC's internal `canonical_featured_title()` may represent `[ft. ...]` and `(ft. ...)` alike for **comparison keys**; that is *not* a mandate to rewrite every on-disk credit to parentheses. The universal output filename grammar/credit punctuation beyond the approved examples remains subject to user confirmation. Do not infer a remix-added feature from bracket punctuation alone.
+**Positional markup (latest user rule):** Title components use `()`, then `[]`, then `{}` in **display order**, not according to whether a component is a remix or a feature. A remix-added feature follows the remix descriptor; a preexisting original feature precedes the remix descriptor. MCC's internal `canonical_featured_title()` normalizes for comparison keys, not the on-disk display rendering. Do not infer feature provenance merely from `[]` versus `()`. See the complete track-file naming examples below.
+
+## Track filename composition, feature provenance, and positional delimiters (user-approved)
+
+This is a **track-level filename/title** standard, separate from the **release-folder** grammar. First classify the real attributes, *then* render them. A featured performer is never interchangeable with a remixer, even when both occur in one title.
+
+### Ordering based on where the feature originated
+
+1. **Feature introduced by the remix:** base track title -> remix descriptor -> featured-artist credit. Exact user example: `The Weeknd - Reminder (Remix) [ft. A$AP Rocky & Young Thug]`. In this case A$AP Rocky and Young Thug are credited on the remix rather than on the original version.
+2. **Feature already on the original recording:** base track title -> featured-artist credit -> remix descriptor. Exact user example: `GTA - Red Lips (ft. Sam Bruno) [Skrillex Remix]`. Sam Bruno belongs to the base/original recording's artist credits; Skrillex is the remixer.
+3. **More descriptors:** preserve their meaningful logical sequence after the base title. Exact user example: `Tiesto vs. Diplo - C'Mon (Catch 'Em By Surprise) (feat. Busta Rhymes) (Extended Club Mix)` -> `Tiesto & Diplo - C'Mon (Catch 'Em By Surprise) [ft. Busta Rhymes] {Extended Club Mix}`.
+
+**Do not infer a feature's origin merely from existing `()` or `[]` punctuation.** Compare with the original/ordinary recording and reliable performer credits, following MCC's semantics. When not resolved, preserve both roles and mark the placement/provenance for review; do not silently assert the performer was remix-added. The names and descriptors must never be discarded.
+
+### Delimiter priority is positional, not tied to a semantic type
+
+- **First separate title descriptor:** `( ... )`.
+- **Second separate title descriptor:** `[ ... ]`.
+- **Third separate title descriptor:** `{ ... }`.
+- Count **in displayed title order**. This is why `(Remix) [ft. Artist]` and `(ft. Artist) [Named Remix]` are **both correct** for different relationships. Do not enforce a rule such as "featured artists always use brackets" or "remix is always parentheses."
+- If the authentic base title already contains a parenthesized title component, **keep it** and count it as the first title component for bracket placement. Thus `C'Mon (Catch 'Em By Surprise) [ft. Busta Rhymes] {Extended Club Mix}`.
+- Preserve the actual descriptor words, track title and punctuation not implicated in the positional bracket normalization. Do not invent fourth-level notation where the three supported delimiter levels would be exceeded; flag such cases for review until defined.
+- Standardize standalone featured-artist labels `feat.` / `featuring` / `ft.` to **`ft.`** in the rendered title; keep the authentic featured names and order. Do not confuse this **display formatting** with MCC's credit-canonicalization for audio comparison.
+
+### Artist credit normalization based on the actual Picard script
+
+Source of truth: [Format_Multiple_Artists.txt](https://github.com/karpuzikov/userscripts/blob/main/picard-tools/scripts/Format_Multiple_Artists.txt). It processes Picard `%artists%` (and `%albumartists%`) as multi-value artist credit lists, collapses redundant credits, and renders:
+
+- **One credited artist:** retain that artist.
+- **Two distinct credited artists:** `Artist A & Artist B`.
+- **Three or more:** `Artist A, Artist B & Artist C` (comma delimiters, final ` & `).
+- **`vs.` joining independently credited artists:** normalize the connective as ` & ` when the source metadata establishes distinct credited artists. Explicit user example: `Tiesto vs. Diplo` -> `Tiesto & Diplo`. The Picard script **does not** itself split an arbitrary single-string `vs.`; the filename stage must detect verified separate artists rather than blindly replace those letters inside any artist name.
+- Source artist spelling/capitalization and genuine mononyms or group names must remain intact. The related [Move_Featured_Artists_to_Title.txt](https://github.com/karpuzikov/userscripts/blob/main/picard-tools/scripts/Move_Featured_Artists_to_Title.txt) moves feature credits out of artist/albumartist into title and normalizes `feat.` to `ft.`, but it is **not** a finalized filename delimiter renderer.
+
+### Required acceptance examples
+
+| Input / credited relationship | Correct output | Why |
+| --- | --- | --- |
+| `The Weeknd - Reminder (Remix) [ft. A$AP Rocky & Young Thug]` / feature added on remix | `The Weeknd - Reminder (Remix) [ft. A$AP Rocky & Young Thug]` | Remix descriptor comes before remix-added feature |
+| `GTA - Red Lips (ft. Sam Bruno) [Skrillex Remix]` / feature already in original | `GTA - Red Lips (ft. Sam Bruno) [Skrillex Remix]` | Original feature comes before named remix |
+| `Tiesto vs. Diplo - C'Mon (Catch 'Em By Surprise) (feat. Busta Rhymes) (Extended Club Mix)` | `Tiesto & Diplo - C'Mon (Catch 'Em By Surprise) [ft. Busta Rhymes] {Extended Club Mix}` | Canonical artist joining, ft. prefix, and `()` -> `[]` -> `{}` in order |
+| `GTA - Red Lips [Skrillex Remix] (ft. Sam Bruno)` when Sam Bruno is confirmed original feature | `GTA - Red Lips (ft. Sam Bruno) [Skrillex Remix]` | Reorder by actual original/remix relationship, not incoming brackets |
+| `The Weeknd - Reminder (ft. A$AP Rocky & Young Thug) [Remix]` when features confirmed remix-added | `The Weeknd - Reminder (Remix) [ft. A$AP Rocky & Young Thug]` | Reorder based on real feature provenance, not source markup |
+
+The `Artist - Track` notation in these demonstrations identifies both **artist-credit and title fields**. It does **not**, by itself, supersede the observed album-track convention `NN Track Title.m4a` or mandate that every filename include an artist prefix. Apply these transformations to actual credited fields in the eventual file-naming pipeline; decide track number/artist-prefix templates separately.
 
 ## Required shared rules
 
@@ -43,7 +87,8 @@ Last updated: 2026-10-13
 4. Do not identify a named remix merely from any occurrence of the word `Mix`: MCC exempts `Original Mix` and ordinary functional mixes absent remixer context. Keep its recognized Remix / Live / Acoustic / Instrumental / Acapella and Version-family semantics.
 5. Do not classify every track in a plural `(Remixes)` release as a remix solely from the release folder title. Analyze tracks individually.
 6. Release folder naming uses the separate [TRRNT RULES.md](RULES.md) grammar. Notably `Plain Jane REMIX - Single` -> `Plain Jane (Remix) - Single`, whereas `Title - The Remixes EP` -> `Title (The Remixes)`. These are **release-folder** transformations, distinct from track filename parsing.
-7. If a proposed filename normalization cannot preserve all semantic fields or there is ambiguous provenance, flag for review rather than discard/guess. Any eventual file operation must provide preview, collision safeguards, CUE reference consistency, and Undo.
+7. Apply user-approved track title ordering: original recording features **before** remix descriptors, remix-added features **after** remix descriptors; assign punctuation to the first, second and third separate title components as `()`, `[]` and `{}`, respectively. Artist credits use the sourced Picard multi-artist joining convention and `feat.` / `featuring` renders as `ft.`.
+8. If a proposed filename normalization cannot preserve all semantic fields or there is ambiguous provenance, flag for review rather than discard/guess. Any eventual file operation must provide preview, collision safeguards, CUE reference consistency, and Undo.
 
 ## Scope / implementation status
 
