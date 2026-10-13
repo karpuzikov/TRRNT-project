@@ -2416,12 +2416,12 @@ input[type=text]{width:100%;height:34px;border:1px solid #37404d;background:var(
 button,select{height:34px;border:1px solid #3a4351;background:#1b2028;color:var(--text);border-radius:8px;padding:0 11px;cursor:pointer}
 button:hover:not(:disabled),select:hover:not(:disabled){background:#252c36;border-color:#596579}button:disabled{opacity:.38;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #8cc8ff;outline-offset:2px}
 button.primary{background:#17324c;border-color:#3e78aa;color:#dff1ff;font-weight:720}button.primary:hover:not(:disabled){background:#1e4265;border-color:#66a9ff}
-button.folder{width:34px;padding:0}.options{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #252b34;padding-top:10px}.options label{font-weight:650;margin-left:6px}select{min-width:72px}
+button.folder{width:34px;padding:0}.options{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #252b34;padding-top:10px}.options label{font-weight:650;margin-left:6px}select{min-width:72px}.checkerrow{display:flex;align-items:center;gap:8px;padding-top:7px}.checkerrow input{flex:1;min-width:100px;max-width:610px}.checkerrow .muted{max-width:260px}
 #progress{padding:12px 14px}.progress-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:650;min-height:17px}
 .track{height:9px;background:#252d36;border-radius:30px;margin:11px 0;overflow:hidden}.fill{height:100%;width:0;background:var(--blue);transition:width .2s}
 .counts{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.counts b{font-size:16px;color:var(--text)}#detail{font-size:11px;color:#c2cddd;margin-top:8px}
 #results{min-height:0;display:flex;flex-direction:column;overflow:hidden}.tools{display:flex;align-items:center;gap:8px;padding:0 13px 10px}.tools input{max-width:280px}.tablewrap{flex:1;overflow:auto;min-height:50px}
-table{border-collapse:collapse;table-layout:fixed;width:100%}th,td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:1px solid #252b35;word-break:break-word}th{position:sticky;top:0;background:#171b22;color:var(--muted);font-size:11px}tr:hover{background:#19212a}
+.tablewrap, .tablewrap *{-webkit-user-select:text!important;user-select:text!important;cursor:text}table{border-collapse:collapse;table-layout:fixed;width:100%}th,td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:1px solid #252b35;word-break:break-word}th{position:sticky;top:0;background:#171b22;color:var(--muted);font-size:11px}tr:hover{background:#19212a}
 .done{color:#a8f5bf}.partial{color:#ffd88b}.skipped{color:#b6c4d2}.failed{color:#ffb0b6}.warning{color:#ffd88b}.small{color:var(--muted);font-size:11px;margin-top:3px}.empty{padding:25px;text-align:center;color:var(--muted)}
 #foot{height:58px;flex:0 0 58px;background:#101319;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 18px}
 #message{color:var(--yellow);max-width:42vw;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px}
@@ -2436,11 +2436,11 @@ table{border-collapse:collapse;table-layout:fixed;width:100%}th,td{padding:8px 1
 <div class="options"><label for="format">Output format</label><select id="format" aria-label="Output format"><option value="ALAC">ALAC (.m4a)</option><option value="FLAC">FLAC (.flac)</option></select>
 <label for="encodeWorkers">Encoding workers</label><select id="encodeWorkers" aria-label="Number of simultaneous encoding workers"></select>
 <label for="checkWorkers">AudioChecker workers</label><select id="checkWorkers" aria-label="Number of simultaneous AudioChecker workers"></select>
-<span class="muted">Looks for supplied AudioChecker ZIP automatically; worker choices are saved.</span></div></div></section>
+<span class="muted">Worker choices saved.</span></div><div class="checkerrow"><label for="checkerZip">AudioChecker ZIP</label><input type="text" id="checkerZip" readonly placeholder="Auto-detect, or select Audio_Checker_UTF8_Multicore.zip"><button id="chooseChecker">Browse ZIP...</button><span class="muted">Only needed if automatic detection fails.</span></div></div></section>
 <section class="card" id="progress"><div class="progress-head"><span id="status" role="status" aria-live="polite">Connecting to desktop...</span><span id="percent">0%</span></div><div class="track" id="progressBar" role="progressbar" aria-label="Organization progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill"></div></div>
 <div class="counts"><span><b id="total">0</b> found</span><span><b id="done">0</b> compliant</span><span><b id="partial">0</b> partial</span><span><b id="skipped">0</b> already present</span><span><b id="failed">0</b> failed</span><span><b id="warnings">0</b> warnings</span></div>
 <div id="detail">Input files remain untouched. Any genuine errors will appear below.</div></section>
-<section class="card" id="results"><div class="head"><strong>Results</strong></div><div class="tools"><input type="text" id="query" placeholder="Filter results..." aria-label="Filter results"><button id="openLog">↗ Open log</button><span class="space"></span><span id="resultCount" class="muted">Not started</span></div>
+<section class="card" id="results"><div class="head"><strong>Results</strong></div><div class="tools"><input type="text" id="query" placeholder="Filter results..." aria-label="Filter results"><button id="openLog">↗ Open log</button><button id="openLogFolder" title="Open folder containing organizer logs" aria-label="Open log folder">📁</button><button id="copyResults" title="Copy visible results to clipboard">Copy results</button><span class="space"></span><span id="resultCount" class="muted">Not started</span></div>
 <div class="tablewrap"><table><thead><tr><th style="width:14%">Result</th><th style="width:31%">Release</th><th>Details</th></tr></thead><tbody id="rows"><tr><td colspan="3" class="empty">Press Organize to begin.</td></tr></tbody></table></div></section>
 </main>
 <footer id="foot"><button class="primary" id="organize" disabled>▶ Organize</button><button id="cancel" disabled>✕ Cancel</button><button id="undo" disabled>↶ Undo last run</button><button id="reconnect" style="display:none" title="Retry connecting to the local Python application">↻ Retry connection</button><span class="space"></span><span id="message" aria-live="polite" role="status"></span></footer>
@@ -2470,7 +2470,7 @@ async function deadline(promise,ms){
 function setBridgeState(ready){
  connected=ready;
  if(!ready){
-  for(const id of ["organize","browseSource","browseDest","openLog","openSource","openDest","undo","cancel"])$(id).disabled=true;
+  for(const id of ["organize","browseSource","browseDest","openLog","openLogFolder","copyResults","chooseChecker","openSource","openDest","undo","cancel"])$(id).disabled=true;
   if(!state)$('status').textContent="Connecting to desktop...";
   if(Date.now()-bootTime>8000){
    $('status').textContent="Desktop connection unavailable - retrying";
@@ -2503,6 +2503,7 @@ function render(){
   $('dest').value=state.dest||suggestPath(state.source);
   suggestedDest=suggestPath(state.source);
   $('format').value=state.format||"ALAC";
+  $('checkerZip').value=state.checker_zip||"";
   setupWorkers('encodeWorkers',state.worker_limit,state.encoding_workers);
   setupWorkers('checkWorkers',state.worker_limit,state.checker_workers);
   initialized=true;
@@ -2512,11 +2513,11 @@ function render(){
  const pct=Number(state.progress||0);$('percent').textContent=pct+"%";$('fill').style.width=pct+"%";$('progressBar').setAttribute("aria-valuenow",String(pct));
  let c=state.counts||{};for(let name of ["total","done","partial","skipped","failed","warnings"])$(name).textContent=c[name]||0;
  $('detail').textContent=working?"Organizing all discovered releases automatically. Genuine errors do not block later releases.":"Originals are untouched. Missing audiochecker.log is not a reason to skip a release.";
- for(let id of ["source","dest","format","encodeWorkers","checkWorkers","browseSource","browseDest"])$(id).disabled=working;
+ for(let id of ["source","dest","format","encodeWorkers","checkWorkers","browseSource","browseDest","chooseChecker"])$(id).disabled=working;
  $('organize').disabled=working;$('cancel').disabled=!working;$('undo').disabled=working||!state.undo;
  $('openSource').disabled=!String($('source').value||"").trim();
  $('openDest').disabled=!String($('dest').value||"").trim();
- $('openLog').disabled=false;
+ $('openLog').disabled=false;$('openLogFolder').disabled=false;$('copyResults').disabled=false;
  
  if(state.error)$('message').textContent=state.error;
  let list=(state.results||[]).filter(x=>[x.name,x.message,(x.warnings||[]).join(" ")].join(" ").toLowerCase().includes(query));
@@ -2580,6 +2581,27 @@ $('openSource').onclick=()=>call("open_folder",$('source').value);
 $('openDest').onclick=()=>call("open_folder",$('dest').value);
 
 $('openLog').onclick=()=>call("open_log");
+$('openLogFolder').onclick=()=>call("open_log_folder");
+$('chooseChecker').onclick=async()=>{
+ const selected=await call("browse_checker_zip");
+ if(selected&&selected.path){$('checkerZip').value=selected.path;$('message').textContent="AudioChecker bundle selected.";}
+};
+$('copyResults').onclick=async()=>{
+ const rows=(state&&state.results||[]).filter(x=>
+  [x.name,x.message,(x.warnings||[]).join(" ")].join(" ").toLowerCase().includes(query));
+ const content=rows.map(x=>[x.status.toUpperCase(),x.name,x.target,x.message,(x.warnings||[]).join(" | ")].join("\t")).join("\n");
+ if(!content){$('message').textContent="No results to copy.";return;}
+ try{
+  if(navigator.clipboard&&navigator.clipboard.writeText)await navigator.clipboard.writeText(content);
+  else{
+   const control=document.createElement('textarea');control.value=content;
+   control.style.position="fixed";control.style.left="-9999px";document.body.appendChild(control);
+   control.focus();control.select();if(!document.execCommand('copy'))throw Error("Copy denied.");
+   control.remove();
+  }
+  $('message').textContent=rows.length+" result rows copied.";
+ }catch(e){error("Clipboard unavailable; select Results with your mouse and press Ctrl+C.");}
+};
 $('organize').onclick=()=>{$('message').textContent="";call("organize",$('source').value,$('dest').value,$('format').value,Number($('encodeWorkers').value),Number($('checkWorkers').value));};
 $('cancel').onclick=()=>call("cancel");
 $('undo').onclick=()=>{if(confirm("Remove unchanged output from the last run? Original files are not touched."))call("undo");};
