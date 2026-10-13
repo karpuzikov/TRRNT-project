@@ -51,7 +51,19 @@ Canonical decision rules: [`RULES.md`](RULES.md). All duplicate/edition/source-s
 
 ## Shared track classification vocabulary
 
-All filename/title/credit normalization in this project must reuse the [canonical shared MUSIC_GLOSSARY.md](MUSIC_GLOSSARY.md), grounded in [MCC's existing semantics](https://github.com/karpuzikov/MCC/blob/main/RULES.md). In particular, a title like `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is a **remix with a featured artist** (two independent attributes); do not treat it as merely alternate feature punctuation, collapse it to the base recording, or claim the feature was newly added without the MCC comparison criteria. Internal title-comparison key canonicalization does not dictate the final on-disk filename rendering. The complete file naming format still needs approval.
+All filename/title/credit normalization in this project must reuse the [canonical shared MUSIC_GLOSSARY.md](MUSIC_GLOSSARY.md), grounded in [MCC's existing semantics](https://github.com/karpuzikov/MCC/blob/main/RULES.md). In particular, a title like `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is a **remix with a featured artist** (two independent attributes); do not treat it as merely alternate feature punctuation, collapse it to the base recording, or claim the feature was newly added without the MCC comparison criteria. Internal title-comparison key canonicalization does not dictate the final on-disk filename rendering. The new user-approved **ordering, positional brackets, and Picard-based artist joining** are detailed in the track filename section below; the complete physical filename template (including whether to include an artist prefix) remains to be finalized.
+
+## Track filename standard - feature provenance and descriptors
+
+The complete shared track-level semantic taxonomy and accepted filename transformations live in [MUSIC_GLOSSARY.md](MUSIC_GLOSSARY.md), grounded in MCC's existing recording-root/remix-feature classification. File naming must distinguish **features introduced by a remix** from **features already in the original**:
+
+- Remix-added feature: `The Weeknd - Reminder (Remix) [ft. A$AP Rocky & Young Thug]` (**remix**, then **feature**).
+- Original feature: `GTA - Red Lips (ft. Sam Bruno) [Skrillex Remix]` (**feature**, then **remix**).
+- Group ordering: first separate title component `()`, second `[]`, third `{}`, **regardless of whether a group contains featured credits, a remix or a version**. An existing parenthesized base-title component counts first.
+- Exact transformation: `Tiesto vs. Diplo - C'Mon (Catch 'Em By Surprise) (feat. Busta Rhymes) (Extended Club Mix)` -> `Tiesto & Diplo - C'Mon (Catch 'Em By Surprise) [ft. Busta Rhymes] {Extended Club Mix}`.
+- Use the actual [Picard Format Multiple Artists script](https://github.com/karpuzikov/userscripts/blob/main/picard-tools/scripts/Format_Multiple_Artists.txt) for artist-list joining: `A & B`, or `A, B & C`. Where `vs.` separates **confirmed individually credited artists**, standardize to ` & `. Do **not** indiscriminately replace `vs.` inside a sole proper artist name; the Picard script only joins pre-resolved multi-values. Render featured credits as `ft.`.
+- The `Artist - Track` display examples do **not** yet decide whether physical album-track filenames include the artist. Preserve the `NN Track Title.m4a` observed base convention until a separate template decision is made.
+- If baseline credits cannot establish whether a feature is original versus remix-added, do **not** guess from existing brackets; flag it for review. These naming steps are planned, not coded or Windows-tested.
 
 ## File organization and naming stage (planned; not yet implemented)
 
