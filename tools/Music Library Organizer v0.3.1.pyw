@@ -530,6 +530,168 @@ def release_title_normalize(title, release_type=None, inferred_single=False):
 
 
 
+
+# Reused MusicBrainz DiscID/TOC algorithm and EAC rip-log precedence from
+# the project's CUE Corrector - MusicBrainz DiscID 1.3.1.pyw.
+_EAC_TOC_RE = re.compile(
+    r"^\s*(\d+)\s*\|\s*\d+:\d{2}\.\d{2}\s*\|\s*\d+:\d{2}\.\d{2}\s*\|\s*(-?\d+)\s*\|\s*(-?\d+)\s*$",
+    re.M)
+
+
+def _disc_identity(starts, leadout):
+    count = len(starts)
+    if not (1 <= count <= 99 and leadout > starts[-1] and
+            all(y > x for x, y in zip(starts, starts[1:]))):
+        raise ValueError("Not a valid physical CD track table.")
+    toc = " ".join(["1", str(count), str(leadout + 150)] +
+                   [str(value + 150) for value in starts])
+    payload = f"{1:02X}{count:02X}{leadout + 150:08X}"
+    payload += "".join(f"{value + 150:08X}" for value in starts)
+    payload += "0" * (8 * (99 - count))
+    token = base64.b64encode(hashlib.sha1(payload.encode("ascii")).digest()).decode("ascii")
+    discid = token.replace("+", ".").replace("/", "_").replace("=", "-")
+    return {"discid": discid, "toc": toc, "tracks": count}
+
+
+def _exact_cd_sectors(audio):
+    """Use exact decoded sample counts; never estimate TOC from rounded seconds."""
+    try:
+        from mutagen import FLAC
+        if audio.suffix.casefold() == ".flac":
+            obj = FLAC(str(audio))
+            samples = getattr(obj.info, "total_samples", None)
+            if samples is not None:
+                rate = obj.info.sample_rate
+                if rate == 44100 and samples % 588 == 0:
+                    return samples // 588
+    except Exception:
+        pass
+    probe_exe = shutil.which("ffprobe")
+    if not probe_exe:
+        raise ValueError("Need FFprobe to calculate exact CD TOC from audio.")
+    result = cmd([probe_exe, "-v", "error", "-select_streams", "a:0",
+                  "-show_entries", "stream=sample_rate,duration_ts,time_base",
+                  "-of", "json", str(audio)], timeout=90)
+    if result.returncode:
+        raise ValueError("Cannot obtain sample-exact CD audio duration.")
+    from fractions import Fraction
+    stream = (json.loads(result.stdout).get("streams") or [{}])[0]
+    if int(stream.get("sample_rate") or 0) != 44100:
+        raise ValueError("CD DiscID requires native 44100-Hz source.")
+    samples = Fraction(int(stream["duration_ts"])) * Fraction(str(stream["time_base"])) * 44100
+    if samples.denominator != 1 or samples.numerator % 588:
+        raise ValueError("CD audio duration does not resolve to exact 75-Hz frames.")
+    return samples.numerator // 588
+
+
+def toc_from_cd_release(folder, files):
+    """Prefer authoritative EAC TOC; derive CUE/audio exact TOC only if complete."""
+    by_folder = {}
+    for file in files:
+        if file.suffix.lower() == ".cue":
+            by_folder.setdefault(file.parent, []).append(file)
+    if not by_folder:
+        return []
+    found = []
+    for disc_folder, cues in sorted(by_folder.items(), key=lambda x: str(x[0])):
+        if len(cues) != 1:
+            continue  # Multiple disc CUEs in one folder require edition review.
+        parsed = cue_read(cues[0])
+        records = parsed.get("records", [])
+        if not records or any(1 not in row["index"] for row in records):
+            continue
+        expected = len(records)
+        used = None
+        for log in sorted(disc_folder.glob("*.log")):
+            if log.name.casefold() == "audiochecker.log":
+                continue
+            try:
+                blob = log.read_bytes()
+                text = blob.decode("utf-8-sig", errors="replace")
+                if not _EAC_TOC_RE.search(text):
+                    text = blob.decode("cp1252", errors="replace")
+                rows = [(int(a), int(b), int(c))
+                        for a, b, c in _EAC_TOC_RE.findall(text)]
+                rows.sort()
+                if (len(rows) >= expected and
+                        [r[0] for r in rows[:expected]] == list(range(1, expected+1))):
+                    starts = [r[1] for r in rows[:expected]]
+                    leadout = rows[expected-1][2] + 1
+                    if starts and starts[0] == 0 and leadout > starts[-1]:
+                        used = _disc_identity(starts, leadout)
+                        used["source"] = "EAC ripping log " + log.name
+                        break
+            except (OSError, ValueError):
+                continue
+        if used is not None:
+            found.append(used)
+            continue
+        # CUE sector timeline, allowing image or one file per track.
+        parts, offsets = [], {}
+        for row in records:
+            name = row.get("file")
+            if not name:
+                parts = []
+                break
+            original = (disc_folder / name.replace("\\", os.sep)).resolve()
+            if not original.is_file():
+                # Historical WAV references may have become FLAC/ALAC files.
+                guesses = [x for x in files if x.parent == disc_folder and
+                           x.suffix.lower() in AUDIO and
+                           extract_number_title(x)[0] == row["number"]]
+                if len(guesses) != 1:
+                    parts = []
+                    break
+                original = guesses[0]
+            if original not in offsets:
+                offsets[original] = 0
+                parts.append(original)
+        if not parts:
+            continue
+        try:
+            base = {}
+            cursor = 0
+            for path in parts:
+                base[path] = cursor
+                cursor += _exact_cd_sectors(path)
+            starts = []
+            for row in records:
+                name = row["file"]
+                path = (disc_folder / name.replace("\\", os.sep)).resolve()
+                if not path.is_file():
+                    options = [x for x in parts if
+                               extract_number_title(x)[0] == row["number"]]
+                    if len(options) != 1:
+                        raise ValueError("Ambiguous historical CUE track.")
+                    path = options[0]
+                starts.append(base[path] + row["index"][1])
+            used = _disc_identity(starts, cursor)
+            used["source"] = "CUE with sample-exact audio duration"
+            found.append(used)
+        except (OSError, ValueError, KeyError):
+            pass
+    return found
+
+
+def discid_release_candidates(folder, files, barcode=""):
+    toc_data = toc_from_cd_release(folder, files)
+    if not toc_data:
+        return [], []
+    # Matching multiple discs is intersection of release IDs; not union.
+    lists = []
+    details = []
+    for toc in toc_data:
+        params = urllib.parse.urlencode({"toc": toc["toc"], "cdstubs": "no", "fmt": "json"})
+        page = mb_json("discid/" + urllib.parse.quote(toc["discid"], safe="") + "?" + params)
+        ids = {str(r["id"]) for r in page.get("releases", []) if r.get("id")}
+        lists.append(ids)
+        details.append(toc)
+    intersection = set.intersection(*lists) if lists else set()
+    # All matching candidates are retained; never silently choose one
+    # from several physical editions with the same DiscID.
+    return sorted(intersection), details
+
+
 def release_identity(folder, files, default_artist="", allow_network=True):
     """Resolve only unambiguous real MusicBrainz releases; otherwise keep source."""
     current = folder.name
