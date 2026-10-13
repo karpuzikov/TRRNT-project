@@ -415,6 +415,29 @@ def catalog(name):
     return (match.group(1) if match else value), bool(match)
 
 
+def suggested_output(source):
+    raw = str(source or "").strip().strip('"')
+    if not raw:
+        return ""
+    name = Path(raw).name
+    if not name:
+        return ""
+    if name.casefold().endswith(" - sorted"):
+        name += " - Organized"
+    else:
+        name += " - Sorted"
+    return str(Path(raw).parent / name)
+
+
+def worker_limit():
+    return max(1, min(64, int(os.cpu_count() or 1)))
+
+
+def worker_defaults():
+    logical = worker_limit()
+    return min(4, logical), min(4, logical)
+
+
 def check_paths(src_text, dst_text, fmt):
     source = Path(src_text.strip().strip('"')).expanduser().resolve(strict=True)
     if not source.is_dir():
@@ -1194,9 +1217,11 @@ class Organizer:
         ensure_data()
         settings = read_json(SETTINGS, {})
         self.source = str(settings.get("source", ""))
-        self.dest = str(settings.get("dest", ""))
+        self.dest = str(settings.get("dest") or suggested_output(self.source))
         self.fmt = str(settings.get("format", "ALAC"))
-        self.checker_path = str(settings.get("checker_path", ""))
+        default_enc, default_check = worker_defaults()
+        self.encoding_workers = int(settings.get("encoding_workers") or default_enc)
+        self.checker_workers = int(settings.get("checker_workers") or default_check)
         self.running = False
         self.stop = threading.Event()
         self.status = "Choose input and output folders, then Organize."
@@ -1223,7 +1248,9 @@ class Organizer:
         with self.lock:
             return {"source": self.source, "dest": self.dest, "format": self.fmt,
                     "running": self.running, "status": self.status,
-                    "progress": self.progress, "checker_path": self.checker_path, "counts": dict(self.counts),
+                    "progress": self.progress, "encoding_workers": self.encoding_workers,
+                    "checker_workers": self.checker_workers, "worker_limit": worker_limit(),
+                    "counts": dict(self.counts),
                     "results": list(self.results), "error": self.error,
                     "activity": list(self.activity), "undo": UNDO.is_file()}
 
@@ -1236,16 +1263,6 @@ class Organizer:
         except Exception as exc:
             self.info("Folder picker failed: " + str(exc))
         return ""
-
-    def browse_checker(self):
-        try:
-            import webview
-            value = self.window.create_file_dialog(
-                webview.OPEN_DIALOG, file_types=("Executables (*.exe)",))
-            return str(value[0]) if value else ""
-        except Exception as exc:
-            self.info("AudioChecker picker failed: " + str(exc))
-            return ""
 
     def open_folder(self, path):
         target = Path(str(path)).expanduser()
@@ -1276,23 +1293,25 @@ class Organizer:
         self.stop.set()
         return {"ok": True}
 
-    def organize(self, source, dest, fmt, checker_path=""):
+    def organize(self, source, dest, fmt, encoding_workers=4, checker_workers=4):
         with self.lock:
             if self.running:
                 return {"error": "Another operation is running."}
             try:
-                src, dst = check_paths(str(source), str(dest), str(fmt))
+                src, dst = check_paths(str(source), str(dest or suggested_output(source)), str(fmt))
+                enc, chk = int(encoding_workers), int(checker_workers)
+                if not 1 <= enc <= worker_limit() or not 1 <= chk <= worker_limit():
+                    raise ValueError("Worker settings must be between 1 and the detected logical CPU count.")
             except Exception as exc:
                 return {"error": str(exc)}
             existing = read_json(UNDO, {})
             if existing.get("pending"):
                 return {"error": "Previous run has an interrupted output checkpoint. Resolve before continuing."}
             self.source, self.dest, self.fmt = str(src), str(dst), str(fmt)
-            self.checker_path = str(checker_path or "").strip()
-            if self.checker_path and not Path(self.checker_path).is_file():
-                return {"error": "AudioChecker executable path does not exist."}
+            self.encoding_workers, self.checker_workers = enc, chk
             write_json(SETTINGS, {"source": self.source, "dest": self.dest,
-                                  "format": self.fmt, "checker_path": self.checker_path})
+                                  "format": self.fmt,
+                                  "encoding_workers": enc, "checker_workers": chk})
             self.running = True
             self.stop.clear()
             self.status, self.progress, self.error = "Discovering releases...", 0, ""
@@ -1319,9 +1338,9 @@ class Organizer:
             staging_root.mkdir()
             ff = ffprobe = None
             seen = set()
-            checker = locate_checker(self.checker_path)
+            checker = setup_checker()
             if not checker:
-                self.info("AudioChecker executable not found: digital output will be PARTIAL, not DONE.")
+                self.info("Provided Audio_Checker_UTF8_Multicore ZIP not detected. Save it beside this .pyw or in Downloads; digital output will be PARTIAL.")
             for index, folder in enumerate(releases, 1):
                 if self.stop.is_set():
                     self.status = "Cancelled. Completed output can be undone."
@@ -1375,7 +1394,7 @@ class Organizer:
                             if not info["physical"]:
                                 try:
                                     self.status = f"AudioChecker {index}/{len(releases)}: {out_name}"
-                                    result["checker"] = check_web_release(tmp, fmt, ff, checker, self.stop)
+                                    result["checker"] = check_web_release(tmp, fmt, ff, checker, self.stop, self.checker_workers)
                                 except InterruptedError:
                                     raise
                                 except Exception as exc:
