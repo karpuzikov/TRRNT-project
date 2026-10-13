@@ -53,6 +53,14 @@ Canonical decision rules: [`RULES.md`](RULES.md). All duplicate/edition/source-s
 
 All filename/title/credit normalization in this project must reuse the [canonical shared MUSIC_GLOSSARY.md](MUSIC_GLOSSARY.md), grounded in [MCC's existing semantics](https://github.com/karpuzikov/MCC/blob/main/RULES.md). In particular, a title like `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is a **remix with a featured artist** (two independent attributes); do not treat it as merely alternate feature punctuation, collapse it to the base recording, or claim the feature was newly added without the MCC comparison criteria. Internal title-comparison key canonicalization does not dictate the final on-disk filename rendering. The new user-approved **ordering, positional brackets, and Picard-based artist joining** are detailed in the track filename section below; the complete physical filename template (including whether to include an artist prefix) remains to be finalized.
 
+## Primary ALAC audio filename format
+
+**Mandatory:** `NN Track Title.m4a` - zero-padded track number (minimum width two digits), followed by **exactly one space**, followed by the entire standardized track title and real file extension. **Exact example:** `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].m4a`.
+
+No `01.`, `01 -`, `01_`, `01-` or double-space separator is allowed. Do not put an artist name or `Artist -` prefix into the physical track filename. The user-provided `Artist - Track` glossary examples describe credited artist and title fields **separately**, not an on-disk album-track filename. Apply the shared [MUSIC_GLOSSARY.md](MUSIC_GLOSSARY.md) ordering rules within the complete title; do not drop either the original-feature or remix information.
+
+For each `CD N` multi-disc folder, preserve its current structure; unresolved numbering edge cases are separate specifications. The filename organizer must update CUE `FILE` references safely, offer old -> new previews and Undo, and must never change actual audio encoding merely by renaming its extension. **No implementation has yet been built or Windows-tested.**
+
 ## Track filename standard - feature provenance and descriptors
 
 The complete shared track-level semantic taxonomy and accepted filename transformations live in [MUSIC_GLOSSARY.md](MUSIC_GLOSSARY.md), grounded in MCC's existing recording-root/remix-feature classification. File naming must distinguish **features introduced by a remix** from **features already in the original**:
@@ -62,7 +70,7 @@ The complete shared track-level semantic taxonomy and accepted filename transfor
 - Group ordering: first separate title component `()`, second `[]`, third `{}`, **regardless of whether a group contains featured credits, a remix or a version**. An existing parenthesized base-title component counts first.
 - Exact transformation: `Tiesto vs. Diplo - C'Mon (Catch 'Em By Surprise) (feat. Busta Rhymes) (Extended Club Mix)` -> `Tiesto & Diplo - C'Mon (Catch 'Em By Surprise) [ft. Busta Rhymes] {Extended Club Mix}`.
 - Use the actual [Picard Format Multiple Artists script](https://github.com/karpuzikov/userscripts/blob/main/picard-tools/scripts/Format_Multiple_Artists.txt) for artist-list joining: `A & B`, or `A, B & C`. Where `vs.` separates **confirmed individually credited artists**, standardize to ` & `. Do **not** indiscriminately replace `vs.` inside a sole proper artist name; the Picard script only joins pre-resolved multi-values. Render featured credits as `ft.`.
-- The `Artist - Track` display examples do **not** yet decide whether physical album-track filenames include the artist. Preserve the `NN Track Title.m4a` observed base convention until a separate template decision is made.
+- The user has now explicitly approved the physical track filename template `NN Track Title.m4a`: padded number + exactly one space + complete standardized title, **without** an artist prefix. The `Artist - Track` strings in examples identify separate fields, not a filename prefix.
 - If baseline credits cannot establish whether a feature is original versus remix-added, do **not** guess from existing brackets; flag it for review. These naming steps are planned, not coded or Windows-tested.
 
 ## File organization and naming stage (planned; not yet implemented)
