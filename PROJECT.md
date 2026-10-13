@@ -1,6 +1,6 @@
 # Discography Torrent Project
 
-Last updated: 2026-09-30
+Last updated: 2026-10-13
 
 ## Repository source-of-truth rule
 
@@ -48,6 +48,18 @@ Canonical decision rules: [`RULES.md`](RULES.md). All duplicate/edition/source-s
 18. Create the torrent with qBittorrent.
 19. Post the torrent.
 20. Run `CUE LOG 4.1.pyw` to collect LOG/CUE data and post it as a comment.
+
+## File organization and naming stage (planned; not yet implemented)
+
+Insert a dedicated organization stage **after lossless-to-ALAC conversion and metadata/tag normalization, before artwork processing**. Normalize only ALAC collections, following the supplied `!torrent_Structure.txt` ALAC examples:
+
+- Top-level folder: `Artist Name ALAC` or, for themed collections, `Brand Name ALAC` (such as `Assassin's Creed ALAC`).
+- Release folders: date, title, edition/release descriptors, and available release-specific identifier. Preserve meaningful distinctions between original-release dates, later edition years, and distinct catalog numbers.
+- The bracketed *country* for a physical CD refers **exclusively to where that exact physical disc edition was manufactured/pressed**, not the release country/market or any inferred distribution territory. Do not guess: omit it if unverified. `EU` is not a country. Do not use a pressing country for WEB/digital releases. Follow `RULES.md` for the authoritative rule.
+- Track filenames: consistent disc/track numbering and titles based on verified tags; preserve CUE-compatible multi-disc structure and supporting CUE/LOG files.
+- Before any filesystem change: preview exact source -> destination mappings, detect conflicts, require explicit approval, preserve backup/Undo and update CUE `FILE` references consistently with audio renames. Never silently destroy data. Final category-directory conventions and the full filename grammar still require explicit specification and tests.
+
+This is an added future workflow stage, not a claim that the current tools implement or have Windows-tested it.
 
 ## Automation strategy
 
