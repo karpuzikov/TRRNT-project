@@ -555,7 +555,10 @@ def release_identity(folder, files, default_artist="", allow_network=True):
         else:
             # Album tags are preferable for legacy names such as "Inna - YO 2019".
             q_title = re.sub(r"\s+-\s+(?:Single|EP)$", "", str(album or original_title), flags=re.I)
-            q_artist = str(artist or "INNA")
+            q_artist = str(artist or "").strip()
+            if not q_artist:
+                result["notes"].append("Artist credit not known; cannot safely search by title.")
+                return result
             query = 'release:"' + q_title.replace('"', "") + '" AND artist:"' + q_artist.replace('"', "") + '"'
         params = urllib.parse.urlencode({"query": query, "fmt": "json", "limit": 100})
         page = mb_json("release/?" + params)
@@ -845,7 +848,7 @@ class Organizer:
         self.stop = threading.Event()
         self.status = "Choose input and output folders, then Organize."
         self.progress = 0
-        self.counts = {"total": 0, "done": 0, "skipped": 0, "failed": 0, "warnings": 0}
+        self.counts = {"total": 0, "done": 0, "partial": 0, "skipped": 0, "failed": 0, "warnings": 0}
         self.results = []
         self.activity = []
         self.error = ""
@@ -983,7 +986,8 @@ class Organizer:
                     if any(fp.suffix.lower() in LOSSY for fp in files):
                         raise RuntimeError("Lossy input present; conversion to purported lossless is prohibited.")
                     self.status = f"Looking up release {index}/{len(releases)}: {folder.name}"
-                    info = release_identity(folder, files)
+                    artist_hint = re.sub(r"(?i)(?:\s+-\s+UPDATED.*|\s+(?:ALAC|FLAC))$", "", source.name).strip()
+                    info = release_identity(folder, files, default_artist=artist_hint)
                     result["metadata"] = {k: v for k, v in info.items() if k != "folder"}
                     result["warnings"].extend(info["notes"])
                     out_name = release_folder_target(info)
@@ -1050,6 +1054,8 @@ class Organizer:
                             manifest["pending"] = None
                             write_json(UNDO, manifest)
                             incomplete = bool(not info["metadata_verified"] or
+                                any("unresolved" in n.lower() or "not auto-selected" in n.lower() for n in info["notes"]) or
+                                (info["physical"] and info["country_provenance"] != "verified-pressing") or
                                 (not info["physical"] and not result["checker"]))
                             if incomplete:
                                 result["status"] = "partial"
