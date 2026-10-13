@@ -61,6 +61,14 @@ No `01.`, `01 -`, `01_`, `01-` or double-space separator is allowed. Do not put 
 
 For each `CD N` multi-disc folder, preserve its current structure; unresolved numbering edge cases are separate specifications. The filename organizer must update CUE `FILE` references safely, offer old -> new previews and Undo, and must never change actual audio encoding merely by renaming its extension. **No implementation has yet been built or Windows-tested.**
 
+## Supporting-file names (physical CD vs WEB)
+
+**Physical CD:** A CD rip **commonly** has a real rip `.log` and `.cue`, but either may be absent. Rename **existing** supporting documents after the exact physical edition's **catalog number**, e.g. `TOCP-66683.log` and `TOCP-66683.cue`. If that edition lacks a catalog number, **use its verified barcode** for both basenames. Use the MusicBrainz DiscID/concrete release and Discogs lookup rules already defined in this project; never invent an identifier. When both catalog number and barcode are unavailable, flag the unresolved filename; never write false provenance or fabricate missing rip files. On multi-disc albums, retain each disc's true LOG/CUE data and placement; prevent overwrites and require review for identical-basename conflicts.
+
+**WEB/digital:** Require a real AudioChecker results file named **`audiochecker.log`**, with that exact case and no catalog/barcode prefix. Missing report = **needs an actual AudioChecker run**, not an empty or invented log. The AudioChecker report is **not a CD ripping log** and cannot establish physical-CD provenance.
+
+The organizer must preserve supporting-file content, CUE `FILE` references and disc layouts, preview rename collisions, require explicit Apply, and preserve Undo. No program implementation or Windows testing is implied by this documentation.
+
 ## Track filename standard - feature provenance and descriptors
 
 The complete shared track-level semantic taxonomy and accepted filename transformations live in [MUSIC_GLOSSARY.md](MUSIC_GLOSSARY.md), grounded in MCC's existing recording-root/remix-feature classification. File naming must distinguish **features introduced by a remix** from **features already in the original**:
