@@ -12,11 +12,93 @@ import threading
 import unittest
 import wave
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.4.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.5.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
 loader.exec_module(mlo)
+
+
+class UserExamples20261014(unittest.TestCase):
+    def test_release_title_has_no_feature_credit(self):
+        self.assertEqual(mlo.clean_release_title("Cola Song (ft. J Balvin)"), "Cola Song")
+        self.assertEqual(mlo.release_title_normalize(
+            "Good Time (feat. Pitbull)", "Single"), "Good Time - Single")
+
+    def test_remix_and_extended_mix_release_case(self):
+        self.assertEqual(mlo.release_title_normalize(
+            "Déjà Vu (extended mix)", "Single"), "Déjà Vu (Extended Mix) - Single")
+        self.assertEqual(mlo.release_title_normalize(
+            "Sun Is Up (remix)", "Single"), "Sun Is Up (Remix) - Single")
+
+    def test_legacy_cd_promo_title_cleaning(self):
+        self.assertEqual(mlo.clean_release_title(
+            "Inna - Déjá Vu (Maxi CD Single) (Promo)", "INNA"), "Déjá Vu")
+        self.assertEqual(mlo.clean_release_title(
+            "Inna - Party Never Ends (Part 2) (2013) [WPCR-15062]", "INNA"),
+            "Party Never Ends (Part 2)")
+
+    def test_diggy_down_filename_and_tag_title_are_same(self):
+        title, artist = mlo.normalize_artist_title(
+            "Diggy Down (Radio Edit) [ft. Marian Hill]", "INNA")
+        self.assertEqual(title, "Diggy Down (ft. Marian Hill) [Radio Edit]")
+        self.assertEqual(artist, "INNA")
+        self.assertEqual(mlo.track_filename(1, title, ".m4a"),
+                         "01 Diggy Down (ft. Marian Hill) [Radio Edit].m4a")
+        title2, _ = mlo.normalize_artist_title(
+            "Diggy Down (Extended Version) [ft. Marian Hill]", "INNA")
+        self.assertEqual(title2,
+                         "Diggy Down (ft. Marian Hill) [Extended Version]")
+
+    def test_bob_taylor_reverse_credit_requires_consensus(self):
+        value = "Deja Vu (Wideboy Stadium Radio Edit) [Bob Taylor ft. INNA]"
+        original, artist = mlo.normalize_artist_title(value, "Bob Taylor")
+        self.assertEqual(original, "Deja Vu (ft. INNA) [Wideboy Stadium Radio Edit]")
+        self.assertEqual(artist, "Bob Taylor")
+        consensus = {(
+            mlo._song_key(value), frozenset(("inna", "bob taylor"))): "INNA"}
+        expected, corrected = mlo.normalize_artist_title(
+            value, "Bob Taylor", "INNA", consensus)
+        self.assertEqual(corrected, "INNA")
+        self.assertEqual(expected,
+                         "Deja Vu (ft. Bob Taylor) [Wideboy Stadium Radio Edit]")
+        # Different versions MUST retain their authentic titles.
+        variant, _ = mlo.normalize_artist_title(
+            "Deja Vu (ft. Bob Taylor) [Play & Win Club Mix]", "INNA")
+        self.assertEqual(variant, "Deja Vu (ft. Bob Taylor) [Play & Win Club Mix]")
+
+    def test_track_remix_added_credit_order_retained(self):
+        t, _ = mlo.normalize_artist_title(
+            "Reminder (Remix) [ft. A$AP Rocky & Young Thug]", "The Weeknd")
+        self.assertEqual(t, "Reminder (Remix) [ft. A$AP Rocky & Young Thug]")
+
+    def test_exact_discid_filters_two_cd_release(self):
+        from unittest.mock import patch
+        base = [{"discid": "valid-disc", "tracks": 16}]
+        def fake_mb(path, **kwargs):
+            if "double" in path:
+                return {"media": [{"format":"CD","track-count":16},
+                                  {"format":"CD","track-count":9}]}
+            if "single" in path:
+                return {"id":"single","media":[{"format":"CD","track-count":16,
+                                                 "discs":[{"id":"valid-disc"}]}]}
+            raise RuntimeError("Unknown release")
+        with patch.object(mlo, "mb_json", side_effect=fake_mb):
+            matching, rejected = mlo._disc_editions_by_medium(
+                ["double", "single"], base)
+        self.assertEqual([x["id"] for x in matching], ["single"])
+        self.assertEqual(len(rejected), 1)
+
+    def test_checker_zip_missing_is_clear_not_silent(self):
+        with tempfile.TemporaryDirectory() as td:
+            missing = Path(td)/"Audio_Checker_UTF8_Multicore.zip"
+            self.assertFalse(missing.is_file())
+
+    def test_result_selection_and_log_folder_gui(self):
+        self.assertIn('-webkit-user-select:text!important', mlo.HTML)
+        self.assertIn('id="openLogFolder"', mlo.HTML)
+        self.assertIn('id="copyResults"', mlo.HTML)
+        self.assertIn('id="chooseChecker"', mlo.HTML)
 
 
 class NamingRules(unittest.TestCase):
@@ -78,7 +160,8 @@ class NamingRules(unittest.TestCase):
             app._current_identity = {"physical": True, "metadata_verified": True,
                                      "catalog": "CAT001", "barcode": ""}
             app.encoding_workers = 1
-            with patch.object(mlo, "probe", return_value={"codec_name": "flac"}):
+            with patch.object(mlo, "probe", return_value={"codec_name": "flac"}), \
+                 patch.object(mlo, "_update_copied_track_tags"):
                 app._export_release(source, dest, "FLAC", "unused-ffmpeg", "unused-ffprobe")
             self.assertFalse((dest / "audiochecker.log").exists())
             self.assertTrue((dest / "CAT001.cue").exists())
@@ -249,8 +332,8 @@ class DesktopStartupRecovery(unittest.TestCase):
         bridge = mlo.DesktopBridge(engine)
         exported = [key for key in dir(bridge) if not key.startswith("_")]
         self.assertEqual(set(exported), {
-            "state", "browse", "open_folder", "open_log", "organize",
-            "cancel", "undo", "diagnostics"})
+            "state", "browse", "open_folder", "open_log", "open_log_folder",
+            "browse_checker_zip", "organize", "cancel", "undo", "diagnostics"})
         self.assertEqual(bridge.state(), {"alive": True})
         self.assertEqual(bridge.browse("source"), "source")
         self.assertEqual(bridge.open_folder("C:\\Music"), {"opened":"C:\\Music"})
@@ -443,10 +526,14 @@ class DiscIDAndWorkers(unittest.TestCase):
                     return {"releases": [{"id": "disc-edition"}, {"id": "other-edition"}]}
                 if path.startswith("release/?"):
                     return {"releases": [{"id": "disc-edition", "barcode": "1234567890123"}]}
+                if path.startswith("release/other-edition"):
+                    return {"id": "other-edition", "media": [
+                        {"format": "CD", "track-count": 2},
+                        {"format": "CD", "track-count": 2}]}
                 if path.startswith("release/disc-edition"):
                     return {"id": "disc-edition", "title": "Example",
                             "barcode": "1234567890123", "country": "US",
-                            "media": [{"format": "CD"}],
+                            "media": [{"format": "CD", "track-count": 2}],
                             "label-info": [{"catalog-number": "CAT-12"}],
                             "release-group": {"first-release-date": "2006-11-18", "primary-type": "Album"}}
                 raise RuntimeError("Unexpected MusicBrainz request " + path)
@@ -520,7 +607,8 @@ class DiscIDAndWorkers(unittest.TestCase):
                 (source / f"{n:02d} Track {n}.flac").write_bytes(bytes([n]*20))
             app = mlo.Organizer()
             app.encoding_workers = 3
-            with patch.object(mlo, "probe", return_value={"codec_name": "flac"}):
+            with patch.object(mlo, "probe", return_value={"codec_name": "flac"}), \
+                 patch.object(mlo, "_update_copied_track_tags"):
                 app._export_release(source, dest, "FLAC", "unused", "unused")
             for n in range(1, 4):
                 self.assertTrue((dest / f"{n:02d} Track {n}.flac").exists())
