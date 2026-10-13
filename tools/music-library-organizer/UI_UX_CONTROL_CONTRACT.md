@@ -22,6 +22,25 @@ MCC source palette: `#0b0c0f` background, `#11141a` card, `#171b22` secondary, `
 | Filter | Filter preview by source/title/state; does not change selection. | Empty result explains no matches. |
 | Per-release Details dialog | Open full source -> output mapping, all files, warning/review reasons. Modal Close button, Escape and keyboard focus. | Must be readable/scrollable; never silently omit changes beyond first 3 visible summaries. |
 
+## v0.2.0 automatic organizer UI contract (replaces mandatory Scan / REVIEW / Apply)
+
+User explicitly rejects manual per-release review as the primary workflow. The only normal required user actions are **choose input, choose output, choose target format (ALAC/FLAC), press Organize**. There is no Scan-then-Apply, no Select ready/none, and no 94-of-94 REVIEW stop caused by missing quality-check logs. Invalid files must not stall valid files; errors are recorded per release, shown as a final report, and export proceeds where safe.
+
+| Control | Unique intent, actions, side effects, states, accessibility |
+| --- | --- |
+| Source field + Browse/open-folder icon | Enter, paste or choose source root; native picker cancel preserves input. Editable only while idle; path and hierarchy validated at start. Folder drop supported where host supplies actual path; manual Browse always available. |
+| Output field + Browse/open-folder icon | Enter/choose explicit output root distinct from source. No content changes merely from editing path. Focus and errors visible. |
+| Target format dropdown | ALAC or FLAC only; persists as own program settings, not MCC settings. Disabled during a run. |
+| **Organize** (primary) | Immediately scan and organize whole input in the same job (no separate Apply). Destination writes only; source untouched. Disabled while running. No per-release approvals or selection blocking. |
+| **Cancel** | Request cooperative stop at safe checkpoints, no interruption of already committed outputs; leave Undo manifest. Clear progress/status. |
+| **Undo last run** | After user confirmation, remove ONLY output files unchanged since the last run; source never touched. Disabled during jobs; audit all files before any deletion. |
+| Summary table or details | **Read-only** automated results: done, skipped (already exists), failed (actual conflict/codec/metadata issue), warning (e.g. missing AudioChecker log). This is reporting **after action**, not a review gate. Large outputs scroll/filter and are readable in keyboard navigation. |
+| Progress + activity + Open output/log | Live number of releases done/total, encoded tracks/files, warnings/errors. 'Open output' and 'Open log' are direct host actions, with disabled state if path absent. Keyboard focus and correct accessible labels. |
+
+MCC v0.5.18 WebView2 color/typography/control height/spacing remains the reference. Remove misleading preview/review controls; do not create buttons that have no behavior. 'Missing audiochecker.log' is a **warning** only; log is not forged and source need not have one to organize. Preserve realistic binary safety by not overwriting/replacing existing outputs and leaving a release-specific error in the run report on true collisions.
+
+Acceptance for v0.2.0: 94 WEB albums without logs should begin automatic work rather than show '0 ready'; mixed good/bad release input processes every good release; missing reports are warnings; invalid CUE, unknown codec, filesystem collisions recorded as real failures without stopping rest; filenames preserve meaningful original descriptors; matching already-sorted outputs skipped non-destructively; Undo, cancellation, source safety, and WebView2 screens require Windows interactive confirmation. All Windows tests remain **NOT RUN** until actually performed.
+
 ## Test register
 
 | Test | Status |
