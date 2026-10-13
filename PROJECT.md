@@ -361,6 +361,12 @@ Required behavior:
 9. If an existing `audiochecker.log` is stale/invalid, preserve it temporarily outside the release folder while regenerating it; restore it if generation fails.
 10. Normal UI is automatic: one folder, progress, final counts. No per-release review.
 
+## Automatic organizer v0.2.0 - no manual REVIEW gate
+
+Latest GUI source: [Music Library Organizer v0.2.0.pyw](tools/Music%20Library%20Organizer%20v0.2.0.pyw). The user explicitly rejected the earlier v0.1.2 workflow that labeled 94/94 WEB releases REVIEW because `audiochecker.log` was missing and disabled Apply. **One normal button now initiates all discovery, organization, copying and conversion.** The operator sets input folder, separate output folder and ALAC/FLAC, clicks **Organize**, then sees per-release Done/Already present/Failed/Warning counts. Missing AudioChecker logs are warnings only, never review blockers. There is no extra Scan, selection or Apply phase. Real failures are isolated per release, not the whole input batch; originals stay untouched, existing output is not overwritten, Undo hashes are stored.
+
+Shorter tags no longer remove a filename's explicit version descriptor when the source filename is more informative, e.g. `01 OK (Extended Version).flac` is not reduced to `01 OK.m4a`. Unknown release dates, country/pressing evidence or identifiers are not fabricated; existing release folder names are kept where no authoritative lookup is available. Read [organizer-specific CONTINUITY.md](tools/music-library-organizer/CONTINUITY.md) and [README.md](tools/music-library-organizer/README.md) for implementation and acceptance blockers. **Status 0.2.0 - Under construction ⚠️, Windows runtime/UI testing NOT RUN.**
+
 ## Independent organizer prototype - Music Library Organizer v0.1.2
 
 Current prototype at [`tools/Music Library Organizer v0.1.2.pyw`](tools/Music%20Library%20Organizer%20v0.1.2.pyw) with its own [continuity](tools/music-library-organizer/CONTINUITY.md), [UI control contract](tools/music-library-organizer/UI_UX_CONTROL_CONTRACT.md), [test source](tools/music-library-organizer/test_organizer.py) and [user guide](tools/music-library-organizer/README.md). GUI matches MCC 0.5.18's dark pywebview/WebView2 component system by deliberate design; **no MCC source or persistent state changed**. The possibility of a future MCC merge is not an implemented integration or instruction to modify MCC now.
