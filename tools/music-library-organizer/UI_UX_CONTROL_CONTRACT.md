@@ -1,6 +1,10 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.8 candidate - Under construction ⚠️; no real Windows acceptance. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.9 candidate - Under construction ⚠️; native engine provisioning and Windows acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.9 - correct AudioChecker availability status
+
+No ZIP browse UI. Actual auCDtect engine needed in program-private dependencies, not a new external user-facing setting. Automatic WEB analysis runs only when a verified user-owned engine exists; display explicit PARTIAL failure and do **not** create `audiochecker.log` if missing. Remove any UI promise of fully integrated no-dependency proprietary analyzer. CUE, files, tag flows and MCC-style WebView2 unchanged. Windows availability/failure UI validation NOT RUN.
 
 ## v0.3.8 - transparent results status and restored naming
 
