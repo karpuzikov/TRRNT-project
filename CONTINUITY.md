@@ -3,6 +3,12 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Music Library Organizer v0.3.2 - remove WEB AudioChecker from physical CDs - 2026-10-13
+
+- User found `audiochecker.log` in organized physical CD `2005-07-01 - New HOT Edition [RU - CDLREC 5592010 CD]`. Cause: `_export_release` copied existing AudioChecker sidecars to CDs even though `_organize` already skipped the checker run for recognized CDs.
+- v0.3.2 excludes existing `audiochecker.log` from **all** copied sources; WEB gets only a new genuine report while CD gets **none**. Source files preserved. Physical recognition now accepts CUE **or** rip LOG without requiring both. Results subtitle removed. Added different-year CD edition year bracket suffix. GitHub regression tests added for CD sidecar prohibition and reissue-year behavior; Windows/full test execution NOT RUN.
+- **Critical remaining issue:** MB release-group first dates 2005 for Hot and 2010 for I Am the Club Rocker contradict independent documented first album dates 2009/2011. v0.3.2 still uses the problematic release-group first date without verification, so those particular folder dates are unresolved. Another metadata validation pass is necessary; do not call this a compliant/stable build. Previously generated output is NOT changed/cleaned on rerun.
+
 ## Music Library Organizer v0.3.1 - UI, worker selectors, supplied checker and DiscID - 2026-10-13
 
 - User requested: eliminate unnecessary checker executable path; reuse supplied `Audio_Checker_UTF8_Multicore.zip`; remove redundant **Open output** toolbar button (keep folder icon beside path); initialize output automatically to input ` - Sorted`; add independent Encoding and AudioChecker worker selectors; verify **both MusicBrainz barcode and DiscID** lookups.
