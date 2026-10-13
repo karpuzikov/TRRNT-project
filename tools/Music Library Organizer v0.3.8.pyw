@@ -1428,12 +1428,16 @@ def release_identity(folder, files, default_artist="", allow_network=True):
     barcode = barcode or (tagged_barcode if _BARCODE.fullmatch(tagged_barcode) else "")
     title = clean_release_title(title, default_artist)
     feature_hint = release_feature_credit(current) or release_feature_credit(album)
+    # Source explicitly labels a Maxi CD Single/CD Single. This is reliable
+    # release-type evidence even if an exact online pressing is unresolved.
+    declared_type = ("Single" if re.search(
+        r"(?i)\((?:Maxi\s+CD\s+Single|CD\s+Single)\)", current) else "")
     result = {"folder": current, "title": title, "date": date,
               "feature_hint": feature_hint,
               "root_artist": default_artist,
               "catalog": ident if ident and not _BARCODE.fullmatch(ident) else "",
               "barcode": barcode, "physical": is_cd, "country": "",
-              "country_provenance": "", "release_type": "",
+              "country_provenance": "", "release_type": declared_type,
               "selected_release": "", "metadata_verified": False,
               "edition_date": "",
               "notes": [], "track_count": len(audios),
