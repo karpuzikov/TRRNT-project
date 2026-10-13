@@ -10,6 +10,8 @@ Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or o
 
 **Critical correction:** v0.3.7/v0.3.8's custom FFT did not reproduce AudioChecker's CDDA/MPEG classification. It is disabled and removed in v0.3.9. Genuine `auCDtect` output is mandatory for a report; original-style 2.0 beta build 457 report formatting, comma summary and checksum are implemented. The exact checksum **145533892** and summary **94,76% CDDA** were independently reproduced from the user's 55-track reference.
 
+**Existing output:** Already-organized directories with old `MLO Integrated AudioChecker v0.3.x` spectral reports are shown as **PARTIAL - INVALID report** instead of quietly SKIPPED. Existing files are never overwritten or removed. New empty output and genuine engine required for correction.
+
 **Not fully self-contained yet:** The original auCDtect binary is proprietary freeware. No verified redistribution permission and the publisher's binary link redirects away to unrelated content. The program can use an already present user-owned binary in its app-private dependencies; it cannot automatically safely install a missing original engine today. It does not prompt for a ZIP, scrape arbitrary mirrors, produce false CDDA/MPEG percentages or silently substitute a homemade classifier. Missing engine means **PARTIAL**, no `audiochecker.log`. Real native Windows scores and binary installation still **NOT RUN / NOT SOLVED**.
 
 ## v0.3.8 - specific INNA naming/status and CUE repair
