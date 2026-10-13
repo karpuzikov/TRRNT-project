@@ -11,6 +11,12 @@ The independent canonical repository for all Discography Torrent Project-owned s
 
 Preserve reference DEA `tools/Duplicate Edition Analyzer v0.22.12.pyw` on `main`, historical versions, and their separate development branches (including `dea-lightweight-modern`). The former DEA Actions YAML files have been archived in `archived-workflows/` rather than enabled in `.github/workflows/`; **do not activate/modify them without an explicit user request**. See `MIGRATION.md` for the verified file-by-file SHA manifest and limitations. Original compiled EXE release assets and GitHub history remain linked from the old repo; migrating source does not imply those assets or histories were transferred.
 
+## Shared music vocabulary for filename semantics (2026-10-13)
+
+The canonical cross-tool recording/credit vocabulary is **[MUSIC_GLOSSARY.md](MUSIC_GLOSSARY.md)**, aligned with MCC's [recording-root, version, and remix-feature rules](https://github.com/karpuzikov/MCC/blob/main/RULES.md). The glossary is shared by Discography Builder, Duplicate Edition Analyzer, MCC, and any planned track filename organizer. **Remix**, **remixer**, **featured artist**, **remix-added featured artist**, **Version**, **release type**, and **source medium** are separate concepts. Neither a bracketed `[ft. ...]` credit nor a parenthesized `(Remix)` may be discarded because the other is present.
+
+Example: `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is an **individual Remix with a featured-artist credit**, not merely an alternative spelling of a feature. MCC's added-feature exception requires actual comparison/explicit evidence; `[ft.]` markup alone does not prove that the feature was new. MCC's internal `canonical_featured_title()` normalizes credits for matching keys and is **not** an approved disk-filename rewrite rule. Track filename punctuation beyond these examples remains under discussion.
+
 ## ALAC collection folder organization and release naming (2026-10-13)
 
 These rules apply to the dedicated **file-organization stage** of the discography workflow. This stage is planned, **not implemented** by the current tools. Inspect only ALAC collection folders for the standard below. All generated names require a preview and explicit Apply before moving/renaming files.
