@@ -1,6 +1,13 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.4 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.5 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.5 selectable Results and log/ZIP controls
+
+- Results table: allow native text selection and Ctrl+C (mouse drag, keyboard), no CSS `user-select:none`. Expose a working **Copy results** button that copies the currently filtered status, source release, destination, message and warnings. No review gate.
+- **Open log folder** (folder icon) immediately adjacent to **Open log**. Both are real native actions through `DesktopBridge`; folder opens app-isolated log directory and does not duplicate the separate organized-output path icon.
+- **AudioChecker ZIP** optional, read-only path and a **Browse ZIP...** chooser. Persist selected real ZIP path under product-only settings, validate bundled `aucdtect.exe`. Auto discovery still happens without manual chooser. If not found, status identifies the real problem and remains PARTIAL, never a synthetic audiochecker.log.
+- Earlier worker selectors, input/output, ALAC/FLAC choice, source safety and WebView2 bridge behavior remain. Real Windows interaction/screen-reader, black-screen, clipboard, native open-folder/ZIP dialog, true reports NOT RUN.
 
 ## v0.3.4 startup/reconnect controls and states
 
