@@ -1352,15 +1352,24 @@ def release_identity(folder, files, default_artist="", allow_network=True):
             # otherwise search by album+artist and require unique strong match.
             entries = barcode_entries
             if not barcode:
-                if not (title and artist):
-                    result["notes"].append("Neither DiscID, barcode nor complete artist/title lookup available.")
-                    return result
-                query = 'release:"' + clean_release_title(album or title, default_artist).replace('"', "") + \
-                        '" AND artist:"' + str(artist).replace('"', "") + '"'
+                if is_cd and result.get("catalog"):
+                    # The exact edition catalog is often present in a
+                    # historical Japanese CD source folder (WPCR-15062).
+                    # Query the catalog, not an approximate album title alone.
+                    query = 'catno:"' + str(result["catalog"]).replace('"', "") + '"'
+                    result["lookup_sources"].append("MusicBrainz catalog number")
+                else:
+                    if not (title and artist):
+                        result["notes"].append(
+                            "No DiscID/barcode/catalog and artist/title pair for lookup.")
+                        return result
+                    query = 'release:"' + clean_release_title(
+                        album or title, default_artist).replace('"', "") + \
+                            '" AND artist:"' + str(artist).replace('"', "") + '"'
+                    result["lookup_sources"].append("MusicBrainz artist/title")
                 url = "release/?" + urllib.parse.urlencode(
                     {"query": query, "fmt": "json", "limit": "100"})
                 entries = mb_json(url).get("releases", [])
-                result["lookup_sources"].append("MusicBrainz artist/title")
             compatible = []
             for entry in entries:
                 similarity = difflib.SequenceMatcher(
@@ -1370,6 +1379,9 @@ def release_identity(folder, files, default_artist="", allow_network=True):
                 rid = str(entry.get("id") or "")
                 if not rid:
                     continue
+                # Catalog numbers on concrete physical editions must
+                # match source exactly before claiming an edition identity.
+                # MusicBrainz search ranking alone is not sufficient.
                 # Require the concrete medium (search results may omit it).
                 detail = mb_json("release/" + rid +
                                  "?inc=release-groups+labels+media+artists&fmt=json")
@@ -1377,6 +1389,11 @@ def release_identity(folder, files, default_artist="", allow_network=True):
                            for m in detail.get("media", [])]
                 if is_cd and not any("cd" in x for x in formats):
                     continue
+                if is_cd and result.get("catalog") and not barcode:
+                    labels = [str(z.get("catalog-number") or "")
+                              for z in detail.get("label-info", [])]
+                    if not any(z.casefold() == result["catalog"].casefold() for z in labels):
+                        continue
                 if not is_cd and not any("digital media" in x for x in formats):
                     continue
                 compatible.append((similarity, detail))
