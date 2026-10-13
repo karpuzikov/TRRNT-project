@@ -35,6 +35,15 @@ Last updated: 2026-10-13
 
 **Positional markup (latest user rule):** Title components use `()`, then `[]`, then `{}` in **display order**, not according to whether a component is a remix or a feature. A remix-added feature follows the remix descriptor; a preexisting original feature precedes the remix descriptor. MCC's internal `canonical_featured_title()` normalizes for comparison keys, not the on-disk display rendering. Do not infer feature provenance merely from `[]` versus `()`. See the complete track-file naming examples below.
 
+## Exact physical audio filename pattern - zero-padded number and one space
+
+The approved ALAC audio filename grammar is **`NN Track Title.m4a`**: minimum two-digit **zero-padded track number**, exactly **one space** as its only delimiter, then the **complete normalized track title**. **User example:** `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].m4a`.
+
+- `01` is the track number (zero-padded); ` ` is the required separator; `Red Lips (ft. Sam Bruno) [Skrillex Remix]` is the full title. Keep `()`, `[]`, and `{}` title/credit ordering intact.
+- No punctuation or extra spaces after the number: `01. Title.m4a`, `01 - Title.m4a`, `01_Title.m4a`, and `01  Title.m4a` are invalid. Punctuation *inside* the real title (such as `ft.`) is unaffected.
+- The on-disk album track filename has **no artist prefix**. A `The Weeknd - Reminder ...` display example describes the separate `artist` and `title` fields rather than requiring those words in the filename.
+- A file's extension must reflect its real format, and CD CUE `FILE` entries must remain valid when a file is renamed. Disc-specific numbering/exception cases will be finalized separately.
+
 ## Track filename composition, feature provenance, and positional delimiters (user-approved)
 
 This is a **track-level filename/title** standard, separate from the **release-folder** grammar. First classify the real attributes, *then* render them. A featured performer is never interchangeable with a remixer, even when both occur in one title.
@@ -77,7 +86,7 @@ Source of truth: [Format_Multiple_Artists.txt](https://github.com/karpuzikov/use
 | `GTA - Red Lips [Skrillex Remix] (ft. Sam Bruno)` when Sam Bruno is confirmed original feature | `GTA - Red Lips (ft. Sam Bruno) [Skrillex Remix]` | Reorder by actual original/remix relationship, not incoming brackets |
 | `The Weeknd - Reminder (ft. A$AP Rocky & Young Thug) [Remix]` when features confirmed remix-added | `The Weeknd - Reminder (Remix) [ft. A$AP Rocky & Young Thug]` | Reorder based on real feature provenance, not source markup |
 
-The `Artist - Track` notation in these demonstrations identifies both **artist-credit and title fields**. It does **not**, by itself, supersede the observed album-track convention `NN Track Title.m4a` or mandate that every filename include an artist prefix. Apply these transformations to actual credited fields in the eventual file-naming pipeline; decide track number/artist-prefix templates separately.
+The `Artist - Track` notation in these demonstrations identifies both **artist-credit and title fields**. The user has since confirmed the physical audio-file template `NN Track Title.m4a`: minimum two-digit zero padding, one space, full standardized title, and **no artist prefix**. Apply credit/title transformations within the title without adding `Artist -` to the filename.
 
 ## Required shared rules
 
