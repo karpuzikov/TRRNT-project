@@ -361,6 +361,14 @@ Required behavior:
 9. If an existing `audiochecker.log` is stale/invalid, preserve it temporarily outside the release folder while regenerating it; restore it if generation fails.
 10. Normal UI is automatic: one folder, progress, final counts. No per-release review.
 
+## Organizer v0.3.1 - supplied AudioChecker, concurrency and DiscID/barcode
+
+Current source: [Music Library Organizer v0.3.1.pyw](tools/Music%20Library%20Organizer%20v0.3.1.pyw). The user supplied `Audio_Checker_UTF8_Multicore.zip`, containing Python multicore implementation, auCDtect and FLAC decoder. The organizer no longer prompts for a generic `achkgui.exe` path; it locates the ZIP beside the script or in Downloads and safely installs only required checker tools into its **own isolated dependency directory**. Analyses use the supplied algorithm, `-mS0`, and genuine `audiochecker.log` checksums. The ZIP remains user-provided and **is not committed as proprietary binary assets**. Existing metadata/CUE functionality stays available.
+
+The output field defaults to `<Input folder> - Sorted` and remains editable. The duplicate toolbar **Open output** action is removed, preserving the existing folder-open icon beside the path. Independent persisted worker selectors control FFmpeg encoding/CUE splits and AudioChecker analysis; initial min(4, logical cores), user-selectable up to 64/CPU count. DiscID uses the existing project CUE Corrector v1.3.1 EAC-log/TOC calculation, with CUE/sample-exact fallback; physical candidate releases must be corroborated with a **MusicBrainz DiscID match**, and independently queried exact **barcode** where present. Ambiguity is logged rather than silently picking a different pressing. The active UI remains one-click Organize with PARTIAL for unresolved mandatory checks.
+
+**Status: 0.3.1 - Under construction ⚠️.** Source and independently supplied ZIP inspected; JS syntax parse PASS; Python suite, Windows UI, native auCDtect, live DiscID service and full INNA source run NOT YET VERIFIED. [Product guide](tools/music-library-organizer/README.md) · [handoff](tools/music-library-organizer/CONTINUITY.md).
+
 ## Organizer v0.3.0 compliance repair checkpoint
 
 The INNA test of 0.2.0 showed **80 files/release exports reported DONE** but no mandatory Single suffix, no researched barcode-to-catalog replacement, no real AudioChecker, unchanged `Inna - YO 2019` and its CUE/LOG, plus **14 failed releases**. An explicit audit is at [AUDIT_INNA_2026-10-13.md](tools/music-library-organizer/AUDIT_INNA_2026-10-13.md).
