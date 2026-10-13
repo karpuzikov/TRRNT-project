@@ -3,6 +3,12 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Music Library Organizer v0.3.1 - UI, worker selectors, supplied checker and DiscID - 2026-10-13
+
+- User requested: eliminate unnecessary checker executable path; reuse supplied `Audio_Checker_UTF8_Multicore.zip`; remove redundant **Open output** toolbar button (keep folder icon beside path); initialize output automatically to input ` - Sorted`; add independent Encoding and AudioChecker worker selectors; verify **both MusicBrainz barcode and DiscID** lookups.
+- Committed new `tools/Music Library Organizer v0.3.1.pyw`. Uses ZIP autodiscovery/bounded extraction of known supplied executable/UTF8 manifests, concurrent auCDtect -mS0 analysis and compatible genuine `audiochecker.log` formatting; independent bounded encoding/checking worker pools; output path suggestion. Exact DiscID algorithm and EAC-log / CUE-exact fallback follow project's existing CUE Corrector. Requires barcode intersection when both available, does not silently choose among ambiguous physical editions. Original files preserved.
+- Enhanced `tools/music-library-organizer/test_organizer.py` with new checks for worker counts, bundle setup, discid/barcode cross-check, ambiguous candidates and report checksum. Tests are committed but not run in target Windows runtime. Separate Linux inspection verified the user-supplied checker format and actual ZIP contents. Inlined UI JS syntax PASS. Product remains **0.3.1 - Under construction ⚠️**, not stable. No Actions workflows altered.
+
 ## Music Library Organizer v0.3.0 - rules audit and repairs - 2026-10-13
 
 - INNA v0.2.0 log: 94 discovered, 80 reported DONE, 14 FAILED. In reality v0.2.0 failed required naming/catalog/checker work; 80 labeled DONE was noncompliant. Eight WEB collisions, six CD CUE errors. Details in product `AUDIT_INNA_2026-10-13.md`.
