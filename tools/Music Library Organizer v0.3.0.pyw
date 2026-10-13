@@ -436,6 +436,7 @@ import urllib.error
 import difflib
 
 _MB_WAIT = [0.0]
+_MB_UNAVAILABLE_UNTIL = [0.0]
 _BARCODE = re.compile(r"^\d{8,14}$")
 _DATE = re.compile(r"^\d{4}(?:-\d{2}){0,2}$")
 _RELEASE_PARTS = re.compile(r"^(?P<date>\d{4}(?:-\d{2}){0,2}) - (?P<title>.*?) \[(?P<id>[^\[\]]+)\]$")
@@ -452,6 +453,8 @@ def mb_json(path, ttl_seconds=86400 * 14):
     stored = _MB_CACHE / (cache_key + ".json")
     if stored.is_file() and time.time() - stored.stat().st_mtime < ttl_seconds:
         return json.loads(stored.read_text(encoding="utf-8"))
+    if time.monotonic() < _MB_UNAVAILABLE_UNTIL[0]:
+        raise RuntimeError("MusicBrainz currently unreachable; preserving original release metadata.")
     wait = max(0.0, 1.1 - (time.monotonic() - _MB_WAIT[0]))
     if wait:
         time.sleep(wait)
@@ -471,6 +474,7 @@ def mb_json(path, ttl_seconds=86400 * 14):
             last = exc
             if retry < 2:
                 time.sleep(1.5 * (retry + 1))
+    _MB_UNAVAILABLE_UNTIL[0] = time.monotonic() + 180
     raise RuntimeError("MusicBrainz lookup unavailable: " + str(last))
 
 
@@ -495,7 +499,7 @@ def release_title_normalize(title, release_type=None, inferred_single=False):
     # Descriptors already correctly enclosed should not get a type suffix.
     if re.search(r"(?i)\((?:The |Club )?Remixes\)(?:\s*(?:-|\()\s*(?:EP|Single)\)?)?$", text):
         return re.sub(r"(?i)\s*(?:-|\()\s*(?:EP|Single)\)?$", "", text).strip()
-    text = re.sub(r"(?i)\s*(?:-|\()\s*(?:Single|EP)\)?$", "", text).strip()
+    text = re.sub(r"(?i)\s+(?:(?:-\s*)|\()?\b(?:Single|EP)\)?$", "", text).strip()
     if re.search(r"(?i)\s+Remix$", text) and not re.search(r"(?i)\(Remix\)$", text):
         text = re.sub(r"(?i)\s+Remix$", " (Remix)", text)
     text = re.sub(r"(?i)\b(?:feat|featuring)\.\s+", "ft. ", text)
