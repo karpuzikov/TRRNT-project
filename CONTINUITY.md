@@ -3,6 +3,14 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Track title / feature provenance / positional delimiters - 2026-10-13
+
+- User specifies two distinguishable cases using MCC's glossary: `The Weeknd - Reminder (Remix) [ft. A$AP Rocky & Young Thug]` = feature added by remix, **remix before feature**; `GTA - Red Lips (ft. Sam Bruno) [Skrillex Remix]` = feature already on original, **feature before remix**. Verify original feature provenance using original recording credits; don't infer it from punctuation.
+- All separate parenthesized track-title components follow **first `()`, second `[]`, third `{}`**, based on final sequence and irrespective of role. Original title parentheticals count as first. Preserve descriptors, remixer names and featured credits; render `feat.` as `ft.`.
+- Exact artist/track example: `Tiesto vs. Diplo - C'Mon (Catch 'Em By Surprise) (feat. Busta Rhymes) (Extended Club Mix)` -> `Tiesto & Diplo - C'Mon (Catch 'Em By Surprise) [ft. Busta Rhymes] {Extended Club Mix}`.
+- Checked canonical Picard script `karpuzikov/userscripts/picard-tools/scripts/Format_Multiple_Artists.txt` and `Move_Featured_Artists_to_Title.txt`. Former joins already-separated `%artists%` and `%albumartists%`: 2 `A & B`, 3+ `A, B & C`; `vs.` conversion needs independently resolved artist credits, not global text replacement. Feature-moving script handles tag positioning but not complete positional `() [] {}` filename grammar.
+- Central `MUSIC_GLOSSARY.md` updated, mirrored as normative references in `RULES.md` and `PROJECT.md`; no MCC/other application logic changed. The full album-file template, especially whether artist is included in physical `NN Track Title.m4a`, still needs a specific instruction.
+
 ## Shared MCC/TRRNT semantic glossary checkpoint - 2026-10-13
 
 - User corrected track-file terminology: `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is **a Remix with featured artist Nicki Minaj**, not simply an alternative featured-artist spelling. The track carries independent recording category/featured-credit attributes.
