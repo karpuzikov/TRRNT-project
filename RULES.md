@@ -47,7 +47,8 @@ These rules apply to the dedicated **file-organization stage** of the discograph
 ### Release type and remix naming
 
 - For regular **single** releases, append ` - Single` to the release title **always**. For regular **EP** releases, append ` - EP` **always**. Avoid adding the suffix a second time if it is already present.
-- **Remix-focused releases are the exception:** with **up to three tracks**, ` - Single` **may** be used; with **more than three tracks**, label the title ` (Remixes)` instead of a normal ` - EP` / ` - Single` suffix. Preserve meaningful version/edition words already belonging to the title; do not duplicate `(Remixes)`.
+- **Remix-focused releases are the exception:** preserve the **original release title**. Do **not** invent or append `(Remixes)` just because a release contains more than three tracks. If the actual release title contains a **standalone remix-collection descriptor** such as `Remixes`, `The Remixes`, `Club Remixes`, or equivalent wording, preserve the original wording but enclose that descriptor in parentheses: `Song - The Remixes` -> `Song (The Remixes)`; `Song Remixes` -> `Song (Remixes)`; `Song (The Remixes)` remains unchanged. Only normalize a descriptor, not words that are an inseparable part of the proper title. Do not duplicate parentheses or remove meaningful title text.
+- A remix-focused release with **up to three tracks** may use ` - Single` where appropriate. For **more than three tracks**, do not force ` - Single`, ` - EP`, or `(Remixes)`; keep the release's actual title and any authentic release-type wording. The track-count distinction must never manufacture a title phrase absent from the original.
 - These suffix rules are for **release folder names**, not arbitrary rewriting of track titles or changes to the Duplicate Edition Analyzer's Save Remixes/Live coverage logic.
 
 ### Exact separators, CD reissues and worked examples
