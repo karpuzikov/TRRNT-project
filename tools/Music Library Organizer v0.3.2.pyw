@@ -754,6 +754,7 @@ def release_identity(folder, files, default_artist="", allow_network=True):
               "barcode": barcode, "physical": is_cd, "country": "",
               "country_provenance": "", "release_type": "",
               "selected_release": "", "metadata_verified": False,
+              "edition_date": "",
               "notes": [], "track_count": len(audios),
               "discids": [], "lookup_sources": []}
     if not allow_network:
@@ -849,6 +850,9 @@ def release_identity(folder, files, default_artist="", allow_network=True):
         if barcode and actual_barcode and actual_barcode.lstrip("0") != barcode.lstrip("0"):
             result["notes"].append("MusicBrainz barcode conflicts with source barcode.")
             return result
+        concrete_date = str(details.get("date") or "")
+        if _DATE.fullmatch(concrete_date):
+            result["edition_date"] = concrete_date
         labels = [str(row.get("catalog-number") or "").strip()
                   for row in details.get("label-info", [])]
         cats = [x for x in labels if x.casefold() not in ("", "none", "n/a", "[none]")]
@@ -901,6 +905,11 @@ def release_folder_target(info):
             info["notes"].append("CD country/manufacture or documented release territory unresolved.")
             return info["folder"]
         suffix = country + " - " + ident
+        edition_date = str(info.get("edition_date") or "")
+        if (_DATE.fullmatch(edition_date) and edition_date[:4] != date[:4]):
+            # The leading date is the original worldwide release date;
+            # a CD edition pressed/reissued in a different year belongs last.
+            suffix += " - " + edition_date[:4]
     else:
         suffix = ident
     candidate = date + " - " + title + " [" + suffix + "]"
