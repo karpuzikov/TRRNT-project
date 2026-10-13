@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.7 - integrated AudioChecker regression tests.
+# Music Library Organizer v0.3.8 - INNA naming and CUE recovery regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.7.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.8.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -212,6 +212,118 @@ class BuiltinCheckerRegression(unittest.TestCase):
         self.assertIn("selectingResults", mlo.HTML)
         self.assertIn("button.result-folder", mlo.HTML)
         self.assertNotIn("id=\"openCheckerZip\"", mlo.HTML)
+
+
+
+class UserCorrections20261014(unittest.TestCase):
+    def test_picard_english_small_words(self):
+        cases = {
+            "10 Minutes (Club Mix By Play & Win)": "10 Minutes (Club Mix by Play & Win)",
+            "We're Going In The Club": "We're Going in the Club",
+            "More Than Friends feat. Daddy Yanke": "More Than Friends (ft. Daddy Yanke)",
+            "INNDiA feat. Play&Win": "INNDiA (ft. Play & Win)",
+        }
+        for supplied, expected in cases.items():
+            with self.subTest(supplied=supplied):
+                self.assertEqual(mlo.normalized_title(supplied), expected)
+                self.assertEqual(mlo.track_filename(13, supplied, ".m4a"),
+                                 "13 " + expected + ".m4a")
+
+    def test_source_filename_feature_survives_short_tag(self):
+        from unittest.mock import patch
+        with patch.object(mlo, "metadata",
+                          return_value=("3", "More Than Friends", "INNA")):
+            num, title, artist = mlo.extract_number_title(
+                Path("03 More Than Friends feat. Daddy Yanke.m4a"), "INNA")
+        self.assertEqual((num, title, artist),
+                         (3, "More Than Friends (ft. Daddy Yanke)", "INNA"))
+
+    def test_unknown_cd_legacy_names_are_cleaned_not_retained(self):
+        example = {"folder": "Inna - Déjá Vu (Maxi CD Single) (Promo)",
+                   "title": "Inna - Déjá Vu (Maxi CD Single) (Promo)",
+                   "date": "", "physical": True, "catalog": "", "barcode": "",
+                   "country": "", "root_artist": "INNA", "notes": [],
+                   "release_type": ""}
+        self.assertEqual(mlo.release_folder_target(example), "Déjá Vu")
+        self.assertIn("unverified", " ".join(example["notes"]))
+        example = {"folder": "Inna - Party Never Ends (Part 2) (2013) [WPCR-15062]",
+                   "title": "Party Never Ends (Part 2): Japan",
+                   "date": "2012-01-01", "physical": True,
+                   "catalog": "WPCR-15062", "barcode": "",
+                   "country": "JP", "root_artist": "INNA", "notes": [],
+                   "release_type": "Album", "edition_date": "2013-01-01"}
+        target = mlo.release_folder_target(example)
+        self.assertIn("Party Never Ends (Part 2)", target)
+        self.assertIn("WPCR-15062", target)
+        self.assertNotIn(":", target)
+        self.assertNotEqual(target, example["folder"])
+
+    def test_verified_web_barcode_does_not_require_catalog(self):
+        # The PARTIAL reason computation is in the batch finalizer, not in
+        # folder-title rendering. Prevent regression via source invariant.
+        import inspect
+        code = inspect.getsource(mlo.Organizer._organize)
+        self.assertIn('info.get("barcode") or info.get("catalog")', code)
+        self.assertIn('result["unmet_requirements"] = reasons', code)
+        self.assertNotIn('not info.get("catalog")', code)
+
+
+class RebuildMissingImageCue(unittest.TestCase):
+    def test_exact_sixteen_track_image_cue_remaps_to_split_files(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            oldcue = root / "Party Never Ends.cue"
+            starts = list(range(0, 16 * 150, 150))
+            lines = []
+            for n, stamp in enumerate(starts, 1):
+                m, rem = divmod(stamp, 75 * 60)
+                sec, frame = divmod(rem, 75)
+                if n == 1:
+                    lines.append('FILE "missing original.wav" WAVE')
+                lines.extend([f"  TRACK {n:02d} AUDIO",
+                              f'    TITLE "Track {n}"',
+                              f"    INDEX 01 {m:02d}:{sec:02d}:{frame:02d}"])
+            oldcue.write_text("\n".join(lines), encoding="utf-8")
+            parsed = mlo.cue_read(oldcue)
+            mapping = {}
+            for n in range(1, 17):
+                src = root / f"{n:02d} Track {n}.flac"
+                dst = root / "New" / f"{n:02d} Track {n}.m4a"
+                mapping[src] = dst
+            with patch.object(mlo, "_exact_cd_sectors", return_value=150):
+                rebuilt, problem = mlo.reconstruct_missing_image_cue(parsed, oldcue, mapping)
+            self.assertEqual(problem, "")
+            self.assertEqual(rebuilt.count('FILE "'), 16)
+            self.assertEqual(rebuilt.count("INDEX 01 00:00:00"), 16)
+            self.assertIn('FILE "16 Track 16.m4a" WAVE', rebuilt)
+            self.assertTrue(oldcue.exists())
+
+    def test_sector_mismatch_or_index00_remains_unresolved(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            cue = root / "old.cue"
+            cue.write_text('FILE "missing.wav" WAVE\n'
+                           '  TRACK 01 AUDIO\n'
+                           '    TITLE "A"\n'
+                           '    INDEX 01 00:00:00\n'
+                           '  TRACK 02 AUDIO\n'
+                           '    TITLE "B"\n'
+                           '    INDEX 01 00:02:00\n', encoding="utf-8")
+            mapping = {root / "01 A.flac": root / "new" / "01 A.flac",
+                       root / "02 B.flac": root / "new" / "02 B.flac"}
+            with patch.object(mlo, "_exact_cd_sectors", return_value=149):
+                rebuilt, problem = mlo.reconstruct_missing_image_cue(
+                    mlo.cue_read(cue), cue, mapping)
+            self.assertIsNone(rebuilt)
+            self.assertIn("150", problem)
+            cue.write_text(cue.read_text() + "    INDEX 00 00:01:70\n")
+            with patch.object(mlo, "_exact_cd_sectors", return_value=150):
+                rebuilt, problem = mlo.reconstruct_missing_image_cue(
+                    mlo.cue_read(cue), cue, mapping)
+            self.assertIsNone(rebuilt)
+            self.assertIn("INDEX 00", problem)
 
 
 class NamingRules(unittest.TestCase):
