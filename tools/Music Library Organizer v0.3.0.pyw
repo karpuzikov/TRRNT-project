@@ -1240,6 +1240,10 @@ class Organizer:
         for fp in files:
             if fp.resolve() in source_images or fp.suffix.lower() in AUDIO:
                 continue
+            if not physical and fp.name.casefold() == "audiochecker.log":
+                # A report written against old filenames/codecs must be
+                # regenerated for the actual organized output, not copied.
+                continue
             sub = fp.parent.relative_to(source)
             if fp.suffix.lower() == ".cue":
                 dest_name = cat + ".cue" if physical and valid_cat else fp.name
