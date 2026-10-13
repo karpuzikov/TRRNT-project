@@ -3,10 +3,12 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
-## Release title EP/Single suffix clarification - 2026-10-13
+## Latest remix title correction - 2026-10-13
 
-- User explicitly requires any genuine `EP` / `Single` designation **present in the release title** to be standardized as one final ` - EP` / ` - Single` suffix, including on remix releases regardless of the number of tracks. Examples: `Title (EP)` -> `Title - EP`; `Song - The Remixes EP` -> `Song (The Remixes) - EP`. Do not retain parenthesized EP/Single designations or duplicate suffixes. Preserve previous rule: remix descriptors like `The Remixes` go in parentheses only if already in the authentic title; track count must not invent `(Remixes)` or a missing release type.
-- Updated naming documentation only (`RULES.md`, `PROJECT.md`, and this continuity note); no implementation, build, or Windows UI testing was performed.
+- User rejected any plural remix-collection folder name combining `(Remixes)` or `(The Remixes)` with an EP or Single suffix. The plural collection exception **supersedes** the previous broad requirement to retain ` - EP` / ` - Single` on every title where that release type is mentioned.
+- **Exact required mappings:** `Plain Jane REMIX - Single` -> `Plain Jane (Remix) - Single` (singular individual remix retains true Single suffix); `Title - The Remixes EP` -> `Title (The Remixes)` (plural remix collection drops EP designation). The same prohibition applies to `(Remixes)` / `(The Remixes)` plus ` - Single`, regardless of track count.
+- Keep the authentic plural remix descriptor wording in parentheses if it actually exists in the source title; never fabricate `(Remixes)` using track count. Ordinary (non-plural-collection) singles/EPs still normalize their release-type designation to final ` - Single` / ` - EP` suffixes. This rule is only for release folder naming.
+- Updated `RULES.md`, `PROJECT.md`, and `CONTINUITY.md`; no executable source, UI, build, or Windows test was changed/performed.
 
 ## Latest folder-organization clarifications - 2026-10-13
 
