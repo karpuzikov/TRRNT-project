@@ -5,7 +5,8 @@ Status: Under construction ⚠️
 
 ## File organization naming clarification - 2026-10-13
 
-- The user explicitly corrected the meaning of country codes inside ALAC physical-CD release folder names: `[US - ...]` indicates **country of manufacture/pressing of the physical CD**, NOT MusicBrainz release country or sales/distribution region. `EU` is not a country. When pressing country is unknown, omit rather than invent it. Digital/WEB releases do not receive a CD pressing-country prefix.
+- The user explicitly corrected the meaning of country codes inside ALAC physical-CD release folder names: `[US - ...]` indicates **country of manufacture/pressing of the physical CD**, NOT MusicBrainz release country or sales/distribution region. `EU` is not a country. For physical CDs with unverified pressing location, flag for review rather than guessing or relabeling the physical CD as digital.
+- User's second explicit rule: a country-less identifier such as `2018-02-16 - El Pintor Bonus Tracks [OLE13186]` means a **digital/WEB release** in this naming convention, so manufacturing/pressing country is **N/A**, not unknown. `[Identifier]` = digital; `[Verified Pressing Country - Catalog Number]` = physical CD.
 - User provided `!torrent_Structure.txt` as an example tree, requesting analysis limited to ALAC folders. A dedicated file organization/naming stage is planned after ALAC conversion and tag normalization, before artwork preparation, preserving CUE/LOG references and offering safe preview/Undo.
 - Updated `RULES.md` (canonical naming rule) and `PROJECT.md` (planned stage). This was documentation only: no software source modifications, build, Windows UI tests, or release-status changes.
 
