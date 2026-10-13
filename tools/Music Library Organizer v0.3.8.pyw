@@ -2042,6 +2042,7 @@ class Organizer:
                         self._current_identity = info
                         self._current_release_feature = info.get("feature_hint") or ""
                         self._export_warnings = []
+                        self._export_notices = []
                         try:
                             self.status = f"Organizing {index}/{len(releases)}: {out_name}"
                             self._export_release(folder, tmp, fmt, ff, ffprobe)
@@ -2102,6 +2103,8 @@ class Organizer:
                                 result["status"] = "done"
                                 self.counts["done"] += 1
                                 result["message"] = str(len(output_files)) + " verified output files."
+                            if self._export_notices:
+                                result["message"] += " | " + " | ".join(self._export_notices)
                         finally:
                             self._current_identity = None
                             if tmp.exists():
@@ -2332,9 +2335,10 @@ class Organizer:
                         if rewritten:
                             target.write_text(rewritten, encoding="utf-8",
                                               newline="\r\n" if IS_WIN else "\n")
-                            self.info(fp.name + ": original shared-image CUE replaced in "
-                                      "organized output by verified sample-exact per-file CUE; "
-                                      "original source CUE remains untouched.")
+                            notice = (fp.name + ": playable split-track CUE rebuilt after "
+                                      "sample-exact sector verification; original CUE untouched.")
+                            getattr(self, "_export_notices", []).append(notice)
+                            self.info(notice)
                             continue
                         if not any(path.parent == fp.parent for path in mapping):
                             raise RuntimeError(
