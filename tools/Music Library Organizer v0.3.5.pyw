@@ -2194,6 +2194,7 @@ class Organizer:
                     raise InterruptedError("Encoding cancelled.")
         # Preserve CUE text, rewriting only correct FILE paths; keep originals in source.
         destinations = set()
+        unresolved_cues = set()
         for fp in files:
             if fp.resolve() in source_images or fp.suffix.lower() in AUDIO:
                 continue
@@ -2224,6 +2225,7 @@ class Organizer:
                 else:
                     cue = cue_read(fp)
                     refs = {}
+                    unresolved_reason = None
                     for rec in cue["records"]:
                         if not rec["file"]:
                             raise RuntimeError("CUE missing FILE for track " + str(rec["number"]))
@@ -2241,12 +2243,28 @@ class Organizer:
                             if len(set(matches)) != 1:
                                 raise RuntimeError("Cannot uniquely remap legacy CUE FILE: " + rec["file"])
                             if len({r["file"].casefold() for r in cue["records"] if r["file"]}) < len(cue["records"]):
-                                raise RuntimeError("Legacy CUE uses shared missing image; no safe split boundary.")
+                                unresolved_reason = (
+                                    "CUE references an absent shared album image. "
+                                    "Exact INDEX00 and pregap distribution cannot be proven "
+                                    "from split tracks. Audio preserved, original CUE quarantined.")
+                                break
                             if rec["index"].get(1, -1) != 0:
-                                raise RuntimeError("Legacy CUE has nonzero indexes; cannot rewrite to split audio safely.")
+                                unresolved_reason = "Legacy CUE index offsets cannot be verified against separate audio."
+                                break
                             refs[key] = os.path.relpath(matches[0], target.parent).replace("/", "\\")
                         else:
                             refs[key] = os.path.relpath(mapping[src_audio], target.parent).replace("/", "\\")
+                    if unresolved_reason:
+                        unresolved_cues.add(fp)
+                        fallback = target.parent / ("Unresolved CUE - " + fp.stem + ".cue")
+                        if os.path.lexists(fallback):
+                            raise RuntimeError("Cannot preserve original unresolved CUE due to name collision.")
+                        shutil.copy2(fp, fallback)
+                        if sha(fp) != sha(fallback):
+                            raise RuntimeError("Unresolved original CUE copy changed.")
+                        getattr(self, "_export_warnings", []).append(
+                            fp.name + ": " + unresolved_reason)
+                        continue
                     rewritten = normal_cue_text(cue, refs)
                 target.write_text(rewritten, encoding="utf-8", newline="\r\n" if IS_WIN else "\n")
             else:
@@ -2255,7 +2273,7 @@ class Organizer:
                     raise RuntimeError("Copied support file differs: " + str(fp))
         # Ensure physical cue(s) and logs preserved or explicitly absent.
         for fp in files:
-            if fp.suffix.lower() == ".cue" and not (dest / fp.parent.relative_to(source) / (cat + ".cue" if physical and valid_cat else fp.name)).is_file():
+            if fp.suffix.lower() == ".cue" and fp not in unresolved_cues and not (dest / fp.parent.relative_to(source) / (cat + ".cue" if physical and valid_cat else fp.name)).is_file():
                 raise RuntimeError("A CUE was lost during export.")
 
     def undo(self):
