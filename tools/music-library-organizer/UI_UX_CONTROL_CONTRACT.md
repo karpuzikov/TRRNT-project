@@ -1,6 +1,10 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.2 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.3 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.3 encoding backend requirement
+
+The Output Format selector remains ALAC/FLAC without an added encoder selector. It now determines **refalac64.exe for ALAC** and **official Xiph flac.exe for FLAC** exclusively; a visible per-release error is required if installation or validation fails, never a fallback to FFmpeg encoders. The Encoding workers selection controls both native encoder subprocesses for individual files and image CUE splits. Background startup/analysis must not freeze the GUI while dependencies download. No UI-control deletion/addition is needed. Actual Windows process/UX acceptance remains NOT RUN.
 
 ## v0.3.2 Results panel correction
 
