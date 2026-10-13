@@ -492,7 +492,7 @@ def release_title_normalize(title, release_type=None, inferred_single=False):
     # Existing "The Remixes EP" and other plural remix collection descriptors
     plural = re.search(
         r"(?i)^(.*?)\s*(?:-|\s)\s*((?:(?:The|Club)\s+)?Remixes)"
-        r"(?:\s*(?:-|\()\s*(?:EP|Single)\)?)?$", text)
+        r"(?:\s+(?:-\s*|\()?\b(?:EP|Single)\)?)?$", text)
     if plural:
         stem, descriptor = plural.group(1).strip(" -()"), plural.group(2)
         return (stem + " " if stem else "") + "(" + descriptor + ")"
