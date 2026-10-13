@@ -319,7 +319,7 @@ class UserCorrections20261014(unittest.TestCase):
     def test_verified_web_barcode_does_not_require_catalog(self):
         verified = {"physical": False, "metadata_verified": True,
                     "barcode": "5948204032791", "catalog": "", "notes": []}
-        checker = [{"possible_bandlimited": 0, "inconclusive": 0}]
+        checker = [{"results": 2, "cdda": 2, "mpeg": 0}]
         self.assertEqual(mlo.completion_reasons(verified, [], checker), [])
         self.assertIn("WEB", " ".join(mlo.completion_reasons(
             dict(verified, barcode=""), [], checker)))
