@@ -1,3 +1,9 @@
+## Mandatory chat handoff closeout - Music Library Organizer v0.3.5 - 2026-10-14
+
+The user issued the exact `this chat is done` global handoff command. Earlier assistant response merely acknowledged closing and **violated the handoff rule**. This closeout records the required GitHub checkpoint. Read product source `tools/Music Library Organizer v0.3.5.pyw`, tests `tools/music-library-organizer/test_organizer.py`, the full authoritative product handoff `tools/music-library-organizer/CONTINUITY.md` (new "Verified closeout and next-chat handoff" section), plus `AUDIT_INNA_2026-10-14.md`. Root/global `SOFTWARE_RULES.md`, project `RULES.md`, `MUSIC_GLOSSARY.md` and UI rules remain mandatory. This is **0.3.5 - Under construction ⚠️**, not stable.
+
+Baseline remains 94 releases, 0 DONE, 93 PARTIAL, 1 FAILED, checker bundle missing; v0.3.5 code now targets feature-free release folders, correct featured performer placement in filename and TITLE tag, single-CD DiscID filtering, lossless CUE preservation, copied text/results and AudioChecker ZIP discovery. **No Python AST/unit suite, Windows GUI or real full-run acceptance was performed during this closeout.** Next developer must run/repair tests and validate actual INNA sources and native executables before marking any release DONE. GitHub Actions and other apps were not altered. The user's source and prior Sorted output must not be overwritten.
+
 # Duplicate Edition Analyzer - Continuity Handoff
 
 Last updated: 2026-10-13
