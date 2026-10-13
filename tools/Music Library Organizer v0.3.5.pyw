@@ -1461,9 +1461,18 @@ _CHECKER_FILES = {
 }
 
 
-def _checker_archive_candidates():
+def _checker_archive_candidates(configured=""):
     bases = [Path(sys.argv[0]).resolve().parent, Path.cwd(),
              Path.home() / "Downloads", documents() / "Downloads", DATA]
+    if IS_WIN:
+        for volume in "CDEFGHIJKLMNOPQRSTUVWXYZ":
+            root = Path(volume + ":\\")
+            for directory in ("Downloads", "Download", "Загрузки"):
+                if (root / directory).is_dir():
+                    bases.append(root / directory)
+    if configured and Path(configured).is_file():
+        return [Path(configured)] + [
+            item for item in _checker_archive_candidates("") if item != Path(configured)]
     found = []
     for base in bases:
         if not base.is_dir():
@@ -1477,7 +1486,7 @@ def _checker_archive_candidates():
     return list(dict.fromkeys(found))
 
 
-def setup_checker():
+def setup_checker(configured=""):
     """Read supplied archive (not downloaded from an untrusted mirror).
     Extract only known files to this application's isolated data directory.
     """
@@ -1493,7 +1502,7 @@ def setup_checker():
             flac = path / "Codecs" / "FLAC" / "flac.exe"
             if analyzer.is_file() and flac.is_file():
                 return {"analyzer": analyzer, "flac": flac}
-    for archive in _checker_archive_candidates():
+    for archive in _checker_archive_candidates(configured):
         try:
             with zipfile.ZipFile(archive) as zf:
                 contents = {}
@@ -1763,6 +1772,7 @@ class Organizer:
         self.dest = str(settings.get("dest") or suggested_output(self.source))
         self.fmt = str(settings.get("format", "ALAC"))
         default_enc, default_check = worker_defaults()
+        self.checker_zip = str(settings.get("checker_zip") or "")
         self.encoding_workers = int(settings.get("encoding_workers") or default_enc)
         self.checker_workers = int(settings.get("checker_workers") or default_check)
         self.running = False
@@ -1792,10 +1802,39 @@ class Organizer:
             return {"source": self.source, "dest": self.dest, "format": self.fmt,
                     "running": self.running, "status": self.status,
                     "progress": self.progress, "encoding_workers": self.encoding_workers,
-                    "checker_workers": self.checker_workers, "worker_limit": worker_limit(),
+                    "checker_workers": self.checker_workers, "checker_zip": self.checker_zip,
+                    "worker_limit": worker_limit(),
                     "counts": dict(self.counts),
                     "results": list(self.results), "error": self.error,
                     "activity": list(self.activity), "undo": UNDO.is_file()}
+
+    def browse_checker_zip(self):
+        try:
+            import webview
+            selected = self.window.create_file_dialog(
+                webview.OPEN_DIALOG, file_types=("ZIP archives (*.zip)",))
+            if selected:
+                chosen = Path(selected[0])
+                if not chosen.is_file() or chosen.suffix.casefold() != ".zip":
+                    return {"error": "Select a real AudioChecker ZIP archive."}
+                with zipfile.ZipFile(chosen) as archive:
+                    members = archive.namelist()
+                    if not any(x.replace(chr(92), "/").endswith("/Codecs/Analyzer/aucdtect.exe")
+                               for x in members):
+                        return {"error": "ZIP has no auCDtect analyzer."}
+                self.checker_zip = str(chosen)
+                settings = read_json(SETTINGS, {})
+                settings["checker_zip"] = self.checker_zip
+                write_json(SETTINGS, settings)
+                self.info("AudioChecker bundle selected: " + self.checker_zip)
+                return {"path": self.checker_zip}
+        except Exception as exc:
+            self.info("Checker ZIP selection failed: " + str(exc))
+            return {"error": str(exc)}
+        return {"path": ""}
+
+    def open_log_folder(self):
+        return self.open_folder(str(DATA))
 
     def browse(self, which):
         try:
@@ -1854,6 +1893,7 @@ class Organizer:
             self.encoding_workers, self.checker_workers = enc, chk
             write_json(SETTINGS, {"source": self.source, "dest": self.dest,
                                   "format": self.fmt,
+                                  "checker_zip": self.checker_zip,
                                   "encoding_workers": enc, "checker_workers": chk})
             self.running = True
             self.stop.clear()
@@ -2285,6 +2325,12 @@ class DesktopBridge:
 
     def open_log(self):
         return self._organizer.open_log()
+
+    def open_log_folder(self):
+        return self._organizer.open_log_folder()
+
+    def browse_checker_zip(self):
+        return self._organizer.browse_checker_zip()
 
     def organize(self, source, dest, fmt, encoding_workers, checker_workers):
         return self._organizer.organize(
