@@ -11,8 +11,9 @@ import tempfile
 import threading
 import unittest
 import wave
+import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.5.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.6.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -126,6 +127,42 @@ class UserExamples20261014(unittest.TestCase):
         self.assertIn('id="openLogFolder"', mlo.HTML)
         self.assertIn('id="copyResults"', mlo.HTML)
         self.assertIn('id="chooseChecker"', mlo.HTML)
+
+
+class CheckerArchiveRegression(unittest.TestCase):
+    def test_supplied_zip_root_or_wrapped_codecs_installs(self):
+        from unittest.mock import patch
+        for prefix in ("", "Audio_Checker_UTF8_Multicore/"):
+            with self.subTest(prefix=prefix), tempfile.TemporaryDirectory() as tmp:
+                base = Path(tmp)
+                archive = base / "Audio_Checker_UTF8_Multicore.zip"
+                with zipfile.ZipFile(archive, "w") as z:
+                    z.writestr(prefix + "Codecs/Analyzer/aucdtect.exe", b"aucdtect-test")
+                    z.writestr(prefix + "Codecs/FLAC/flac.exe", b"flac-test")
+                with patch.object(mlo, "DEPS", base / "app-deps"), \
+                     patch.object(mlo, "DATA", base / "app-data"), \
+                     patch.object(mlo, "_checker_archive_candidates", return_value=[archive]):
+                    installed = mlo.setup_checker(str(archive))
+                self.assertIsNotNone(installed)
+                self.assertEqual(installed["analyzer"].read_bytes(), b"aucdtect-test")
+                self.assertEqual(installed["flac"].read_bytes(), b"flac-test")
+
+    def test_checker_member_allowlist_rejects_traversal(self):
+        self.assertEqual(mlo._checker_member_key("Codecs/Analyzer/aucdtect.exe"),
+                         "Codecs/Analyzer/aucdtect.exe")
+        self.assertEqual(mlo._checker_member_key(
+            "some-root/Codecs/Analyzer/AUCDETECT.EXE"),
+            "Codecs/Analyzer/aucdtect.exe")
+        for unsafe in ("../Codecs/Analyzer/aucdtect.exe",
+                       "archive/../Codecs/FLAC/flac.exe",
+                       "Codecs//Analyzer/aucdtect.exe"):
+            self.assertEqual(mlo._checker_member_key(unsafe), "")
+
+    def test_result_selection_survives_status_poll_and_has_path_icon(self):
+        self.assertIn("renderedResultMarkup", mlo.HTML)
+        self.assertIn("selectingResults", mlo.HTML)
+        self.assertIn("button.result-folder", mlo.HTML)
+        self.assertIn("id=\"openCheckerZip\"", mlo.HTML)
 
 
 class NamingRules(unittest.TestCase):
