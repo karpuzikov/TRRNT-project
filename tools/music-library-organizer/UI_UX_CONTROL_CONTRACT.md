@@ -1,6 +1,10 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.1.2 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.2.0 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## Active controls
+
+The **v0.2.0 automatic organizer** control contract below supersedes older 0.1.x Scan, Select Ready, Details and Apply contracts retained historically later in this file. These old controls are removed from the UI. The one normal action is **Organize**; the results table is not a blocking review interface. Real Windows acceptance remains NOT RUN.
 
 ## Shared visual system
 MCC source palette: `#0b0c0f` background, `#11141a` card, `#171b22` secondary, `#181c23` field, `#2a303a` divider, `#f3f6fb` text, `#9ca7b8` muted, `#66a9ff` accent, `#ef4444` error, `#f59e0b` review, `#22c55e` success. Segoe UI Variable/Segoe UI; 58px toolbar, 34px buttons/fields, 8px radii, 4px spacing scale, 12-14px text, responsive compact cards. Buttons have hover/focus/pressed/disabled; icon buttons minimum 34x34 and accessible labels.
@@ -48,6 +52,7 @@ Acceptance for v0.2.0: 94 WEB albums without logs should begin automatic work ra
 | Source/code inspection versus MCC 0.5.18 palette/component sizing | DONE (source inspection only - not GUI acceptance) |
 | Inline JS syntax compilation (V8 Function on extracted <script>) | PASS (syntax only - not GUI acceptance) |
 | Python source AST/compile, unit regression suite | NOT RUN |
+| v0.2.0 missing-log automatic run, per-release failure isolation, source safety, Undo | NOT RUN |
 | Windows real launch / default/minimum/large screenshots | NOT RUN |
 | Hover/click/keyboard/mouse/drop / native folder picker | NOT RUN |
 | Read-only Scan, empty/unknown metadata, collision and symlink fixtures | NOT RUN |
