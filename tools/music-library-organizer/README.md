@@ -1,41 +1,38 @@
 # Music Library Organizer
 
-**Version: 0.1.2 - Under construction ⚠️**
+**Version: 0.2.0 - Under construction ⚠️**
 
-**[Download the versioned Windows Python GUI](../Music%20Library%20Organizer%20v0.1.2.pyw)**
+**[Download Music Library Organizer v0.2.0.pyw](../Music%20Library%20Organizer%20v0.2.0.pyw)**
 
-Standalone prototype inspired by [Music Collection Cleaner v0.5.18](https://github.com/karpuzikov/MCC/blob/main/Music%20Collection%20Cleaner%20v0.5.18.pyw). MCC's visual design is used as a reference; MCC's executable and persistent data are not modified or imported.
+Standalone Windows application with the dark pywebview / Edge WebView2 design language of [Music Collection Cleaner v0.5.18](https://github.com/karpuzikov/MCC/blob/main/Music%20Collection%20Cleaner%20v0.5.18.pyw). It does not modify MCC or use MCC's settings/cache.
 
-## Current 0.1.2 behavior
+## One-click workflow
 
-- Compact dark MCC-style WebView2 window with input and explicit output collection folder selectors, drag-and-drop where native pywebview exposes full folder paths, and manual paste/Browse fallback.
-- ALAC (.m4a) or FLAC (.flac) output choice, retained in program-specific settings.
-- Recursive discovery of releases under the collection root, flattening deprecated `Albums`, `Singles`, `EPs`, etc. folders while retaining internal disc folders.
-- Scans candidate release names for date/title/bracketed identifiers and flags unverified names for review instead of guessing.
-- Preview of every proposed file name/target path (Details on a release row), including image-splitting output, metadata-based audio names, catalog/barcode-named CD CUE and rip LOG, and WEB `audiochecker.log`. Source-change preflight checks detect files modified after Scan. Reviews/conflicts cannot be Apply-selected.
-- Copies files into a separate **explicitly chosen** destination; does not move/delete source folders. Writes each release in a staging directory, verifies copied files or decoded PCM on lossless conversions, then finalizes without overwriting existing destination releases.
-- Splits single-file lossless album images according to a valid CUE, using verified sample-rate/tick boundaries; rewrites a track-based CUE where safe. **CUE INDEX 00/HTOA, additional indexes, missing cues, mixed CUE layouts and uncertain source metadata are review blockers**, not grounds to guess. No lossy source conversion.
-- Durable Undo of the last export: only if the entire set of generated output files still exactly matches the recorded SHA-256 manifest. Original sources are untouched.
-- Preserves separate settings, logs, Undo manifests and Python dependencies under `Documents/Karpuzikov Tools/Music Library Organizer/`.
+1. Choose **Input collection** (e.g. `C:\deemix Music\INNA - UPDATED`).
+2. Choose a different, non-nested **Organized output** directory (e.g. `C:\deemix Music\INNA - UPDATED - Sorted`).
+3. Select **Output format: ALAC or FLAC**.
+4. Click **Organize**. It automatically discovers and processes all eligible releases, converts/renames files and copies completed releases to the output. There is **no separate Scan, REVIEW, Select ready, or Apply step**.
 
-## How to try it on Windows
+**Missing `audiochecker.log` is a warning, never a reason to block file organization.** The app does not forge an AudioChecker report. It continues automatically when a particular release fails; the end report shows organized/already-present/failed/warning counts with each release's reason. Genuine missing track metadata, unsupported codec, unsafe CUE, output name conflicts, missing decoder and other hard failures are recorded and skipped *without stopping the remaining releases*. You cannot manually review all releases to unblock the batch because that step has been removed.
 
-1. Download `Music Library Organizer v0.1.2.pyw` and open it with Python 3.11+ on Windows. On first launch, the program attempts to install isolated pywebview/mutagen dependencies as needed; Windows WebView2 is required. For encoding, FFmpeg/FFprobe will be checked/installed through WinGet if absent.
-2. **First test with a small disposable collection**, not the complete music library.
-3. Choose a source folder and a **different, non-nested** output folder. If selecting FLAC, the output folder must not be an ALAC-labeled collection.
-4. Set Output format; click Scan / Preview; inspect release statuses and click **Details...** to see full source/target paths. Unresolved releases are excluded from Apply.
-5. Click **Apply selected**, confirm, then verify output and use **Undo last run** to test reversible handling before expanding the scope.
+**Original input files are never changed.** Output is written through temporary staging folders. Completed outputs are checked and a SHA-256 Undo manifest is kept. Previously generated output is not overwritten on reruns; duplicates are marked already present. The output root must not be within the input root. **Undo last run** removes only files matching the manifest, after confirmation and verification; earlier run manifests are archived under the tool's own program data.
 
-To run source-level regression tests (separate from real GUI acceptance):
+## Naming / conversion scope
 
-```powershell
-py -3 "tools\music-library-organizer\test_organizer.py"
-```
+- Folder discovery recursively finds existing release subfolders and flattens obsolete organizational subfolders (e.g. `deemix`, `Albums`, `EPs`) **in the output only**, preserving release-internal `CD 1` / `CD 2`.
+- Output individual audio tracks use `NN Track Title.m4a` for ALAC or `NN Track Title.flac` for FLAC, number padded to at least 2, exactly one space, no artist prefix. Title normalization follows the TRRNT shared glossary. A more complete original file name such as `01 OK (Extended Version).flac` is kept when a shorter `OK` title tag would otherwise strip the version.
+- Existing CUE/logs are preserved. When a physical edition identifier is available in an already correctly structured folder, the output CUE/rip LOG can be renamed to its catalog number; unknown identifiers leave existing sidecar names unchanged. A missing WEB AudioChecker log is reported but does not prevent export.
+- Supports known lossless input codecs and exports to ALAC or FLAC using FFmpeg's native lossless encoders. CUE-described single-image CDs can be split when all track boundaries are representable safely. INDEX 00/pregaps/HTOA, irregular CUE layouts, and ambiguous sources remain explicit per-release failures instead of guessed boundaries.
+- Every release must pass source-to-output decoded PCM or exact copy verification before finalization. The organizer keeps all non-audio sidecars where they do not conflict.
 
-## Important current limitations
+## Limitations / acceptance status
 
-This is a prototype, **not** a metadata-research product or Windows-accepted release. It does **not yet** look up MusicBrainz, Discogs, Beatport or BPTopTracker, identify earliest worldwide dates, dynamically infer CD pressing country, or automatically resolve missing catalog/barcode fields; it trusts only well-formed source-folder identifiers as provisional for preview/export. It does not automatically settle whether a featured artist was added by a remix when source provenance is unavailable. It does not yet perform an independent embedded-artwork and tag-parity audit on every transcode. It uses FFmpeg's native ALAC encoder for initial lossless parity verification; the existing project's preferred refalac pipeline has not yet been integrated.
+**Not yet Windows-tested.** The UI and workflow have been changed substantially. JavaScript syntax was checked using V8; full Python compilation, source-level unit tests, Windows WebView2 screenshots, actual ALAC/FLAC output and Undo remain **NOT RUN** here. **Test first on a disposable input/output pair.**
 
-Do not use it for an unresolved CUE containing INDEX 00/HTOA, pregap audio, additional indexes or ambiguous multi-image layout; those scenarios are intentionally blocked pending a full fidelity implementation. WinGet/bootstrap failure requires investigation. Do not mistake source-level checks for Windows functional testing. A crash with an Undo manifest marked `pending` needs manual reconciliation before exporting again.
+Important remaining scope: no live MusicBrainz DiscID/Discogs/Beatport/BPTopTracker lookup, no verified automatic earliest worldwide release date/manufacturing country/catalog resolution, no refalac output integration (uses native FFmpeg ALAC encoder), incomplete metadata/artwork parity auditing, and restricted CUE INDEX 00/pregap/HTOA support. Existing input release folder names are retained when they cannot be authoritatively resolved; this is a conservative export, **not** a claim of fully researched catalog provenance.
 
-See [CONTINUITY.md](CONTINUITY.md), [UI_UX_CONTROL_CONTRACT.md](UI_UX_CONTROL_CONTRACT.md), and root [RULES.md](../../RULES.md) for requirements and acceptance status. **No automatic GitHub Actions workflows were added.**
+Python 3.11+ on Windows is required; pywebview/WebView2 UI and mutagen dependencies are bootstrapped as needed and FFmpeg/FFprobe are checked/installed via WinGet as needed. Persistent data belongs only to `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+Regression test source (tests **not executed**): [test_organizer.py](test_organizer.py).
+
+See [CONTINUITY.md](CONTINUITY.md), [UI_UX_CONTROL_CONTRACT.md](UI_UX_CONTROL_CONTRACT.md), and the project's [RULES.md](../../RULES.md) / [MUSIC_GLOSSARY.md](../../MUSIC_GLOSSARY.md). No GitHub Actions workflows modified.
