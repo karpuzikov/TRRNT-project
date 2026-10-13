@@ -3,6 +3,13 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Music Library Organizer v0.3.0 - rules audit and repairs - 2026-10-13
+
+- INNA v0.2.0 log: 94 discovered, 80 reported DONE, 14 FAILED. In reality v0.2.0 failed required naming/catalog/checker work; 80 labeled DONE was noncompliant. Eight WEB collisions, six CD CUE errors. Details in product `AUDIT_INNA_2026-10-13.md`.
+- New version `tools/Music Library Organizer v0.3.0.pyw`: MusicBrainz release-group/labels/catalog/format research with rate limiting/cache, Single/EP/remix suffix normalization, folder name rewriting, source-of-truth CUE/LOG catalog basename, checker executable selector/invocation and authentic log on FLAC or lossless temporary FLAC from ALAC, per-release PARTIAL status for incomplete work, duplicate PCM hash dedup, historical split WAV CUE track remapping, INDEX00/HTOA image split. Does not modify other apps or GitHub Actions.
+- Specific external MusicBrainz example: INNA YO Romanian CD has catalog GR18186, earliest worldwide date 2019-05-31 and RO release territory (not verified pressing); expected when concrete matching succeeds `2019-05-31 - YO [RO - GR18186]` and `GR18186.cue`/`GR18186.log`.
+- **NOT RUN**: Actual Python AST/real regression tests, Windows GUI, AudioChecker executable, local INNA CD sample and entire 94-release run, screenshot acceptance. V8 inlined JS syntax only PASS. Full Discogs manufacturing, MusicBrainz DiscID candidate resolution and Beatport/BPTopTracker digital catalog fallbacks not yet implemented. Remains **0.3.0 - Under construction ⚠️**, not a claimed complete application. Next tests must use a new EMPTY output destination to avoid existing v0.2 folder collisions.
+
 ## Music Library Organizer v0.2.0 - eliminate review gate - 2026-10-13
 
 - User rejected the 94 release / 0 ready / 94 REVIEW blocker and instructed: **take the input folder and output organized files**. The organizer is no longer a review-management program.
