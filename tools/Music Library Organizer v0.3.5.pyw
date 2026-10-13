@@ -143,36 +143,118 @@ def metadata(path: Path):
     return "", "", ""
 
 
+_TITLE_GROUP = re.compile(r"(?<!\w)([\(\[\{])([^()\[\]{}]+)([\)\]\}])")
+_FT_PREFIX = re.compile(r"(?i)^(?:ft\.?|feat\.?|featuring)\s+(.+)$")
+_FT_JOINT = re.compile(r"(?i)^(.+?)\s+(?:ft\.?|feat\.?|featuring)\s+(.+)$")
+_EDIT_KEYWORD = re.compile(
+    r"(?i)\b(?:radio|edit|extended|version|remix|mix|club|stadium|instrumental|acoustic|dub|original|vip)\b")
+_VERSION_HINT = re.compile(
+    r"(?i)\b(?:remix|mix|radio|edit|extended|version|club|stadium|instrumental|acoustic|dub|vip|live)\b")
+
+
+def _clean_group_spelling(text):
+    text = " ".join(str(text).split())
+    if _FT_PREFIX.match(text):
+        return "ft. " + _FT_PREFIX.match(text).group(1)
+    # Case only established descriptor words, not proper names or acronyms.
+    return _EDIT_KEYWORD.sub(lambda match: match.group(0)[0].upper() +
+                             match.group(0)[1:].lower(), text)
+
+
+def _song_parts(value):
+    """Return base, meaningful ordered groups, and original individual credits."""
+    value = " ".join(str(value or "").split())
+    matches = list(_TITLE_GROUP.finditer(value))
+    base = value[:matches[0].start()].strip() if matches else value
+    groups = []
+    feature = ""
+    named_main = ""
+    for match in matches:
+        component = match.group(2).strip()
+        feat = _FT_PREFIX.match(component)
+        split = _FT_JOINT.match(component)
+        if feat and not feature:
+            feature = feat.group(1).strip()
+            groups.append(("feature", "ft. " + feature))
+        elif split and not feature:
+            named_main, feature = split.group(1).strip(), split.group(2).strip()
+            groups.append(("feature", "ft. " + feature))
+        else:
+            groups.append(("version", _clean_group_spelling(component)))
+    if matches and value[matches[-1].end():].strip():
+        # Unparsed trailing text is significant; preserve rather than guessing.
+        tail = value[matches[-1].end():].strip()
+        groups.append(("unparsed", tail))
+    return base, groups, named_main, feature
+
+
+def _song_key(value):
+    import unicodedata
+    base = _song_parts(value)[0]
+    plain = "".join(c for c in unicodedata.normalize("NFKD", base)
+                    if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]+", "", plain.casefold())
+
+
+def normalize_artist_title(value, artist="", main_artist="", consensus=None):
+    """Render artist/TITLE separately; never put an artist prefix in TITLE."""
+    value = " ".join(str(value or "").strip().split())
+    artist = " ".join(str(artist or "").strip().split())
+    base, groups, named_main, feature = _song_parts(value)
+    tagged_main = _FT_JOINT.match(artist)
+    if tagged_main and not named_main:
+        named_main, feature = tagged_main.group(1).strip(), tagged_main.group(2).strip()
+        artist = named_main
+        if not any(role == "feature" for role, _ in groups):
+            groups.append(("feature", "ft. " + feature))
+    if named_main:
+        artist = named_main
+    if feature and consensus:
+        pair = frozenset((artist.casefold(), feature.casefold()))
+        preferred = consensus.get((_song_key(value), pair))
+        if preferred and preferred.casefold() == feature.casefold():
+            artist, feature = feature, artist
+            groups = [(role, "ft. " + feature if role == "feature" else component)
+                      for role, component in groups]
+    # Feature already on the ordinary recording is prior to Radio/Edit/Version.
+    # Unknown remix-added credits remain after a genuine Remix component.
+    feat_at = next((i for i, (role, _) in enumerate(groups) if role == "feature"), -1)
+    if feat_at > 0 and all(
+            not re.search(r"(?i)\bremix\b", text)
+            for role, text in groups[:feat_at] if role == "version"):
+        credited = groups.pop(feat_at)
+        # Preserve an intrinsic parenthetical title (no edit/version keywords).
+        pos = 0
+        while pos < len(groups) and groups[pos][0] == "version" and not _VERSION_HINT.search(groups[pos][1]):
+            pos += 1
+        groups.insert(pos, credited)
+    if not groups:
+        return value, artist
+    brackets = ("()", "[]", "{}")
+    if len(groups) > 3 or any(role == "unparsed" for role, _ in groups):
+        # Never discard fourth-level descriptors.
+        return value, artist
+    rendered = base
+    for i, (role, text) in enumerate(groups):
+        item = _clean_group_spelling(text)
+        rendered += " " + brackets[i][0] + item + brackets[i][1]
+    return rendered, artist
+
+
 def normalized_title(value: str) -> str:
-    """Positional brackets only; never assert unknown original/remix credit provenance."""
-    value = " ".join(str(value).strip().split())
-    value = re.sub(r"\b(?:feat(?:uring)?|ft)\.\s+", "ft. ", value, flags=re.I)
-    # Only normalize clearly separated balanced single-level title groups.
-    parts = list(re.finditer(r"(?<!\w)[(\[{]([^()\[\]{}]+)[)\]}]", value))
-    if not parts or len(parts) > 3:
-        return value
-    out, last = [], 0
-    for i, match in enumerate(parts):
-        if i >= 3:
-            break
-        out.append(value[last:match.start()])
-        op, cl = ("()", "[]", "{}")[i]
-        out.append(op + match.group(1).strip() + cl)
-        last = match.end()
-    out.append(value[last:])
-    return "".join(out)
+    title, _ = normalize_artist_title(value)
+    return title
 
 
 def track_filename(number: int, title: str, ext: str) -> str:
     title = normalized_title(title)
-    # Windows filename reserved characters cannot appear unescaped.
     title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "-", title).strip(" .")
-    if not title or number < 0:
+    if not title or number <= 0:
         raise ValueError("Missing valid title/track number")
     return f"{number:02d} {title}{ext}"
 
 
-def extract_number_title(path: Path):
+def extract_number_title(path: Path, main_artist="", consensus=None):
     tag_num, tag_title, artist = metadata(path)
     number = 0
     if tag_num:
@@ -184,16 +266,56 @@ def extract_number_title(path: Path):
         number = int(old.group(1))
     file_title = old.group(2).strip() if old else ""
     title = (tag_title or "").strip()
-    # A stale title tag must not delete the recording version in a richer filename.
-    # Example: filename "01 OK (Extended Version)" with tag "OK".
+    # A richer filename must not lose a version solely because its tag is short.
     if file_title and (not title or (
-        file_title.casefold().startswith(title.casefold())
-        and len(file_title) > len(title)
-        and re.search(r"\b(?:remix|mix|version|edit|extended|live|acoustic|ft\.|feat\.|instrumental|acapella|a cappella)\b",
-                      file_title[len(title):], re.I)
+        file_title.casefold().startswith(title.casefold()) and
+        len(file_title) > len(title) and
+        _VERSION_HINT.search(file_title[len(title):])
     )):
         title = file_title
+    title, artist = normalize_artist_title(title, artist, main_artist, consensus)
     return number, title, artist
+
+
+def collection_credit_consensus(releases, main_artist):
+    """Learn majority orientation from actual collection metadata, not a preset."""
+    from collections import Counter
+    votes = {}
+    main = str(main_artist or "").casefold()
+    for release in releases:
+        try:
+            files = collect_files(release)
+        except (OSError, ValueError):
+            continue
+        for file in files:
+            if file.suffix.lower() not in AUDIO:
+                continue
+            _, title, artist = metadata(file)
+            if not title:
+                matched = TRACK.match(file.stem)
+                title = matched.group(2) if matched else ""
+            if not title:
+                continue
+            base, _, named_main, feature = _song_parts(title)
+            if named_main:
+                artist = named_main
+            else:
+                join = _FT_JOINT.match(artist or "")
+                if join:
+                    artist, feature = join.group(1).strip(), join.group(2).strip()
+            if not (artist and feature and
+                    main in (artist.casefold(), feature.casefold())):
+                continue
+            key = (_song_key(title),
+                   frozenset((artist.casefold(), feature.casefold())))
+            votes.setdefault(key, Counter())[artist] += 1
+    decided = {}
+    for key, counts in votes.items():
+        ordered = counts.most_common(2)
+        if len(ordered) == 1 or ordered[0][1] > ordered[1][1]:
+            decided[key] = ordered[0][0]
+    return decided
+
 
 
 def cue_read(path: Path):
