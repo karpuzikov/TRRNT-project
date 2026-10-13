@@ -157,8 +157,8 @@ def _clean_group_spelling(text):
     if _FT_PREFIX.match(text):
         return "ft. " + _FT_PREFIX.match(text).group(1)
     # Case only established descriptor words, not proper names or acronyms.
-    return _EDIT_KEYWORD.sub(lambda match: match.group(0)[0].upper() +
-                             match.group(0)[1:].lower(), text)
+    return _EDIT_KEYWORD.sub(lambda match: match.group(0) if match.group(0).isupper() else
+                             match.group(0)[0].upper() + match.group(0)[1:].lower(), text)
 
 
 def _song_parts(value):
@@ -992,7 +992,7 @@ def clean_release_title(value, root_artist=""):
     if last_id:
         candidate_id = last_id.group(1)
         if (re.fullmatch(r"\d{8,14}", candidate_id) or
-                re.fullmatch(r"(?i)[A-Z]{0,3}\s*-?\s*[A-Z]*\d[\w .-]*", candidate_id)):
+                re.fullmatch(r"(?i)[A-Z]{0,8}\s*-?\s*[A-Z]*\d[\w .-]*", candidate_id)):
             original = original[:last_id.start()]
     original = _RELEASE_YEAR_NOTE.sub("", original).strip()
     original = _RELEASE_FORMAT_NOTE.sub("", original).strip()
