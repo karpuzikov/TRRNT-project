@@ -31,6 +31,17 @@ Example: `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is an **individual Remix 
 - The explicit numbering scope for multi-disc albums (e.g. whether numbering resets in each `CD N` folder) and the handling of unusual zero-number/three-digit cases should be specified separately rather than guessed. Keep structural disc folders, metadata, original files, and CUE `FILE` references intact until these edge cases are resolved and the changes have been previewed and approved.
 - Preserve the audio extension matching the actual encoded file; do not rename non-ALAC audio to `.m4a` without conversion. Normalization changes filenames and related CUE references, not audio content.
 
+## Mandatory exclusive ALAC/FLAC encoders (2026-10-13)
+
+**This strict requirement supersedes earlier generic/optional encoder language and applies to all ordinary-track conversion, single-image CUE splitting, and any subsequent audio re-encoding in the Music Library Organizer and in later integrations (including MCC if explicitly merged).**
+
+- **ALAC output: only nu774 `refalac64.exe`** from the [nu774/qaac project](https://github.com/nu774/qaac), with reference ALAC output in `.m4a`. Do **not** use FFmpeg `-c:a alac`, `qaac.exe`, ALAC via another library, or any silent fallback encoder.
+- **FLAC output: only the official Xiph `flac.exe`** from [Xiph's FLAC releases](https://ftp.osuosl.org/pub/xiph/releases/flac/), using lossless native FLAC encoding, `--best` and `--verify` where supported. Do **not** use FFmpeg `-c:a flac` or any alternative FLAC encoding library/binary.
+- Directly copying already-correct ALAC/FLAC files byte-for-byte is allowed and is **not re-encoding**. For cross-codec conversion or image splitting, an intermediate **temporary integer PCM WAV** may be decoded with FFmpeg, but this is strictly a **decoder** operation, never the ALAC/FLAC encoder. Preserve the original sample rate, valid integer precision and sample-accurate CUE boundaries; never add lossy intermediates, downsample, dither or silently reduce depth. Explicitly reject any unsupported float/precision case rather than call a substitute encoder.
+- Automatically locate or securely install the required exact official encoder into **this program's own** `Documents/Karpuzikov Tools/Music Library Organizer/dependencies/encoders/` directory. Do not require users to manually download codec executables when official downloads are reachable; validate download provenance and official published checksums if available, and extract archives safely. A missing/invalid encoder stops that release with a clear error; **NEVER silently switch to FFmpeg**.
+- After native encoding, verify actual target codec, sampling rate, full decoded PCM against source, and preserve/verify source tags and embedded artwork. Inability to preserve content or required metadata is an error, not an implicit pass. Clean temporary WAV and incomplete output on failure, preserve original source, and keep per-release errors isolated.
+- Keep **Encoding workers** under the existing manual selector and use it for both ordinary-track conversion and album-image splitting. Downloaded dependencies and temporary work files remain isolated to the organizer, not shared with other programs.
+
 ## Audio image splitting and selectable lossless target format (2026-10-13)
 
 **New mandatory conversion-script requirements (planned, not yet implemented):**
