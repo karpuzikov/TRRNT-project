@@ -27,6 +27,28 @@ class NamingRules(unittest.TestCase):
         x = {"folder":"Inna - YO 2019", "title":"YO", "date":"2019-05-01", "catalog":"CAT123", "barcode":"1234", "physical":False, "country":"", "release_type":"Album", "track_count":13, "notes":[]}
         self.assertEqual(mlo.release_folder_target(x), "2019-05-01 - YO [CAT123]")
 
+    def test_yo_physical_edition_folder_and_sidecar_identity(self):
+        info = {"folder": "Inna - YO 2019", "title": "YO",
+                "date": "2019-05-31", "catalog": "GR18186",
+                "barcode": "", "physical": True, "country": "RO",
+                "release_type": "Album", "track_count": 11, "notes": []}
+        self.assertEqual(mlo.release_folder_target(info),
+                         "2019-05-31 - YO [RO - GR18186]")
+
+    def test_release_type_suffix_relocation(self):
+        self.assertEqual(mlo.release_title_normalize("Song (EP) (Extended Mix)", "EP"),
+                         "Song (Extended Mix) - EP")
+        self.assertEqual(mlo.release_title_normalize("Song (Remixes) (Single)", "Single"),
+                         "Song (Remixes)")
+        self.assertEqual(mlo.release_title_normalize("Song (Maxi CD Single) (Promo)", "Single"),
+                         "Song (Maxi CD) (Promo) - Single")
+
+    def test_checker_rejects_fake_report(self):
+        with tempfile.TemporaryDirectory() as td:
+            log = Path(td) / "audiochecker.log"
+            log.write_text("AudioChecker fake output\\n100", encoding="utf-8")
+            self.assertFalse(mlo.is_real_checker_log(log, [Path("01 Example.flac")]))
+
     def test_zero_padding_exact_one_space(self):
         self.assertEqual(mlo.track_filename(1, "Red Lips (ft. Sam Bruno) [Skrillex Remix]", ".m4a"),
                          "01 Red Lips (ft. Sam Bruno) [Skrillex Remix].m4a")
