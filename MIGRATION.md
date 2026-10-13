@@ -44,5 +44,17 @@ The following Git blob SHAs represent the **source-side originals** and allow lo
 - **New canonical source:** `karpuzikov/TRRNT-project` root, `main`.
 - **Project rules:** `RULES.md` plus `SOFTWARE_RULES.md`, `UI_UX_RULES.md`, `UI_UX_ACCEPTANCE.md`.
 - **Project state:** `CONTINUITY.md`, `PROJECT.md`, `README.md`.
-- **Current legacy DEA reference:** `tools/Duplicate Edition Analyzer v0.22.12.pyw` - `0.22.12 - Under construction ⚠️`. The rejected native prototype and lightweight work may exist only in branches or other historical locations; this migration does not purport to import unmerged branches.
+- **Current legacy DEA reference:** `tools/Duplicate Edition Analyzer v0.22.12.pyw` - `0.22.12 - Under construction ⚠️`. The lightweight/native branches were reconstructed with file-exact source snapshots; see the branch preservation section below.
 - Preserve existing functionality, source-file names/versions, local user data/settings, and the current Windows testing gate. Do not modify GitHub Actions without explicit user approval.
+## Development branch migration
+
+Three project-specific branches were preserved under **the same branch names** in `karpuzikov/TRRNT-project`:
+
+| New branch | Source branch tip in `userscripts` | Preserved project files |
+| --- | --- | --- |
+| `dea-lightweight-modern` | `9a3454bcb8faba78b6840dda97bbf56df3dccfd1` | 12 exact blob copies: `lightweight/` versions 0.4.1-0.4.9, branch README, RULES, CONTINUITY |
+| `dea-lightweight-ascii-ui-test` | `c59b5671626c44206f4f9db1244c75fe756326b6` | 5 exact copies: version 0.4.0 and launcher, branch README, RULES, CONTINUITY |
+| `dea-native-light-test` | `7d43add67a280e5b6134cb2e9eaccf31daeaa405` | 8 exact copies: native-light C++ source+README, native branch PROJECT/README, historical build workflow archived inactive |
+
+Branch snapshots have new commit ancestry from the target repository's main branch. **Original Git commit history, issues, tags, PR discussions and release assets are NOT imported**, and the original historical source branches remain accessible in `userscripts`. All migrated branch-specific file blobs were verified identical by SHA. No Actions workflows are active in the new repository.
+
