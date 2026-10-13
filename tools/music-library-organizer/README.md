@@ -1,10 +1,21 @@
 # Music Library Organizer
 
-**Current: v0.3.1 - Under construction ⚠️**
+**Current: v0.3.2 - Under construction ⚠️**
 
-**[Download Music Library Organizer v0.3.1.pyw](../Music%20Library%20Organizer%20v0.3.1.pyw)**
+**[Download Music Library Organizer v0.3.2.pyw](../Music%20Library%20Organizer%20v0.3.2.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.2 CD sidecar and result UI corrections
+
+- **Physical CD output excludes `audiochecker.log` entirely** even when the original CD folder contains one. Its original source bytes are preserved. The organizer does not run AudioChecker for CD releases; CD CUE and authentic rip LOG are retained/renamed separately using matched catalog (barcode fallback). If a stray WEB checker log was supplied alongside a CD rip, its omission from export is reported as informational in the batch log.
+- A physical CD can have only a CUE or only a genuine non-AudioChecker rip LOG; the application now recognizes either as physical-rip evidence rather than misclassifying it as WEB solely due to a missing companion document.
+- The redundant Results caption **"Automatic results. No approval step."** was removed. The Results panel now simply says **Results**.
+- A concrete physical CD edition dated in a different year from the original album should append ` - <Edition Year>` inside its final bracket. Example, **if original worldwide date has been independently confirmed**: `2011-09-19 - I Am the Club Rocker [JP - WPCR-14516 - 2012]`.
+- **Known blocker - not fixed:** MusicBrainz currently shows first release-group dates **2005** for INNA's *Hot* and **2010** for *I Am the Club Rocker*, while independently documented original album dates are **2009** and **2011**. v0.3.2 still consumes the MB release-group first-release-date without independent corroboration; reissue-suffix logic alone does **not** fix those leading years. **Do not regard those two output folder names as correct until independent date validation is implemented.**
+- An existing organized output folder is never modified on a new run: v0.3.2 will **not remove an erroneous `audiochecker.log` left by v0.3.1 in an already-present destination**. Use a fresh empty output folder to test, or manually reconcile your earlier output after verifying the originals.
+
+**Verification:** Source logic and embedded JavaScript syntax inspected; new targeted CD-sidecar/reissue regression tests committed but **not executed on the user's Windows host**. Real-file results remain to be checked; version remains under construction.
 
 ## One-click UI
 
