@@ -56,6 +56,19 @@ Insert a dedicated organization stage **after lossless-to-ALAC conversion and me
 - Top-level folder: `Artist Name ALAC` or, for themed collections, `Brand Name ALAC` (such as `Assassin's Creed ALAC`).
 - Release folders: date, title, edition/release descriptors, and available release-specific identifier. Preserve meaningful distinctions between original-release dates, later edition years, and distinct catalog numbers.
 - For physical CDs, `[Pressing Country - Catalog Number]` uses only the **verified manufacturing/pressing country** of that exact disc, never a release-market country. `EU` is not a country. For WEB/digital releases, `[Identifier]` has **no country prefix**, and manufacturing/pressing country is **N/A** (example: `2018-02-16 - El Pintor Bonus Tracks [OLE13186]`). Do not conflate a known digital release with a physical CD whose pressing country is unknown: flag the latter for review rather than silently forcing the digital naming pattern. Follow `RULES.md` for the authoritative rule.
+#### Exact release-folder components
+
+For a physical CD, format as `YYYY-MM-DD - Release Title [Pressing Country - Catalog Number]`. The date is the **initial release date**. Use literal ` - ` for date/title and bracket-field separators; the brackets enclose the release's physical edition data. Use the **manufacturing/pressing country**, not the market/release country. For digital releases, use `YYYY-MM-DD - Release Title [Identifier]` without a country.
+
+For physical CD reissues, append the **four-digit reissue year** after the catalog number using ` - ` **only when it differs from the initial release year**: `YYYY-MM-DD - Release Title [Pressing Country - Catalog Number - Reissue Year]`. Never replace the leading initial-release date with the reissue date. The release title may itself contain the edition designation.
+
+Examples from the user:
+- `2007-07-09 - Our Love to Admire [JP - TOCP-66683]` = initial date, original title, CD pressing country, catalog number.
+- `2002-08-19 - Turn on the Bright Lights (The Tenth Anniversary Edition) [US - OLE 993-2 - 2012]` = initial date in 2002; 2012 physical reissue year placed after catalog.
+- `2018-02-16 - El Pintor Bonus Tracks [OLE13186]` = WEB/digital, pressing country N/A.
+
+The precise handling of date records where only a year is known remains to be specified without inventing month/day values. See `RULES.md` for the authoritative separator/year requirements.
+
 - Track filenames: consistent disc/track numbering and titles based on verified tags; preserve CUE-compatible multi-disc structure and supporting CUE/LOG files.
 - Before any filesystem change: preview exact source -> destination mappings, detect conflicts, require explicit approval, preserve backup/Undo and update CUE `FILE` references consistently with audio renames. Never silently destroy data. Final category-directory conventions and the full filename grammar still require explicit specification and tests.
 
