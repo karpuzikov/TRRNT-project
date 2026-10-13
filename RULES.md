@@ -5,6 +5,12 @@ Last updated: 2026-10-05
 This file is the project-specific rulebook for the Discography Builder and Duplicate / Edition Analyzer.
 The account-wide `SOFTWARE_RULES.md` baseline always applies. This file may add stricter project-specific requirements but must never weaken or override a newer global rule or a newer explicit user instruction. When project rules conflict with the global baseline, the stricter/newer requirement wins.
 
+## Repository ownership after migration - 2026-10-13
+
+The independent canonical repository for all Discography Torrent Project-owned source code, utilities, workflow assets, and current project documentation is **`karpuzikov/TRRNT-project`**. The former `karpuzikov/userscripts/audio-tools/discography-torrent-project/` directory is historical only; do not write new project updates there. Maintain this repository's root `SOFTWARE_RULES.md`, `UI_UX_RULES.md`, and `UI_UX_ACCEPTANCE.md` as exact mirrors of the account-wide canonical files in `karpuzikov/userscripts`.
+
+Preserve reference DEA `tools/Duplicate Edition Analyzer v0.22.12.pyw` on `main`, historical versions, and their separate development branches (including `dea-lightweight-modern`). The former DEA Actions YAML files have been archived in `archived-workflows/` rather than enabled in `.github/workflows/`; **do not activate/modify them without an explicit user request**. See `MIGRATION.md` for the verified file-by-file SHA manifest and limitations. Original compiled EXE release assets and GitHub history remain linked from the old repo; migrating source does not imply those assets or histories were transferred.
+
 ## 1. Core objective
 
 Build the most complete practical discography while minimizing unnecessary retained tracks.
