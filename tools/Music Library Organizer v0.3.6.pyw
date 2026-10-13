@@ -209,6 +209,19 @@ def normalize_artist_title(value, artist="", main_artist="", consensus=None):
             groups.append(("feature", "ft. " + feature))
     if named_main:
         artist = named_main
+    if feature and main_artist and artist:
+        # A track explicitly crediting (ft. X) should not redundantly store
+        # the same performer in a combined ARTIST tag. Limit the removal to
+        # exact two-person spellings; do not erase genuine co-headliners.
+        main = str(main_artist).strip()
+        credited = feature.strip()
+        joined = (
+            main + " & " + credited, main + ", " + credited,
+            main + " ft. " + credited, main + " feat. " + credited,
+            main + " featuring " + credited,
+        )
+        if artist.casefold() in {x.casefold() for x in joined}:
+            artist = main
     if feature and consensus:
         pair = frozenset((artist.casefold(), feature.casefold()))
         preferred = consensus.get((_song_key(value), pair))
