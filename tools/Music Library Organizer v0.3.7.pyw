@@ -2499,7 +2499,7 @@ function render(){
  const pct=Number(state.progress||0);$('percent').textContent=pct+"%";$('fill').style.width=pct+"%";$('progressBar').setAttribute("aria-valuenow",String(pct));
  let c=state.counts||{};for(let name of ["total","done","partial","skipped","failed","warnings"])$(name).textContent=c[name]||0;
  $('detail').textContent=working?"Organizing all discovered releases automatically. Genuine errors do not block later releases.":"Originals are untouched. Missing audiochecker.log is not a reason to skip a release.";
- for(let id of ["source","dest","format","encodeWorkers","checkWorkers","browseSource","browseDest","chooseChecker"])$(id).disabled=working;
+ for(let id of ["source","dest","format","encodeWorkers","checkWorkers","browseSource","browseDest"])$(id).disabled=working;
  $('organize').disabled=working;$('cancel').disabled=!working;$('undo').disabled=working||!state.undo;
  $('openSource').disabled=!String($('source').value||"").trim();
  $('openDest').disabled=!String($('dest').value||"").trim();
