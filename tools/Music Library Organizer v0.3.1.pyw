@@ -1722,7 +1722,7 @@ input[type=text]{width:100%;height:34px;border:1px solid #37404d;background:var(
 button,select{height:34px;border:1px solid #3a4351;background:#1b2028;color:var(--text);border-radius:8px;padding:0 11px;cursor:pointer}
 button:hover:not(:disabled),select:hover:not(:disabled){background:#252c36;border-color:#596579}button:disabled{opacity:.38;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #8cc8ff;outline-offset:2px}
 button.primary{background:#17324c;border-color:#3e78aa;color:#dff1ff;font-weight:720}button.primary:hover:not(:disabled){background:#1e4265;border-color:#66a9ff}
-button.folder{width:34px;padding:0}.options{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #252b34;padding-top:10px}.options label{font-weight:650}select{min-width:110px}
+button.folder{width:34px;padding:0}.options{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #252b34;padding-top:10px}.options label{font-weight:650;margin-left:6px}select{min-width:72px}
 #progress{padding:12px 14px}.progress-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:650;min-height:17px}
 .track{height:9px;background:#252d36;border-radius:30px;margin:11px 0;overflow:hidden}.fill{height:100%;width:0;background:var(--blue);transition:width .2s}
 .counts{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.counts b{font-size:16px;color:var(--text)}#detail{font-size:11px;color:#c2cddd;margin-top:8px}
@@ -1739,17 +1739,19 @@ table{border-collapse:collapse;table-layout:fixed;width:100%}th,td{padding:8px 1
 <section class="card"><div class="head"><strong>Input and output folders</strong><span class="muted">Choose folders, then Organize. No review or second confirmation.</span></div><div class="form">
 <label for="source" class="label">Input collection</label><div class="path" id="sourceDrop"><button class="folder" id="openSource" title="Open input folder" aria-label="Open input folder">📁</button><input type="text" id="source" aria-label="Input folder" placeholder="Choose input folder..."><button id="browseSource">Browse...</button></div>
 <label for="dest" class="label">Organized output</label><div class="path" id="destDrop"><button class="folder" id="openDest" title="Open output folder" aria-label="Open output folder">📁</button><input type="text" id="dest" aria-label="Output folder" placeholder="Choose separate output folder..."><button id="browseDest">Browse...</button></div>
-<div class="options"><label for="format">Output format</label><select id="format" aria-label="Output format"><option value="ALAC">ALAC (.m4a)</option><option value="FLAC">FLAC (.flac)</option></select><span class="muted">Genuine AudioChecker report required; unverified output is labeled PARTIAL.</span></div>
-<label for="checker">AudioChecker</label><input id="checker" type="text" placeholder="achkgui.exe path (optional if discoverable)" style="max-width:420px" aria-label="AudioChecker executable path"><button id="browseChecker" title="Locate installed AudioChecker executable">Browse...</button></div></div></section>
+<div class="options"><label for="format">Output format</label><select id="format" aria-label="Output format"><option value="ALAC">ALAC (.m4a)</option><option value="FLAC">FLAC (.flac)</option></select>
+<label for="encodeWorkers">Encoding workers</label><select id="encodeWorkers" aria-label="Number of simultaneous encoding workers"></select>
+<label for="checkWorkers">AudioChecker workers</label><select id="checkWorkers" aria-label="Number of simultaneous AudioChecker workers"></select>
+<span class="muted">Supplied AudioChecker ZIP detected automatically; all settings saved.</span></div></div></section>
 <section class="card" id="progress"><div class="progress-head"><span id="status" role="status" aria-live="polite">Ready</span><span id="percent">0%</span></div><div class="track" id="progressBar" role="progressbar" aria-label="Organization progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill"></div></div>
 <div class="counts"><span><b id="total">0</b> found</span><span><b id="done">0</b> compliant</span><span><b id="partial">0</b> partial</span><span><b id="skipped">0</b> already present</span><span><b id="failed">0</b> failed</span><span><b id="warnings">0</b> warnings</span></div>
 <div id="detail">Input files remain untouched. Any genuine errors will appear below.</div></section>
-<section class="card" id="results"><div class="head"><strong>Results</strong><span class="muted">Automatic results. No approval step.</span></div><div class="tools"><input type="text" id="query" placeholder="Filter results..." aria-label="Filter results"><button id="openLog">↗ Open log</button><button id="openOutput">📁 Open output</button><span class="space"></span><span id="resultCount" class="muted">Not started</span></div>
+<section class="card" id="results"><div class="head"><strong>Results</strong><span class="muted">Automatic results. No approval step.</span></div><div class="tools"><input type="text" id="query" placeholder="Filter results..." aria-label="Filter results"><button id="openLog">↗ Open log</button><span class="space"></span><span id="resultCount" class="muted">Not started</span></div>
 <div class="tablewrap"><table><thead><tr><th style="width:14%">Result</th><th style="width:31%">Release</th><th>Details</th></tr></thead><tbody id="rows"><tr><td colspan="3" class="empty">Press Organize to begin.</td></tr></tbody></table></div></section>
 </main>
 <footer id="foot"><button class="primary" id="organize">▶ Organize</button><button id="cancel" disabled>✕ Cancel</button><button id="undo" disabled>↶ Undo last run</button><span class="space"></span><span id="message" aria-live="polite" role="status"></span></footer>
 <script>
-let state=null,initialized=false,working=false,query="";
+let state=null,initialized=false,working=false,query="",suggestedDest="";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 async function api(method,...args){for(let j=0;j<120;j++){let a=window.pywebview&&window.pywebview.api;if(a&&typeof a[method]==="function")return a[method](...args);await new Promise(r=>setTimeout(r,50));}throw Error("Desktop connection failed.");}
@@ -1757,35 +1759,69 @@ function error(e){$('message').textContent=String(e&&e.message||e);}
 async function call(name,...args){try{const out=await api(name,...args);if(out&&out.error)throw Error(out.error);await refresh();return out;}catch(e){error(e);return null;}}
 function render(){
  if(!state)return;
- if(!initialized){$('source').value=state.source||"";$('dest').value=state.dest||"";$('format').value=state.format||"ALAC";$('checker').value=state.checker_path||"";initialized=true;}
+ if(!initialized){
+  $('source').value=state.source||"";
+  $('dest').value=state.dest||suggestPath(state.source);
+  suggestedDest=suggestPath(state.source);
+  $('format').value=state.format||"ALAC";
+  setupWorkers('encodeWorkers',state.worker_limit,state.encoding_workers);
+  setupWorkers('checkWorkers',state.worker_limit,state.checker_workers);
+  initialized=true;
+ }
  working=!!state.running;
  $('status').textContent=state.status||"Ready";
  const pct=Number(state.progress||0);$('percent').textContent=pct+"%";$('fill').style.width=pct+"%";$('progressBar').setAttribute("aria-valuenow",String(pct));
  let c=state.counts||{};for(let name of ["total","done","partial","skipped","failed","warnings"])$(name).textContent=c[name]||0;
  $('detail').textContent=working?"Organizing all discovered releases automatically. Genuine errors do not block later releases.":"Originals are untouched. Missing audiochecker.log is not a reason to skip a release.";
- for(let id of ["source","dest","format","checker","browseChecker","browseSource","browseDest"])$(id).disabled=working;
+ for(let id of ["source","dest","format","encodeWorkers","checkWorkers","browseSource","browseDest"])$(id).disabled=working;
  $('organize').disabled=working;$('cancel').disabled=!working;$('undo').disabled=working||!state.undo;
- $('openOutput').disabled=!$('dest').value.trim();
+ 
  if(state.error)$('message').textContent=state.error;
  let list=(state.results||[]).filter(x=>[x.name,x.message,(x.warnings||[]).join(" ")].join(" ").toLowerCase().includes(query));
  $('resultCount').textContent=list.length+" shown / "+(state.results||[]).length+" processed";
  $('rows').innerHTML=list.slice(-500).map(x=>'<tr><td class="'+esc(x.status)+'"><b>'+esc(x.status.toUpperCase())+'</b></td><td><b>'+esc(x.name)+'</b><div class="small">'+esc(x.target)+'</div></td><td>'+esc(x.message)+(x.warnings&&x.warnings.length?'<div class="small warning">'+esc(x.warnings.join(" | "))+'</div>':"")+'</td></tr>').join("")||'<tr><td colspan="3" class="empty">'+(working?"Working...":"No releases processed yet.")+'</td></tr>';
 }
 async function refresh(){try{state=await api("state");render();}catch(e){error(e);}}
-async function browse(which){let selected=await call("browse",which);if(selected)$(which).value=selected;}
-$('browseSource').onclick=()=>browse("source");$('browseDest').onclick=()=>browse("dest");$('browseChecker').onclick=async()=>{let x=await call('browse_checker');if(x)$('checker').value=x;};
+function suggestPath(input){
+ let v=String(input||"").replace(/[\\/]+$/,"");
+ if(!v)return "";
+ return v + (v.toLowerCase().endsWith(" - sorted")?" - Organized":" - Sorted");
+}
+function changedInput(){
+ const proposed=suggestPath($('source').value);
+ if(!$('dest').value.trim() || $('dest').value===suggestedDest){
+  $('dest').value=proposed;
+ }
+ suggestedDest=proposed;
+}
+function setupWorkers(id,limit,selected){
+ let max=Math.max(1,Math.min(64,Number(limit)||1));
+ let preferred=Math.max(1,Math.min(max,Number(selected)||4));
+ let el=$(id);el.replaceChildren();
+ for(let i=1;i<=max;i++){
+  const option=document.createElement('option');
+  option.value=String(i);option.textContent=String(i);
+  el.appendChild(option);
+ }
+ el.value=String(preferred);
+}
+async function browse(which){
+ const chosen=await call("browse",which);
+ if(chosen){$(which).value=chosen;if(which==="source")changedInput();}
+}
+$('browseSource').onclick=()=>browse("source");$('browseDest').onclick=()=>browse("dest");$('source').addEventListener('input',changedInput);
 $('openSource').onclick=()=>call("open_folder",$('source').value);
 $('openDest').onclick=()=>call("open_folder",$('dest').value);
-$('openOutput').onclick=()=>call("open_folder",$('dest').value);
+
 $('openLog').onclick=()=>call("open_log");
-$('organize').onclick=()=>{$('message').textContent="";call("organize",$('source').value,$('dest').value,$('format').value,$('checker').value);};
+$('organize').onclick=()=>{$('message').textContent="";call("organize",$('source').value,$('dest').value,$('format').value,Number($('encodeWorkers').value),Number($('checkWorkers').value));};
 $('cancel').onclick=()=>call("cancel");
 $('undo').onclick=()=>{if(confirm("Remove unchanged output from the last run? Original files are not touched."))call("undo");};
 $('query').oninput=()=>{query=$('query').value.trim().toLowerCase();render();};
 for(let [zone,input] of [["sourceDrop","source"],["destDrop","dest"]]){
 let z=$(zone);z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("drag");});
 z.addEventListener("dragleave",()=>z.classList.remove("drag"));
-z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("drag");let f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];let path=f&&(f.pywebviewFullPath||f.path);if(path)$(input).value=path;else error("Folder drop unsupported here; use Browse.");});
+z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("drag");let f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];let path=f&&(f.pywebviewFullPath||f.path);if(path){$(input).value=path;if(input==='source')changedInput();}else error("Folder drop unsupported here; use Browse.");});
 }
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&state&&state.running)call("cancel");});
 setInterval(refresh,900);refresh();
