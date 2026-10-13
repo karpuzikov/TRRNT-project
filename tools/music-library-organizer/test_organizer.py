@@ -259,13 +259,20 @@ class UserCorrections20261014(unittest.TestCase):
         self.assertNotEqual(target, example["folder"])
 
     def test_verified_web_barcode_does_not_require_catalog(self):
-        # The PARTIAL reason computation is in the batch finalizer, not in
-        # folder-title rendering. Prevent regression via source invariant.
-        import inspect
-        code = inspect.getsource(mlo.Organizer._organize)
-        self.assertIn('info.get("barcode") or info.get("catalog")', code)
-        self.assertIn('result["unmet_requirements"] = reasons', code)
-        self.assertNotIn('not info.get("catalog")', code)
+        verified = {"physical": False, "metadata_verified": True,
+                    "barcode": "5948204032791", "catalog": "", "notes": []}
+        checker = [{"possible_bandlimited": 0, "inconclusive": 0}]
+        self.assertEqual(mlo.completion_reasons(verified, [], checker), [])
+        self.assertIn("WEB", " ".join(mlo.completion_reasons(
+            dict(verified, barcode=""), [], checker)))
+        self.assertIn("Integrated AudioChecker report missing",
+                      mlo.completion_reasons(verified, [], []))
+        self.assertTrue(mlo.completion_reasons(
+            dict(verified, physical=True, country_provenance=
+                 "MusicBrainz release-territory-fallback (not verified pressing)"),
+            [], []))
+        self.assertTrue(mlo.completion_reasons(
+            dict(verified, metadata_verified=False), [], checker))
 
 
 class RebuildMissingImageCue(unittest.TestCase):
