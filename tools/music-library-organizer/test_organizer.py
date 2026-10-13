@@ -68,8 +68,8 @@ class NamingRules(unittest.TestCase):
             source.mkdir()
             (source / "01 Track.flac").write_bytes(b"placeholder-audio")
             (source / "original.cue").write_text(
-                'FILE "01 Track.flac" WAVE\\n  TRACK 01 AUDIO\\n'
-                '    TITLE "Track"\\n    INDEX 01 00:00:00\\n',
+                'FILE "01 Track.flac" WAVE\n  TRACK 01 AUDIO\n'
+                '    TITLE "Track"\n    INDEX 01 00:00:00\n',
                 encoding="utf-8")
             (source / "original.log").write_text("Exact Audio Copy rip log", encoding="utf-8")
             checker_source = source / "audiochecker.log"
@@ -91,8 +91,8 @@ class NamingRules(unittest.TestCase):
             folder = Path(td) / "Unknown"
             folder.mkdir()
             cue = folder / "one.cue"
-            cue.write_text('FILE "01 Track.flac" WAVE\\n'
-                           '  TRACK 01 AUDIO\\n    INDEX 01 00:00:00\\n')
+            cue.write_text('FILE "01 Track.flac" WAVE\n'
+                           '  TRACK 01 AUDIO\n    INDEX 01 00:00:00\n')
             info = mlo.release_identity(folder, [cue], default_artist="Artist", allow_network=False)
             self.assertTrue(info["physical"])
 
