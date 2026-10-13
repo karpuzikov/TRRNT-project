@@ -1521,17 +1521,30 @@ class Organizer:
             if src_img.resolve() not in source_images:
                 raise RuntimeError("Image mapping invalid.")
             names = {}
+            image_jobs = []
+            seen_image_names = set()
             for k, rec in enumerate(records):
-                if self.stop.is_set():
-                    raise InterruptedError("Cancelled.")
-                start = ticks[k] * (rate // 75)
-                end = ticks[k + 1] * (rate // 75) if k + 1 < len(records) else None
+                start_sample = ticks[k] * (rate // 75)
+                end_sample = ticks[k + 1] * (rate // 75) if k + 1 < len(records) else None
                 name = track_filename(rec["number"], rec["title"], extension)
                 output = dest / sub / name
-                if output.exists():
-                    raise RuntimeError("Two tracks resolve to same output path: " + str(output))
-                convert(ff, src_img, output, fmt, start, end, rec["title"], rec["number"])
-                names[rec["number"]] = (name, ticks[k], ticks[k + 1] if k + 1 < len(ticks) else None)
+                if str(output).casefold() in seen_image_names or os.path.lexists(output):
+                    raise RuntimeError("Image tracks map to the same output path: " + str(output))
+                seen_image_names.add(str(output).casefold())
+                image_jobs.append((rec, name, output, start_sample, end_sample, k))
+            def encode_image(job):
+                rec, name, output, start_sample, end_sample, k = job
+                if self.stop.is_set():
+                    raise InterruptedError("Cancelled.")
+                convert(ff, src_img, output, fmt, start_sample, end_sample,
+                        rec["title"], rec["number"])
+                return rec["number"], name, k
+            with concurrent.futures.ThreadPoolExecutor(
+                    max_workers=max(1, int(self.encoding_workers))) as pool:
+                futures = [pool.submit(encode_image, job) for job in image_jobs]
+                for future in concurrent.futures.as_completed(futures):
+                    num, name, k = future.result()
+                    names[num] = (name, ticks[k], ticks[k + 1] if k + 1 < len(ticks) else None)
             new_cues[cp] = image_cue_text(parsed, names)
         # Prepare all ordinary tracks before encoding. Duplicate target names
         # are verified against decoded PCM; never drop different audio.
