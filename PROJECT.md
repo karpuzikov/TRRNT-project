@@ -361,6 +361,10 @@ Required behavior:
 9. If an existing `audiochecker.log` is stale/invalid, preserve it temporarily outside the release folder while regenerating it; restore it if generation fails.
 10. Normal UI is automatic: one folder, progress, final counts. No per-release review.
 
+## Organizer v0.3.3 - mandatory native refalac64 and FLAC encoders
+
+New [Music Library Organizer v0.3.3.pyw](tools/Music%20Library%20Organizer%20v0.3.3.pyw) satisfies the explicit encoder *implementation choice* from the user: **ALAC exclusively via the official nu774/qaac `refalac64.exe`**, **FLAC exclusively via the official Xiph `flac.exe`**. FFmpeg performs only supported lossless decoding into temporary integer PCM WAV and decoded-audio checks; it must never encode ALAC/FLAC. Exact official native Windows encoders are located or bootstrapped in the isolated organizer dependency directory, not in another program; native codec, source PCM, sample rate, depth, metadata and artwork verification gates reject unproven outputs. Same-codec identical file copies are allowed. Original source remains untouched. Source and tests updated, independent native Xiph flac CLI PCM example passed, **Windows/native refalac and whole .pyw test run NOT RUN**. Status 0.3.3 - Under construction ⚠️. See [native encoding specifications](RULES.md#mandatory-exclusive-alacflac-encoders-2026-10-13), [product README](tools/music-library-organizer/README.md) and product [continuity](tools/music-library-organizer/CONTINUITY.md).
+
 ## Organizer v0.3.2 - fix unintended AudioChecker report in CDs
 
 v0.3.1 wrongly copied any existing `audiochecker.log` from a CD source to organized CD output. v0.3.2 now excludes that WEB-specific file from physical-CD exports without touching sources and never runs AudioChecker on physical CD rips. CD classification works with either CUE or an authentic rip LOG; a missing companion document should not force WEB classification. Removed redundant Results caption and added different-year physical-edition suffix when actual edition date is known. Source: [v0.3.2.pyw](tools/Music%20Library%20Organizer%20v0.3.2.pyw).
