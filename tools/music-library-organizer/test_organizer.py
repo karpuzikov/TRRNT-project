@@ -53,7 +53,7 @@ class NamingRules(unittest.TestCase):
             with self.assertRaises(ValueError):
                 mlo.check_paths(str(src), str(src / "child"), "FLAC")
             with self.assertRaises(ValueError):
-                mlo.check_paths(str(src), str(Path(td) / "Artist ALAC copy"), "FLAC")
+                mlo.check_paths(str(src), str(Path(td) / "Other ALAC"), "FLAC")
             self.assertEqual(mlo.check_paths(str(src), str(Path(td) / "Artist FLAC"), "FLAC")[2], "FLAC")
 
 
