@@ -3,6 +3,13 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## CD CUE/LOG and WEB AudioChecker naming rules - 2026-10-13
+
+- User's supporting-file rule: Physical CD releases **usually**, but not invariably, contain a real rip LOG and a CUE. Name those existing supporting files using the exact edition's **catalog number** as the common basename: `<Catalog Number>.log`, `<Catalog Number>.cue`; **barcode fallback** when no catalog number exists. If neither is available, flag for review, do not invent names. DiscID and Discogs edition validation remain authoritative.
+- WEB/digital releases **should have `audiochecker.log`**, an actual AudioChecker report, not a physical CD rip LOG. When absent, require genuine AudioChecker analysis; do not synthesize an empty/fake file or treat it as CD evidence.
+- Existing CD rip LOG/CUE may be missing, which is an absence to report, not a reason to reclassify media or fabricate documentation. Preserve separate multi-disc data, CUE references, file contents, and rename preview/Undo. Block filename collisions rather than overwrite.
+- Updated `RULES.md`, `PROJECT.md`, and `CONTINUITY.md` only. No software changes or actual Windows filesystem testing.
+
 ## Main ALAC audio file naming rule - 2026-10-13
 
 - User explicitly specified the main filename structure: `01 Red Lips (ft. Sam Bruno) [Skrillex Remix]` = `01` zero-padded track number, followed by **exactly one space**, followed by the complete standardized track title. Full ALAC filename: `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].m4a`.
