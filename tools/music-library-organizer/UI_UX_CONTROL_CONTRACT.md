@@ -1,6 +1,16 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.9 candidate - Under construction ⚠️; native engine provisioning and Windows acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.10 candidate - Under construction ⚠️; native engine provisioning and Windows acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.10 - three independent user controls (manual stage selection)
+
+| Control | Function | Disabled state and acceptance |
+| --- | --- | --- |
+| `#doEncode` (Encode audio checkbox, default ON) | Persist setting; ON converts ordinary tracks to chosen format using native encoders, OFF copies each ordinary source codec/extension and stages metadata. Never mutate original. | Keyboard Space/Tab, pointer, focus-visible; unchecked disables Encoding workers, and Output format only if Split also unchecked. Real Windows tests pending. |
+| `#doChecker` (AudioChecker checkbox, default ON) | Persist setting; ON runs only genuine auCDtect for WEB when binary available and generates original-style log; OFF skips analysis and removes its report compliance requirement. No ZIP chooser. | Unchecked disables AudioChecker workers. Real report/Windows tests pending. |
+| `#doSplit` (Split album images (CUE) checkbox, default ON) | ON splits verified CUE image to individual lossless tracks using chosen native encoder; OFF preserves whole album audio image and rewrites staged CUE FILE paths. | When Encoding is also OFF, Output format disabled; when Split ON but Encoding OFF, format must stay enabled for new split tracks. Real native splitter tests pending. |
+
+All controls are small integrated checkboxes in existing MCC-like form. States persist across restarts; show settings via bridge, expose processing choices in activity/report/Undo metadata, lock while run active, do not trigger actions merely by toggling. Mocked WebView2 DOM checked state restore and enabled/disabled interactions; **real Windows hover/keyboard, screen size/accessibility, validation and complete codec tests NOT RUN**.
 
 ## v0.3.9 - correct AudioChecker availability status
 
