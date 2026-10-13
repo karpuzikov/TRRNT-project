@@ -6,7 +6,7 @@ Status: v0.3.10 candidate - Under construction ⚠️; native engine provisionin
 
 | Control | Function | Disabled state and acceptance |
 | --- | --- | --- |
-| `#doEncode` (Encode audio checkbox, default ON) | Persist setting; ON converts ordinary tracks to chosen format using native encoders, OFF copies each ordinary source codec/extension and stages metadata. Never mutate original. | Keyboard Space/Tab, pointer, focus-visible; unchecked disables Encoding workers, and Output format only if Split also unchecked. Real Windows tests pending. |
+| `#doEncode` (Encode audio checkbox, default ON) | Persist setting; ON converts ordinary tracks to chosen format using native encoders, OFF copies each ordinary source codec/extension and stages metadata. Never mutate original. | Keyboard Space/Tab, pointer, focus-visible; unchecked disables Encoding/Split workers only if Split is ALSO unchecked, and Output format only if Split also unchecked. Real Windows tests pending. |
 | `#doChecker` (AudioChecker checkbox, default ON) | Persist setting; ON runs only genuine auCDtect for WEB when binary available and generates original-style log; OFF skips analysis and removes its report compliance requirement. No ZIP chooser. | Unchecked disables AudioChecker workers. Real report/Windows tests pending. |
 | `#doSplit` (Split album images (CUE) checkbox, default ON) | ON splits verified CUE image to individual lossless tracks using chosen native encoder; OFF preserves whole album audio image and rewrites staged CUE FILE paths. | When Encoding is also OFF, Output format disabled; when Split ON but Encoding OFF, format must stay enabled for new split tracks. Real native splitter tests pending. |
 
