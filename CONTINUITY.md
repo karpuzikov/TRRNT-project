@@ -3,6 +3,13 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Music Library Organizer v0.3.4 - recover desktop bridge and black window - 2026-10-13
+
+- User reports v0.3.3 starts with "Desktop connection failed", hangs; force-close/reopen intermittently displays blank black WebView2 windows. Source audit: JS bridge probe gives up after only 6 sec, never subscribes to `pywebviewready`; periodic refresh overlaps while bridge is slow; exposing whole `Organizer` to js_api may trigger nested reflection into a WebView2 native window/locks.
+- New `tools/Music Library Organizer v0.3.4.pyw`: dedicated small `DesktopBridge` API facade (no publicly exposed window/events), JS subscription to `pywebviewready`, single-flight timed status polls with retry/backoff and Retry connection button only during disconnection. Real startup status and disabled controls until Python responds, then full restoration including source/destination folder and log buttons.
+- Black-window preventive measures: unique per-process app-isolated WebView2 profile; attempt cleanup stale profile directories (never other apps), single-instance Windows mutex, `webview-startup.log` under program-only Documents folder; recorded renderer shown/loaded/closed events and startup errors. Existing codec exclusivity, source safety and MCC-styled UI preserved.
+- V8 JS syntax check and V8 mocked late bridge/controls interaction PASS, Python regression source added but **NOT RUN**; actual Win11 WebView2/black-screen tests remain NOT RUN. Product status stays `0.3.4 - Under construction ⚠️`. Next: test multiple normal starts and one forced-close/reopen with disposable source. If failure ask for app's `webview-startup.log`, `startup-error.log`, `activity.log`.
+
 ## Music Library Organizer v0.3.3 - exclusive native ALAC/FLAC encoders - 2026-10-13
 
 - User mandates **ALAC with `refalac64.exe` only** (source nu774/qaac), **FLAC with Xiph's official `flac.exe` only** (source ftp.osuosl.org/pub/xiph/releases/flac). FFmpeg `-c:a alac`/`-c:a flac` was expressly rejected. Strict rule committed into root `RULES.md`, overriding earlier softer language.
