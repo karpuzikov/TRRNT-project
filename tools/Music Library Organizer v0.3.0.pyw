@@ -256,28 +256,43 @@ def cue_image_plan(cue_path: Path, cue):
 
 
 def image_cue_text(cue, new_names):
-    header = []
-    seen = False
+    """Write a separated-image CUE, keeping INDEX 00/01 and other indexes."""
+    def stamp(frames):
+        if frames < 0:
+            raise ValueError("Negative CUE position.")
+        minute, other = divmod(frames, 75 * 60)
+        second, frame = divmod(other, 75)
+        return f"{minute:02d}:{second:02d}:{frame:02d}"
+
+    out = []
     for line in cue["lines"]:
-        if re.match(r"^\s*TRACK\s+\d\d\s+AUDIO\b", line, re.I):
-            seen = True
-        if seen:
+        if FILE.match(line) or re.match(r"^\s*TRACK\b", line, re.I):
             break
-        if not FILE.match(line):
-            header.append(line)
-    out = list(header)
+        out.append(line)
     for rec in cue["records"]:
-        target = new_names.get(rec["number"])
-        if target is None:
-            raise ValueError("Mixed or unsupported CUE FILE layout; manual review required.")
-        out.append('FILE "' + target + '" WAVE')
-        for line in rec["lines"]:
-            if INDEX.match(line):
-                if INDEX.match(line).group(1) == "01":
-                    out.append("    INDEX 01 00:00:00")
+        if rec["number"] not in new_names:
+            raise ValueError("Unmapped audio image CUE track.")
+        name, start, end = new_names[rec["number"]]
+        out.append('FILE "' + name + '" WAVE')
+        first = rec["lines"][0] if rec["lines"] else "  TRACK %02d AUDIO" % rec["number"]
+        out.append(first)
+        idx = rec["index"]
+        if rec["number"] == cue["records"][0]["number"] and start == 0 and idx[1] > 0 and 0 not in idx:
+            out.append("    INDEX 00 00:00:00")
+        for line in rec["lines"][1:]:
+            if FILE.match(line):
+                continue
+            m = INDEX.match(line)
+            if m:
+                index_no = int(m.group(1))
+                relative = idx[index_no] - start
+                if relative < 0 or (end is not None and idx[index_no] >= end):
+                    raise ValueError("CUE index lies outside generated track.")
+                out.append("    INDEX %02d " % index_no + stamp(relative))
             else:
                 out.append(line)
     return "\n".join(out).rstrip() + "\n"
+
 
 
 def normal_cue_text(cue, names):
@@ -1137,7 +1152,7 @@ class Organizer:
                 if output.exists():
                     raise RuntimeError("Two tracks resolve to same output path: " + str(output))
                 convert(ff, src_img, output, fmt, start, end, rec["title"], rec["number"])
-                names[rec["number"]] = name
+                names[rec["number"]] = (name, ticks[k], ticks[k + 1] if k + 1 < len(ticks) else None)
             new_cues[cp] = image_cue_text(parsed, names)
         # Copy or transcode normal track audio. Map old paths to newly named paths.
         for fp in files:
