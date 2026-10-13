@@ -749,10 +749,20 @@ def start_checker_window(hwnd):
         cls = ctypes.create_unicode_buffer(256)
         user32.GetWindowTextW(child, label, 512)
         user32.GetClassNameW(child, cls, 256)
-        if "button" in cls.value.lower() and label.value.strip().upper() in ("START", "СТАРТ"):
+        name = label.value.strip().upper()
+        if "button" in cls.value.lower() and (name in ("START", "СТАРТ") or name.startswith("START ")):
             user32.SendMessageW(child, 0x00F5, 0, 0)
             return True
-    return False
+    # Some AudioChecker builds use the main-window default Enter action.
+    try:
+        user32.ShowWindow(hwnd, 5)
+        user32.SetForegroundWindow(hwnd)
+        time.sleep(.15)
+        user32.keybd_event(0x0D, 0, 0, 0)
+        user32.keybd_event(0x0D, 0, 2, 0)
+        return True
+    except Exception:
+        return False
 
 
 def genuine_audiochecker(checker, folder, tracks, stop_event):
