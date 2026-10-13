@@ -3,6 +3,15 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Music Library Organizer v0.1.2 prototype - 2026-10-13
+
+- User requested a **new standalone file/folder organization program using MCC's UI as the base**, potentially to be merged into MCC later. Built isolated `tools/Music Library Organizer v0.1.2.pyw`, using MCC's pywebview / WebView2 dark UI visual tokens and independently scoped app data. Earlier v0.1.0 and v0.1.1 snapshots remain on `main`.
+- Added `tools/music-library-organizer/CONTINUITY.md`, `UI_UX_CONTROL_CONTRACT.md`, `README.md`, and `test_organizer.py`. The new app's continuity is authoritative for its detailed source behavior, test results, UI controls, known bugs, limitations and future work. Root project RULES, MUSIC_GLOSSARY, global SOFTWARE/UI_UX rules also apply.
+- Features: source + independent output roots, persisted ALAC/FLAC, scan, ready/review decisions, full path mapping Details, safe copy/export with verification and per-release staging, SHA-256 recorded Undo, limited valid CUE image splitting. Unsupported source metadata/INDEX 00/HTOA, unverified release names, collisions, missing WEB audiochecker.log are flagged. No source-file deletion.
+- **NOT IMPLEMENTED/VERIFIED:** external MusicBrainz DiscID/Discogs/Beatport lookups, earliest dates and manufacturing proof, verified catalog fallback, refalac, full metadata/artwork parity, complex CUE indexes, Windows WebView2 launch/testing/screenshots. No physical exe or workflow modifications.
+- Unit and FFmpeg test **source committed but NOT EXECUTED**. JavaScript extracted from source syntax-parsed via V8 Function - PASS syntax only. Product remains **0.1.2 - Under construction ⚠️**. Next: run Python AST/unittest/FFmpeg on real OS then Windows screenshots and disposable-root Apply/Undo regression, fix all discrepancies before declaring success.
+- MCC repository/application was not modified by this new product work. Future MCC merging is optional and requires later user request.
+
 ## CUE album-image splitting and ALAC/FLAC output format - 2026-10-13
 
 - User requires **whole-album audio image files to be split into individual tracks**. The conversion script must use the associated valid CUE for track timing and preserve pregaps, indexes, HTOA, track count and complete decoded audio; no invented split times if missing/invalid CUE.
