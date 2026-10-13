@@ -229,6 +229,12 @@ class UserCorrections20261014(unittest.TestCase):
                 self.assertEqual(mlo.track_filename(13, supplied, ".m4a"),
                                  "13 " + expected + ".m4a")
 
+    def test_deluxe_edition_typo_and_feature_free_release(self):
+        title = mlo.release_title_normalize(
+            "Party Never Ends, Pt. 2 (Deluxe Editon)", "EP")
+        self.assertEqual(title, "Party Never Ends, Pt. 2 (Deluxe Edition) - EP")
+        self.assertNotIn("feat.", title.lower())
+
     def test_source_filename_feature_survives_short_tag(self):
         from unittest.mock import patch
         with patch.object(mlo, "metadata",
