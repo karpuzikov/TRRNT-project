@@ -1,10 +1,25 @@
 # Music Library Organizer
 
-**Current: v0.3.4 - Under construction ⚠️**
+**Current: v0.3.5 - Under construction ⚠️**
 
-**[Download Music Library Organizer v0.3.4.pyw](../Music%20Library%20Organizer%20v0.3.4.pyw)**
+**[Download Music Library Organizer v0.3.5.pyw](../Music%20Library%20Organizer%20v0.3.5.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.5 - INNA naming, DiscID, AudioChecker, results
+
+**Based on the user's actual 94-release `Pasted text(4).txt` log (0 done, 93 partial, 1 failed):**
+
+- Release/folder names no longer include `(ft. Artist)`/`(feat. Artist)` credits. The track itself retains featured performers. Folder version descriptors such as `(extended mix)` and `(remix)` become `(Extended Mix)` and `(Remix)` while proper names and diacritics remain.
+- Added cleanup of source album/edition strings: removes leading collection artist `INNA - `, trailing `(Promo)`/`(FLAC)`, `(Maxi CD Single)`, duplicate date-year and catalog bracket from the **search title**. It still requires authoritative album dates/catalog/territory to generate a fully standard final release folder; an unresolved match remains PARTIAL, not fabricated.
+- Track TITLE and audio filename are normalized together on both direct same-codec *copies* and native refalac64/Xiph FLAC conversions. `Diggy Down (Radio Edit) [ft. Marian Hill]` -> `Diggy Down (ft. Marian Hill) [Radio Edit]`. Edit/version names are never replaced with another release's remix names.
+- Contradictory `Bob Taylor ft. INNA` credits are parsed as separate ARTIST and featured performer. A source-collection majority over the **same song and performer pair** can establish the canonical direction `INNA ft. Bob Taylor`; only then does the output change ARTIST and TITLE accordingly. A tie or unverified credit does not trigger fabricated role reversal.
+- MusicBrainz DiscID candidates are filtered by *exact medium count*, medium format, track count per disc and available DiscID matches **before** deciding the edition is ambiguous. This addresses the user's 16-track `Party Never Ends 2013` case where one of the two DiscID candidates is a two-CD edition. Live local TOC/media response still needs end-to-end confirmation.
+- For a CUE referencing a shared full-album WAV no longer present alongside **valid split tracks**, the app preserves those audio tracks and retains the old CUE clearly labeled `Unresolved CUE - ...`; reports PARTIAL without claiming the CUE is now playable. It never invents pregap offsets.
+- **AudioChecker:** 93 WEB exports in the supplied log had no reports because the ZIP wasn't found. The app now also searches likely Downloads directories on drive letters and provides an optional **Browse ZIP...** selector to locate the exact user-supplied `Audio_Checker_UTF8_Multicore.zip`; selected location is persisted. The real `aucdtect.exe` bundle generates checker reports; failed/unavailable checks remain PARTIAL.
+- **Results UI:** rows explicitly selectable with mouse/keyboard Ctrl+C; added **Copy results** for visible rows, and **Open log folder** beside **Open log**. The log folder button opens the product's own isolated Documents folder.
+- Earlier hard requirement unchanged: **ALAC exclusively by official `refalac64.exe`; FLAC exclusively by Xiph's official `flac.exe`**; no FFmpeg ALAC/FLAC encoding. Source untouched, staging/Undo retained.
+- **Status:** Code and separate GitHub regression test source committed. Inlined UI JavaScript syntax PASSED. Complete Python AST/regression suite, native Windows WebView2/binaries, DiscID live response, real AudioChecker job, credit-vote/metadata parity and the 94-release batch have **NOT RUN** in the target environment. Do not call fully working/stable. New full audit: [INNA regression (2026-10-14)](AUDIT_INNA_2026-10-14.md). Test using a disposable collection and a new empty destination.
 
 ## v0.3.4 WebView2 startup and connection recovery
 
