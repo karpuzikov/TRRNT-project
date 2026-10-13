@@ -1173,6 +1173,45 @@ def discid_release_candidates(folder, files, barcode=""):
     return sorted(intersection), details
 
 
+def _disc_editions_by_medium(candidates, toc_data):
+    """DiscID must match the actual count/order/track-count of CD media."""
+    if not toc_data:
+        return list(candidates), []
+    accepted = []
+    rejected = []
+    for rid in candidates:
+        details = mb_json("release/" + str(rid) +
+                          "?inc=recordings+discids+release-groups+labels+artists&fmt=json")
+        media = details.get("media", [])
+        if len(media) != len(toc_data):
+            rejected.append((rid, f"medium count {len(media)} != {len(toc_data)}"))
+            continue
+        compatible = True
+        for physical, expected in zip(media, toc_data):
+            if "cd" not in str(physical.get("format") or "").lower():
+                compatible = False
+                break
+            count = physical.get("track-count")
+            if count is None:
+                count = len(physical.get("tracks", []))
+            if int(count or 0) != expected["tracks"]:
+                compatible = False
+                break
+            listed_discids = {
+                str(row.get("id") or "") for row in physical.get("discs", [])
+            }
+            # When MB exposes the disc IDs on the selected medium, require
+            # the actual local DiscID among them, never a neighbouring disc.
+            if listed_discids and expected["discid"] not in listed_discids:
+                compatible = False
+                break
+        if compatible:
+            accepted.append(details)
+        else:
+            rejected.append((rid, "CD format, per-medium track-count or DiscID mismatch"))
+    return accepted, rejected
+
+
 def release_identity(folder, files, default_artist="", allow_network=True):
     """Physical DiscID + barcode corroboration, then actual edition metadata."""
     current = folder.name
@@ -1222,6 +1261,7 @@ def release_identity(folder, files, default_artist="", allow_network=True):
         return result
     try:
         disc_candidates = []
+        disc_data = []
         if is_cd and cue_files:
             try:
                 disc_candidates, disc_data = discid_release_candidates(folder, files, barcode)
@@ -1241,18 +1281,24 @@ def release_identity(folder, files, default_artist="", allow_network=True):
             result["lookup_sources"].append("MusicBrainz barcode")
         chosen = None
         if disc_candidates:
-            possible = disc_candidates
+            # Discard mismatching 2-CD / 1-CD editions *before* reporting
+            # ambiguity. The local TOC is the authoritative disc structure.
+            filtered, rejected = _disc_editions_by_medium(disc_candidates, disc_data)
+            if rejected:
+                result["notes"].append(
+                    f"Discarded {len(rejected)} incompatible DiscID edition(s) by medium/track counts.")
+            possible = filtered
             if barcode:
                 confirmed = {str(x.get("id")) for x in barcode_entries}
-                possible = [rid for rid in possible if rid in confirmed]
+                possible = [r for r in possible if str(r.get("id")) in confirmed]
                 if not possible:
-                    result["notes"].append("DiscID candidates conflict with the barcode - no edition selected.")
+                    result["notes"].append("No DiscID edition also matches the source barcode.")
                     return result
             if len(possible) != 1:
-                result["notes"].append(str(len(possible)) +
-                                       " DiscID-matching physical editions; selection is ambiguous.")
+                result["notes"].append(
+                    f"{len(possible)} structurally matching DiscID edition(s) remain; no arbitrary selection.")
                 return result
-            chosen = {"id": possible[0]}
+            chosen = possible[0]
         else:
             # No exact DiscID: use exact-barcode candidates when available,
             # otherwise search by album+artist and require unique strong match.
