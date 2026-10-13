@@ -1,6 +1,18 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.6 candidate - Under construction ⚠️; no real Windows acceptance. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.7 candidate - Under construction ⚠️; no real Windows acceptance. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.7 - integrated AudioChecker: no ZIP/file-picker UI
+
+The user explicitly rejected the ZIP/file picker workflow. Remove `#checkerZip`, `#chooseChecker`, `#openCheckerZip`, all associated input and folder icons, and the `browse_checker_zip` native bridge API. Do not substitute another checker installation screen. AudioChecker is a **built-in automatic stage** of Organize; retain `#checkWorkers` (manual bounded worker count) as the only checker-specific input. A single small passive label clarifies `AudioChecker is integrated. WEB releases are checked automatically; no external checker or ZIP is needed.`. Source/output path controls and result-path folder icons remain for real displayed paths.
+
+| Affected control | Purpose, actions, side effects | Focus/feedback, states, geometry and acceptance |
+| --- | --- | --- |
+| AudioChecker workers `#checkWorkers` | Select 1..detected logical CPU maximum for concurrent *built-in* per-track spectral checks; saved to this app's settings. | Existing 34px select, label, keyboard/Tab, pointer; disabled while run; validate output and persistence. Windows NOT RUN. |
+| Integrated checker status | Automatic, no separate click/ZIP. When organizing WEB release, show current stage `AudioChecker`; produce integrity-validated `audiochecker.log` with evidence/uncertainty; CD never invokes checker. | Descriptive warnings for strong bandlimiting, inconclusive or actual probe failure. Partial when not verified. No false auCDtect probability/compliance. Windows actual file workflow NOT RUN. |
+| Results table / Copy results / path folder icon | Preserve prior v0.3.6 fixes. Mouse/keyboard select/copy, folder icon adjacent to destination paths and app log controls. | Native focus, hovering, resizing, polling while selecting, selection restoration, horizontal text wrapping, error handling NOT RUN on Windows. |
+
+The prior v0.3.6 AudioChecker ZIP row contract below is **historical and superseded**. The current UI MUST NOT include its controls; do not revive the `auCDtect` upload/selection flow. The entire MCC-style WebView2 design tokens, source/destination controls and error recovery remain unchanged. Run min/default/large-size screenshots; keyboard-only, hover, pointer and real conversion/analysis tests before stable status.
 
 ## v0.3.6 candidate - added/changed controls and selection stability
 
