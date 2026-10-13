@@ -1022,6 +1022,8 @@ class OptionalProcessingAndDigitalDates(unittest.TestCase):
         for name in ("doEncode", "doChecker", "doSplit"):
             self.assertIn('id="' + name + '"', mlo.HTML)
         self.assertIn("updateTaskControls()", mlo.HTML)
+        self.assertIn("Encoding / split workers", mlo.HTML)
+        self.assertIn("!$('doEncode').checked&&!$('doSplit').checked", mlo.HTML)
         self.assertIn("'doEncode').checked", mlo.HTML)
         self.assertIn("'doChecker').checked", mlo.HTML)
         self.assertIn("'doSplit').checked", mlo.HTML)
