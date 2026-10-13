@@ -1,9 +1,23 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.2.0 - Under construction ⚠️**
+Current version: **0.3.0 - Under construction ⚠️**
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Current source: [`tools/Music Library Organizer v0.2.0.pyw`](../Music%20Library%20Organizer%20v0.2.0.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Current source: [`tools/Music Library Organizer v0.3.0.pyw`](../Music%20Library%20Organizer%20v0.3.0.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Latest checkpoint - v0.3.0 rule compliance repairs (2026-10-13)
+
+**Origin:** User's INNA test of v0.2.0 reported missing Single suffixes, no MusicBrainz/Beatport catalog replacement, no AudioChecker generation, unchanged `Inna - YO 2019`, unchanged `Inna - Yo.cue`/`.log`, and minimal meaningful changes. Uploaded `Pasted text(1).txt` log: **80 DONE**, **14 FAILED**. Eight target filename collisions; six CD/CUE errors (INDEX00, mismatched historical WAV references, missing CUE audio).
+
+**Development actions:** `tools/Music Library Organizer v0.3.0.pyw` now has MusicBrainz WS2 search by barcode/artist/title, concrete edition media filtering, labels/catalog numbers, barcode, initial worldwide date/release group and release-type; applies standard ` - Single`/` - EP` with plural Remixes exception; derives conservative renamed output directory, and uses verified identity for CUE/LOG basenames. Source `Inna - YO 2019` physical CD plausibly maps to MB CD `GR18186`, first release `2019-05-31`, RO release territory fallback: `2019-05-31 - YO [RO - GR18186]` and `GR18186.cue`, `GR18186.log`. **Exact local edition matching has not been verified; pressing location not proven**.
+
+**AudioChecker:** optional browsable `achkgui.exe` path in UI, auto discovery, real Windows GUI invocation and validity check; FLAC output checked natively, ALAC output transcoded to temporary *lossless PCM-verified FLAC* for checking with truthful report provenance. No fabricated report. Missing checker causes **PARTIAL** status, not falsely DONE.
+
+**Collisions/CUE:** multiple source files mapping to same target can be deduplicated **only when decoded PCM hashes match**. Distinct content collisions fail release. CUE image supports INDEX00/pregap/HTOA offsets in split output where safety conditions permit; historical CUE WAV references can be matched uniquely by track number when indexes are zero-based. Still blocks complex/missing ambiguous CUE mapping rather than silently corrupting.
+
+**Release-gate audit:** Full TRRNT compliance is still **NOT VERIFIED**. Discogs pressing evidence and DiscID ambiguity resolver, Beatport/BPTopTracker catalog fallback, full tag/artwork parity, real Windows/WebView2/AudioChecker integration, and Python AST+unit tests remain open. The UI embedded JavaScript passes a V8 parse check only. CD pressing provenance or digital barcode-only catalogs without all required source checks yield **PARTIAL**, not DONE. Test *original source* to *new empty destination*, not output reused from v0.2.0 (which could create differently named duplicate folders alongside old exports). **Status 0.3.0 - Under construction ⚠️; do not mark stable or advertise a completed build**.
+
+**Next tasks:** (1) Python AST compile + run `tools/music-library-organizer/test_organizer.py` under Windows/Python 3.11+, fix test failures; (2) actual WebView2 screenshot/layout/control acceptance at small/default/large window and keyboard interactions; (3) disposable output test using INNA YO CD, one 1-track WEB single, duplicate stereo audio sources, AudioChecker installed, CUE with INDEX00; (4) compare 94 release regression against actual user log with precise per-release naming and reports; (5) implement remaining provider and pressing/DiscID/Beatport research. GitHub Actions unchanged.
 
 ## Active product contract - v0.2.0 automatic mode
 
