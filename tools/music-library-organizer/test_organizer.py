@@ -12,7 +12,7 @@ import threading
 import unittest
 import wave
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.1.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.2.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -48,6 +48,53 @@ class NamingRules(unittest.TestCase):
             log = Path(td) / "audiochecker.log"
             log.write_text("AudioChecker fake output\\n100", encoding="utf-8")
             self.assertFalse(mlo.is_real_checker_log(log, [Path("01 Example.flac")]))
+
+    def test_cd_reissue_year_suffix_from_concrete_edition(self):
+        info = {"folder": "Legacy", "title": "I Am the Club Rocker",
+                "date": "2011-09-19", "edition_date": "2012-07-11",
+                "catalog": "WPCR-14516", "barcode": "", "physical": True,
+                "country": "JP", "release_type": "Album", "notes": []}
+        self.assertEqual(mlo.release_folder_target(info),
+                         "2011-09-19 - I Am the Club Rocker [JP - WPCR-14516 - 2012]")
+        info["edition_date"] = "2011-10-10"
+        self.assertEqual(mlo.release_folder_target(info),
+                         "2011-09-19 - I Am the Club Rocker [JP - WPCR-14516]")
+
+    def test_cd_does_not_export_existing_web_audiochecker_log(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source, dest = root / "CD", root / "Output"
+            source.mkdir()
+            (source / "01 Track.flac").write_bytes(b"placeholder-audio")
+            (source / "original.cue").write_text(
+                'FILE "01 Track.flac" WAVE\\n  TRACK 01 AUDIO\\n'
+                '    TITLE "Track"\\n    INDEX 01 00:00:00\\n',
+                encoding="utf-8")
+            (source / "original.log").write_text("Exact Audio Copy rip log", encoding="utf-8")
+            checker_source = source / "audiochecker.log"
+            checker_source.write_text("historic WEB report", encoding="utf-8")
+            app = mlo.Organizer()
+            app._current_identity = {"physical": True, "metadata_verified": True,
+                                     "catalog": "CAT001", "barcode": ""}
+            app.encoding_workers = 1
+            with patch.object(mlo, "probe", return_value={"codec_name": "flac"}):
+                app._export_release(source, dest, "FLAC", "unused-ffmpeg", "unused-ffprobe")
+            self.assertFalse((dest / "audiochecker.log").exists())
+            self.assertTrue((dest / "CAT001.cue").exists())
+            self.assertTrue((dest / "CAT001.log").exists())
+            self.assertEqual(checker_source.read_text(encoding="utf-8"), "historic WEB report")
+            self.assertEqual((dest / "01 Track.flac").read_bytes(), b"placeholder-audio")
+
+    def test_cue_only_cd_does_not_become_web(self):
+        with tempfile.TemporaryDirectory() as td:
+            folder = Path(td) / "Unknown"
+            folder.mkdir()
+            cue = folder / "one.cue"
+            cue.write_text('FILE "01 Track.flac" WAVE\\n'
+                           '  TRACK 01 AUDIO\\n    INDEX 01 00:00:00\\n')
+            info = mlo.release_identity(folder, [cue], default_artist="Artist", allow_network=False)
+            self.assertTrue(info["physical"])
 
     def test_zero_padding_exact_one_space(self):
         self.assertEqual(mlo.track_filename(1, "Red Lips (ft. Sam Bruno) [Skrillex Remix]", ".m4a"),
