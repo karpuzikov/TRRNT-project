@@ -3,6 +3,11 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Release title EP/Single suffix clarification - 2026-10-13
+
+- User explicitly requires any genuine `EP` / `Single` designation **present in the release title** to be standardized as one final ` - EP` / ` - Single` suffix, including on remix releases regardless of the number of tracks. Examples: `Title (EP)` -> `Title - EP`; `Song - The Remixes EP` -> `Song (The Remixes) - EP`. Do not retain parenthesized EP/Single designations or duplicate suffixes. Preserve previous rule: remix descriptors like `The Remixes` go in parentheses only if already in the authentic title; track count must not invent `(Remixes)` or a missing release type.
+- Updated naming documentation only (`RULES.md`, `PROJECT.md`, and this continuity note); no implementation, build, or Windows UI testing was performed.
+
 ## Latest folder-organization clarifications - 2026-10-13
 
 - Earliest **worldwide initial release date** regardless of country, format, edition; use maximum known date precision (`YYYY-MM-DD`, `YYYY-MM`, or `YYYY`).
