@@ -294,6 +294,12 @@ def collection_credit_consensus(releases, main_artist):
             if not title:
                 matched = TRACK.match(file.stem)
                 title = matched.group(2) if matched else ""
+            filematch = TRACK.match(file.stem)
+            if filematch:
+                filetitle = filematch.group(2)
+                _, _, _, filefeat = _song_parts(filetitle)
+                if filefeat and not _song_parts(title)[3]:
+                    title = filetitle
             if not title:
                 continue
             base, _, named_main, feature = _song_parts(title)
@@ -980,6 +986,14 @@ def clean_release_title(value, root_artist=""):
         original = re.sub(
             r"(?i)^" + re.escape(str(root_artist).strip()) + r"\s+-\s+",
             "", original, count=1)
+    # Old release source folders may include the barcode/catalog as a final
+    # bracket but that is not part of the musical release TITLE.
+    last_id = re.search(r"\s+\[([^\[\]]+)\]$", original)
+    if last_id:
+        candidate_id = last_id.group(1)
+        if (re.fullmatch(r"\d{8,14}", candidate_id) or
+                re.fullmatch(r"(?i)[A-Z]{0,3}\s*-?\s*[A-Z]*\d[\w .-]*", candidate_id)):
+            original = original[:last_id.start()]
     original = _RELEASE_YEAR_NOTE.sub("", original).strip()
     original = _RELEASE_FORMAT_NOTE.sub("", original).strip()
     original = _RELEASE_MEDIA_NOTE.sub("", original).strip()
@@ -1331,7 +1345,7 @@ def release_identity(folder, files, default_artist="", allow_network=True):
                 if not (title and artist):
                     result["notes"].append("Neither DiscID, barcode nor complete artist/title lookup available.")
                     return result
-                query = 'release:"' + str(album or title).replace('"', "") + \
+                query = 'release:"' + clean_release_title(album or title, default_artist).replace('"', "") + \
                         '" AND artist:"' + str(artist).replace('"', "") + '"'
                 url = "release/?" + urllib.parse.urlencode(
                     {"query": query, "fmt": "json", "limit": "100"})
