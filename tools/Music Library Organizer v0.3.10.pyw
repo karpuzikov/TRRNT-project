@@ -2661,7 +2661,7 @@ button.folder{width:34px;padding:0}.options{display:flex;align-items:center;gap:
 <label for="dest" class="label">Organized output</label><div class="path" id="destDrop"><button class="folder" id="openDest" title="Open output folder" aria-label="Open output folder">📁</button><input type="text" id="dest" aria-label="Output folder" placeholder="Choose separate output folder..."><button id="browseDest">Browse...</button></div>
 <div class="processing-toggles" role="group" aria-label="Optional processing stages"><label class="processing-check"><input type="checkbox" id="doEncode" checked> Encode audio</label><label class="processing-check"><input type="checkbox" id="doChecker" checked> AudioChecker</label><label class="processing-check"><input type="checkbox" id="doSplit" checked> Split album images (CUE)</label></div>
 <div class="options"><label for="format">Output format</label><select id="format" aria-label="Output format"><option value="ALAC">ALAC (.m4a)</option><option value="FLAC">FLAC (.flac)</option></select>
-<label for="encodeWorkers">Encoding workers</label><select id="encodeWorkers" aria-label="Number of simultaneous encoding workers"></select>
+<label for="encodeWorkers">Encoding / split workers</label><select id="encodeWorkers" aria-label="Number of concurrent encodes, including CUE album-image splitting"></select>
 <label for="checkWorkers">AudioChecker workers</label><select id="checkWorkers" aria-label="Number of simultaneous AudioChecker workers"></select>
 <span class="muted">Worker choices and checkboxes saved.</span></div><div class="muted" style="padding-top:8px">Encoding off preserves each track\u0027s codec; Split off keeps album-image tracks whole. AudioChecker uses original auCDtect when enabled and available. Missing engine never creates a fake report.</div></div></section>
 <section class="card" id="progress"><div class="progress-head"><span id="status" role="status" aria-live="polite">Connecting to desktop...</span><span id="percent">0%</span></div><div class="track" id="progressBar" role="progressbar" aria-label="Organization progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill"></div></div>
@@ -2726,7 +2726,7 @@ async function call(name,...args){
 function updateTaskControls(){
  const locked=!connected||working;
  for(const id of ['doEncode','doChecker','doSplit'])$(id).disabled=locked;
- $('encodeWorkers').disabled=locked||!$('doEncode').checked;
+ $('encodeWorkers').disabled=locked||(!$('doEncode').checked&&!$('doSplit').checked);
  $('checkWorkers').disabled=locked||!$('doChecker').checked;
  $('format').disabled=locked||(!$('doEncode').checked&&!$('doSplit').checked);
 }
