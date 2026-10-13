@@ -940,9 +940,39 @@ def _key(s):
     return re.sub(r"[^\w]+", "", s)
 
 
+_RELEASE_FEATURE = re.compile(
+    r"(?i)\s*[\(\[]\s*(?:ft\.?|feat\.?|featuring)\s+[^()\[\]]+[\)\]]")
+_RELEASE_FEATURE_BARE = re.compile(
+    r"(?i)\s+(?:ft\.?|feat\.?|featuring)\s+[\w .&,'’\-]+$")
+_RELEASE_FORMAT_NOTE = re.compile(r"(?i)\s*\((?:Promo|FLAC|ALAC|MP3|WAV)\)\s*$")
+_RELEASE_MEDIA_NOTE = re.compile(r"(?i)\s*\((?:Maxi\s+CD\s+Single|CD\s+Single)\)")
+_RELEASE_YEAR_NOTE = re.compile(r"\s*\((?:19|20)\d{2}\)\s*$")
+
+
+def clean_release_title(value, root_artist=""):
+    """Featured artists exist on TRACKS, not on release/folder TITLE."""
+    original = " ".join(str(value or "").split())
+    if root_artist:
+        original = re.sub(
+            r"(?i)^" + re.escape(str(root_artist).strip()) + r"\s+-\s+",
+            "", original, count=1)
+    original = _RELEASE_YEAR_NOTE.sub("", original).strip()
+    original = _RELEASE_FORMAT_NOTE.sub("", original).strip()
+    original = _RELEASE_MEDIA_NOTE.sub("", original).strip()
+    original = _RELEASE_FORMAT_NOTE.sub("", original).strip()
+    original = _RELEASE_FEATURE.sub("", original)
+    original = _RELEASE_FEATURE_BARE.sub("", original)
+    # Case-correct musical version labels only; keep named artist capitalization.
+    original = re.sub(
+        r"(?i)(?<=\()(extended\s+mix|radio\s+edit|remix|club\s+mix|extended\s+version)(?=\))",
+        lambda x: " ".join(w[0].upper() + w[1:].lower() for w in x.group(1).split()),
+        original)
+    return " ".join(original.split()).strip(" -")
+
+
 def release_title_normalize(title, release_type=None, inferred_single=False):
     """Single/EP designation always lives at the end, except plural Remixes."""
-    value = " ".join(str(title or "").strip().split())
+    value = clean_release_title(title)
     if not value:
         return value
     # A plural Remixes release never gets an EP/Single suffix, even if
@@ -1177,7 +1207,9 @@ def release_identity(folder, files, default_artist="", allow_network=True):
     title = title or album or current
     barcode = ident if _BARCODE.fullmatch(ident or "") else ""
     barcode = barcode or (tagged_barcode if _BARCODE.fullmatch(tagged_barcode) else "")
+    title = clean_release_title(title, default_artist)
     result = {"folder": current, "title": title, "date": date,
+              "root_artist": default_artist,
               "catalog": ident if ident and not _BARCODE.fullmatch(ident) else "",
               "barcode": barcode, "physical": is_cd, "country": "",
               "country_provenance": "", "release_type": "",
@@ -1293,7 +1325,7 @@ def release_identity(folder, files, default_artist="", allow_network=True):
             result["date"] = first_date
         else:
             result["notes"].append("Earliest worldwide release date missing.")
-        result["title"] = str(details.get("title") or title)
+        result["title"] = clean_release_title(details.get("title") or title, default_artist)
         result["catalog"] = catalog_number or result["catalog"]
         result["barcode"] = actual_barcode or barcode
         result["release_type"] = str(release_group.get("primary-type") or "")
@@ -1314,7 +1346,7 @@ def release_identity(folder, files, default_artist="", allow_network=True):
 
 def release_folder_target(info):
     title = release_title_normalize(
-        info["title"], info.get("release_type"),
+        clean_release_title(info["title"], info.get("root_artist", "")), info.get("release_type"),
         inferred_single=(not info.get("release_type") and not info.get("physical")
                          and info.get("track_count") == 1
                          and not re.search(r"(?i)\b(?:album|remixes|the remixes)\b",
