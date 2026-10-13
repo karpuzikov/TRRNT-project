@@ -1,9 +1,23 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.6 - Under construction ⚠️** (candidate in `mlo-v0.3.6-checker-results-fixes`; not merged/accepted)
+Current version: **0.3.7 - Under construction ⚠️** (candidate on `mlo-v0.3.6-checker-results-fixes`; not merged/accepted)
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Candidate source: [`tools/Music Library Organizer v0.3.6.pyw`](../Music%20Library%20Organizer%20v0.3.6.pyw) on the feature branch; v0.3.5 is the last existing source on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Candidate source: [`tools/Music Library Organizer v0.3.7.pyw`](../Music%20Library%20Organizer%20v0.3.7.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Current candidate - v0.3.7 integrated AudioChecker (2026-10-14)
+
+**Highest-priority user correction:** The user rejected the checker ZIP field and insisted `BUILD AUDIOCHECKER IN THE PROGRAM`. The v0.3.6 ZIP discovery and Browse ZIP implementation is **superseded and removed** in v0.3.7. The single-file `tools/Music Library Organizer v0.3.7.pyw` owns its checker logic. Users must not install, provide, browse to, or download an AudioChecker archive or proprietary analyzer executable. The AudioChecker worker selector persists. All WEB release outputs are checked automatically; CDs are excluded.
+
+**Algorithm/provenance:** The new `_fft_power`, `_spectral_summary`, `_integrated_checker_job`, `integrated_check_web_release` pipeline performs real PCM decoding with FFmpeg, original Hann-windowed radix-2 FFT (2048 samples, standard-library only, 8 deterministically distributed sample points), examines the 10-14 kHz vs 17.5-20.5 kHz band energy, and emits `audiochecker.log` containing per-track observations `BANDLIMIT_SIGNATURE`, `NO_STRONG_CUTOFF`, or `INCONCLUSIVE`, scan windows/sample rate, and SHA-256 report digest validation. It does **not** emit CDDA/MPEG confidence/probability percentages or claim reproduction of auCDtect's proprietary algorithm; frequency-bandlimiting is not proof of prior lossy compression and lack of cutoff is not proof of lossless origin. WAV/PCM used for signal analysis does not change source or output encoding. No nonstandard NumPy dependency or checker ZIP is required; existing FFmpeg/FFprobe decoding remains a dependency.
+
+**Failure/partial behavior:** Report is generated into fresh staged WEB output before commit. A true decoding/probe/integrity failure leaves the release PARTIAL with explicit warning, not a forged report. A flagged possible bandlimit or inconclusive track is logged and marks that release PARTIAL. Real decoded PCM samples cannot always reveal historical codec provenance. Existing native refalac64/Xiph FLAC encoder restrictions, source safety, staging, Undo and DiscID/CUE logic remain untouched.
+
+**Local isolated non-GUI QA on the analyzer kernel:** Python 3.13.5 compiled the extracted/new integrated signal-analyzer kernel; independent FFmpeg/FFprobe generated a broadband 44.1kHz FLAC and strongly filtered 44.1kHz FLAC. `_integrated_checker_job` classified broadband as `NO_STRONG_CUTOFF` and strong lowpass as `BANDLIMIT_SIGNATURE`; a two-track integrated report was generated (real deterministic FFT). These are synthetic unit checks, **not proof of real-source CDDA/MPEG accuracy**, Windows runtime behavior, or whole-product Python compilation. The embedded WebView2 JavaScript passes isolated V8 syntax parsing after removal of all ZIP buttons.
+
+**Still NOT RUN:** Entire organizer v0.3.7 Python compilation/test suite against checked-out source, actual Windows WebView2 UI, ALAC/FLAC tag and artwork fidelity, large-scale HDD/SSD performance, real-track spectral false positive/negative benchmark, all INNA naming/DiscID/CUE cases end-to-end and full 94 releases. No Actions workflows touched. Draft PR #1 still open, status **Under construction ⚠️**. User's requested source/test improvements must be tested before merge.
+
+**Next action:** On Windows clone/checkout `mlo-v0.3.6-checker-results-fixes`, run `py -3 -m py_compile "tools/Music Library Organizer v0.3.7.pyw"`, then `py -3 "tools/music-library-organizer/test_organizer.py"`; run WebView2 on Windows and confirm **no ZIP row**, automatic per-WEB `audiochecker.log` generation, Ctrl+C results selection, log folder button, DiscID and CUE on a disposable INNA subset; compare spectral reports against real reference material, then progress to new empty 94-release destination.
 
 ## Current candidate - v0.3.6 ZIP discovery and results selection repair (2026-10-14)
 
