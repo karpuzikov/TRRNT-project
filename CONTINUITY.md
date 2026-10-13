@@ -3,6 +3,15 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## CUE album-image splitting and ALAC/FLAC output format - 2026-10-13
+
+- User requires **whole-album audio image files to be split into individual tracks**. The conversion script must use the associated valid CUE for track timing and preserve pregaps, indexes, HTOA, track count and complete decoded audio; no invented split times if missing/invalid CUE.
+- New user-selectable **Output format**: **ALAC (.m4a)** or **FLAC (.flac)**. Persist setting and apply to image splits and existing track-based source conversion. Only lossless output formats supported now; lossy choices may be implemented later, not now.
+- Resulting tracks use the same mandatory zero-padded number + one space + complete title naming: `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].m4a` or corresponding `.flac`. Existing album-level original CUE/LOG metadata must be preserved; generated track-based CUE must correctly reference new files/indexes.
+- Verify complete source-to-output sample coverage, exact boundaries/decoding and relevant PCM parity before disposal. Preserve source image/CUE/LOG after failures; flag missing cue, unsupported codec, bad gaps/HTOA, duplicate basenames and incomplete output instead of guessing.
+- Previous ALAC-only conversion design is **superseded** for the planned conversion-script update. Existing DEA/MCC virtual-image track handling is **unchanged** and the new splitter does not run during analysis. ALAC folder conventions do not automatically authorize FLAC output inside `Artist ALAC`; FLAC output hierarchy is pending clarification.
+- Updated GitHub planning/rules/glossary/continuity only. No source implementation or Windows execution/verification has been completed for this feature.
+
 ## CD CUE/LOG and WEB AudioChecker naming rules - 2026-10-13
 
 - User's supporting-file rule: Physical CD releases **usually**, but not invariably, contain a real rip LOG and a CUE. Name those existing supporting files using the exact edition's **catalog number** as the common basename: `<Catalog Number>.log`, `<Catalog Number>.cue`; **barcode fallback** when no catalog number exists. If neither is available, flag for review, do not invent names. DiscID and Discogs edition validation remain authoritative.
