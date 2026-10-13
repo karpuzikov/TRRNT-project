@@ -326,6 +326,13 @@ class RebuildMissingImageCue(unittest.TestCase):
             self.assertIn('FILE "16 Track 16.m4a" WAVE', rebuilt)
             self.assertTrue(oldcue.exists())
 
+    def test_successful_cue_rebuild_is_reported_without_false_warning(self):
+        import inspect
+        source = inspect.getsource(mlo.Organizer._organize)
+        export = inspect.getsource(mlo.Organizer._export_release)
+        self.assertIn('result["message"] += " | " + " | ".join(self._export_notices)', source)
+        self.assertIn('playable split-track CUE rebuilt after', export)
+
     def test_sector_mismatch_or_index00_remains_unresolved(self):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as td:
