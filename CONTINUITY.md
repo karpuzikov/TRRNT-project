@@ -3,6 +3,12 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## File organization naming clarification - 2026-10-13
+
+- The user explicitly corrected the meaning of country codes inside ALAC physical-CD release folder names: `[US - ...]` indicates **country of manufacture/pressing of the physical CD**, NOT MusicBrainz release country or sales/distribution region. `EU` is not a country. When pressing country is unknown, omit rather than invent it. Digital/WEB releases do not receive a CD pressing-country prefix.
+- User provided `!torrent_Structure.txt` as an example tree, requesting analysis limited to ALAC folders. A dedicated file organization/naming stage is planned after ALAC conversion and tag normalization, before artwork preparation, preserving CUE/LOG references and offering safe preview/Undo.
+- Updated `RULES.md` (canonical naming rule) and `PROJECT.md` (planned stage). This was documentation only: no software source modifications, build, Windows UI tests, or release-status changes.
+
 ## Chat closeout checkpoint - 2026-10-13
 
 - **User's latest request:** move **all Discography Torrent Project-owned material** from `karpuzikov/userscripts` into independent `karpuzikov/TRRNT-project`; user then issued the project-wide handoff command **"this chat is done"**. Continue development in the new repository, not the former `userscripts/audio-tools/discography-torrent-project/` directory.
