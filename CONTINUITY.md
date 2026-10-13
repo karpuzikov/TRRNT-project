@@ -3,6 +3,12 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Music Library Organizer v0.3.3 - exclusive native ALAC/FLAC encoders - 2026-10-13
+
+- User mandates **ALAC with `refalac64.exe` only** (source nu774/qaac), **FLAC with Xiph's official `flac.exe` only** (source ftp.osuosl.org/pub/xiph/releases/flac). FFmpeg `-c:a alac`/`-c:a flac` was expressly rejected. Strict rule committed into root `RULES.md`, overriding earlier softer language.
+- New single-file source `tools/Music Library Organizer v0.3.3.pyw`: official encoder bootstrap into product-specific directories; native refalac64 or Xiph flac --best --verify, decoded-only PCM WAV with no rate/depth downgrade, full decoded PCM comparison, basic tags and cover-art preservation, clear failed release if encoder missing/precision unverified. Applies to normal tracks and CUE splits; same-codec binary copies allowed. Test source `tools/music-library-organizer/test_organizer.py` extended with backend invariants. No MCC/Actions changes.
+- Independent local Xiph `flac --best --verify` on a synthetic WAV PASS with matching decoded PCM SHA-256. **Actual full Python source tests/Windows native refalac/bootstrap/GUI real-file processing NOT RUN.** Current v0.3.3 - Under construction ⚠️. Do not label stable until Windows acceptance.
+
 ## Music Library Organizer v0.3.2 - remove WEB AudioChecker from physical CDs - 2026-10-13
 
 - User found `audiochecker.log` in organized physical CD `2005-07-01 - New HOT Edition [RU - CDLREC 5592010 CD]`. Cause: `_export_release` copied existing AudioChecker sidecars to CDs even though `_organize` already skipped the checker run for recognized CDs.
