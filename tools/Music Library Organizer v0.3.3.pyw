@@ -113,7 +113,8 @@ def load_ui():
     if DEPS.is_dir():
         sys.path.insert(0, str(DEPS))
     try:
-        return importlib.import_module("webview")
+        importlib.import_module("webview")
+        importlib.import_module("mutagen")
     except ImportError:
         if not IS_WIN:
             raise RuntimeError("pywebview is not installed; Windows WebView2 is the supported GUI.")
@@ -124,7 +125,7 @@ def load_ui():
         if str(DEPS) not in sys.path:
             sys.path.insert(0, str(DEPS))
         importlib.invalidate_caches()
-        return importlib.import_module("webview")
+    return importlib.import_module("webview")
 
 
 def metadata(path: Path):
@@ -518,78 +519,91 @@ def _lossless_pcm_format(ffprobe, input_path):
 
 
 def _copy_audio_metadata(src_path, dst_path, fmt, title, number):
-    """Preserve supported tags and album art after WAV -> native encoding."""
+    """Carry standard and custom metadata through an untagged WAV intermediate."""
     from mutagen import File as MutagenFile
+    from mutagen.flac import FLAC, Picture
+    from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
     try:
         source = MutagenFile(str(src_path), easy=True)
+        metadata = dict(source.tags or {}) if source else {}
+        raw = MutagenFile(str(src_path))
     except Exception as exc:
-        raise RuntimeError("Failed to read source metadata: " + str(exc))
-    # WAV source may have no tags; native encoded outputs are still valid.
-    source_tags = dict(source.tags or {}) if source is not None else {}
+        raise RuntimeError("Cannot inspect source metadata: " + str(exc))
     if title:
-        source_tags["title"] = [title]
+        metadata["title"] = [title]
     if number:
-        source_tags["tracknumber"] = [str(number)]
-    dest = MutagenFile(str(dst_path), easy=True)
-    if dest is None:
-        raise RuntimeError("Native encoder produced unrecognized output: " + str(dst_path))
-    if dest.tags is None:
-        dest.add_tags()
-    common = {"title", "artist", "album", "albumartist", "tracknumber",
-              "discnumber", "date", "genre", "composer", "comment",
-              "isrc", "barcode", "organization", "copyright", "totaltracks",
-              "totaldiscs", "albumartistsort", "artistsort", "musicbrainz_albumid",
-              "musicbrainz_trackid", "musicbrainz_releasegroupid", "label"}
-    unsupported = []
-    for key, values in source_tags.items():
+        metadata["tracknumber"] = [str(number)]
+    destination = MutagenFile(str(dst_path), easy=True)
+    if destination is None:
+        raise RuntimeError("Native encoder output not recognized.")
+    if destination.tags is None:
+        destination.add_tags()
+
+    # Any Vorbis comment can be represented as a FLAC tag. EasyMP4 supports
+    # standard iTunes fields; additional source keys use MP4 freeform atoms
+    # rather than being silently dropped.
+    additional = {}
+    for key, values in metadata.items():
+        key = str(key).lower()
         if not values:
             continue
-        key = str(key).lower()
-        if key not in common:
-            unsupported.append(key)
-            continue
+        items = [str(v) for v in values] if isinstance(values, (list, tuple)) else [str(values)]
         try:
-            dest[key] = list(values) if isinstance(values, (list, tuple)) else [str(values)]
-        except (ValueError, KeyError):
-            unsupported.append(key)
-    dest.save()
-    # Cover artwork must survive FLAC <-> ALAC, not just tags.
-    from mutagen.flac import FLAC, Picture
-    from mutagen.mp4 import MP4, MP4Cover
-    raw = MutagenFile(str(src_path))
-    if raw is not None:
-        art = []
-        if isinstance(raw, FLAC):
-            for pic in raw.pictures:
-                art.append((pic.data, pic.mime))
-        elif isinstance(raw, MP4) and raw.tags:
-            for cover in raw.tags.get("covr", []):
-                mime = "image/png" if cover.imageformat == MP4Cover.FORMAT_PNG else "image/jpeg"
-                art.append((bytes(cover), mime))
-        if art:
-            if fmt == "ALAC":
-                output = MP4(str(dst_path))
-                if output.tags is None:
-                    output.add_tags()
-                output.tags["covr"] = [
-                    MP4Cover(data, imageformat=(
-                        MP4Cover.FORMAT_PNG if mime == "image/png" else MP4Cover.FORMAT_JPEG))
-                    for data, mime in art]
-                output.save()
-            else:
-                output = FLAC(str(dst_path))
-                output.clear_pictures()
-                for data, mime in art:
-                    picture = Picture()
-                    picture.data, picture.mime = data, mime
-                    picture.type = 3
-                    output.add_picture(picture)
-                output.save()
-    if unsupported:
-        # Never silently claim a metadata-complete transcoding when source
-        # contains custom fields that we could not preserve.
-        raise RuntimeError("Some source metadata needs a verified mapping: " +
-                           ", ".join(sorted(set(unsupported))[:12]))
+            destination[key] = items
+        except (ValueError, KeyError, TypeError):
+            if fmt != "ALAC":
+                raise RuntimeError("Cannot preserve FLAC metadata field: " + key)
+            additional[key] = items
+    destination.save()
+
+    artworks = []
+    if isinstance(raw, FLAC):
+        artworks = [(pic.data, pic.mime, pic.type, pic.desc) for pic in raw.pictures]
+    elif isinstance(raw, MP4) and raw.tags:
+        for cover in raw.tags.get("covr", []):
+            mime = "image/png" if cover.imageformat == MP4Cover.FORMAT_PNG else "image/jpeg"
+            artworks.append((bytes(cover), mime, 3, "Front cover"))
+
+    if fmt == "ALAC":
+        target = MP4(str(dst_path))
+        if target.tags is None:
+            target.add_tags()
+        for key, values in additional.items():
+            tag = "----:com.apple.iTunes:" + key
+            target.tags[tag] = [MP4FreeForm(v.encode("utf-8")) for v in values]
+        if artworks:
+            target.tags["covr"] = [
+                MP4Cover(data, imageformat=(
+                    MP4Cover.FORMAT_PNG if mime == "image/png" else MP4Cover.FORMAT_JPEG))
+                for data, mime, _, _ in artworks]
+        target.save()
+    elif artworks:
+        target = FLAC(str(dst_path))
+        target.clear_pictures()
+        for data, mime, role, description in artworks:
+            picture = Picture()
+            picture.data = data
+            picture.mime = mime
+            picture.type = role
+            picture.desc = description
+            target.add_picture(picture)
+        target.save()
+    # Verify tags survived. Audio parity is checked separately.
+    check = MutagenFile(str(dst_path), easy=True)
+    if title and (not check or str(check.get("title", [""])[0]) != title):
+        raise RuntimeError("Output title tag verification failed.")
+    if number and (not check or
+                   str(check.get("tracknumber", [""])[0]).split("/")[0] != str(number)):
+        raise RuntimeError("Output track-number tag verification failed.")
+    if artworks:
+        output_raw = MutagenFile(str(dst_path))
+        stored = ([p.data for p in output_raw.pictures]
+                  if isinstance(output_raw, FLAC)
+                  else [bytes(p) for p in output_raw.tags.get("covr", [])]
+                  if isinstance(output_raw, MP4) and output_raw.tags else [])
+        if [data for data, _, _, _ in artworks] != stored:
+            raise RuntimeError("Album artwork changed during transcoding.")
+
 
 
 def convert(ff, input_path, output_path, fmt, start=None, end=None,
@@ -1831,7 +1845,7 @@ class Organizer:
                 if self.stop.is_set():
                     raise InterruptedError("Cancelled.")
                 convert(ff, src_img, output, fmt, start_sample, end_sample,
-                        rec["title"], rec["number"])
+                        rec["title"], rec["number"], ffprobe=ffprobe)
                 return rec["number"], name, k
             with concurrent.futures.ThreadPoolExecutor(
                     max_workers=max(1, int(self.encoding_workers))) as pool:
@@ -1871,7 +1885,7 @@ class Organizer:
                 if sha(src) != sha(dst):
                     raise RuntimeError("Source copy hash mismatch: " + str(src))
             else:
-                convert(ff, src, dst, fmt, title=title, number=number)
+                convert(ff, src, dst, fmt, title=title, number=number, ffprobe=ffprobe)
             # Additional files mapping to this name are discarded ONLY when
             # the decoded PCM equals the successfully verified first copy.
             for variant, _, _ in variants[1:]:
