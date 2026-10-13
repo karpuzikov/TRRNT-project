@@ -361,6 +361,12 @@ Required behavior:
 9. If an existing `audiochecker.log` is stale/invalid, preserve it temporarily outside the release folder while regenerating it; restore it if generation fails.
 10. Normal UI is automatic: one folder, progress, final counts. No per-release review.
 
+## Organizer v0.3.2 - fix unintended AudioChecker report in CDs
+
+v0.3.1 wrongly copied any existing `audiochecker.log` from a CD source to organized CD output. v0.3.2 now excludes that WEB-specific file from physical-CD exports without touching sources and never runs AudioChecker on physical CD rips. CD classification works with either CUE or an authentic rip LOG; a missing companion document should not force WEB classification. Removed redundant Results caption and added different-year physical-edition suffix when actual edition date is known. Source: [v0.3.2.pyw](tools/Music%20Library%20Organizer%20v0.3.2.pyw).
+
+**Still NOT fixed:** uncorroborated MusicBrainz release-group earliest dates (INNA's *Hot* group erroneously 2005, *I Am the Club Rocker* erroneously 2010) can still produce incorrect leading years. Full catalog rules remain incomplete. Unit test source committed, Windows execution NOT RUN; continue under construction, separate source and empty target.
+
 ## Organizer v0.3.1 - supplied AudioChecker, concurrency and DiscID/barcode
 
 Current source: [Music Library Organizer v0.3.1.pyw](tools/Music%20Library%20Organizer%20v0.3.1.pyw). The user supplied `Audio_Checker_UTF8_Multicore.zip`, containing Python multicore implementation, auCDtect and FLAC decoder. The organizer no longer prompts for a generic `achkgui.exe` path; it locates the ZIP beside the script or in Downloads and safely installs only required checker tools into its **own isolated dependency directory**. Analyses use the supplied algorithm, `-mS0`, and genuine `audiochecker.log` checksums. The ZIP remains user-provided and **is not committed as proprietary binary assets**. Existing metadata/CUE functionality stays available.
