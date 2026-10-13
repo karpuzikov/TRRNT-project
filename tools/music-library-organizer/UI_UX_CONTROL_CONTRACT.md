@@ -1,6 +1,12 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.7 candidate - Under construction ⚠️; no real Windows acceptance. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.8 candidate - Under construction ⚠️; no real Windows acceptance. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.8 - transparent results status and restored naming
+
+No new controls. Existing Results column must display **why** each PARTIAL item is incomplete, not a generic `requirements unfinished` message. `last-run.json` records a structured `unmet_requirements` list. For each unmet requirement, show an English actionable phrase and retain all original source and target paths with immediate adjacent folder icons. A WEB barcode satisfies its identifier requirement even without a separate catalog. Physical pressing-manufacture evidence is stricter and must be explicit if missing.
+
+Result rows stay mouse-selectable/copyable during 1.5s status polling; Copy results copies the full visible reason. Native WebView2 test of this modified content, hover, click, Copy, keyboard focus, narrow/default/large window, actual INNA records and reader accessibility **NOT RUN**. CUE reports specify exact sector/pregap reason when reconstruction is not proven. No spurious new checkbox or review dialog.
 
 ## v0.3.7 - integrated AudioChecker: no ZIP/file-picker UI
 
