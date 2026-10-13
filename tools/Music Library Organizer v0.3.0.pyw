@@ -706,16 +706,25 @@ def locate_checker(saved=""):
 
 
 def is_real_checker_log(log_path, tracks):
+    """Require authentic footer and coverage; decode Unicode/Cyrillic filenames."""
     try:
-        lines = log_path.read_text(encoding="cp1252", errors="replace").splitlines()
-        body = "\n".join(lines).lower()
-        if "audiochecker" not in body or not ("cdda" in body or "mpeg" in body):
-            return False
-        if not lines or not re.fullmatch(r"\d+", lines[-1].strip()):
-            return False
-        return all(track.name.lower() in body for track in tracks)
+        raw = log_path.read_bytes()
+        for encoding in ("utf-8-sig", "utf-8", "cp1251", "cp1252"):
+            try:
+                body = raw.decode(encoding).lower()
+            except UnicodeError:
+                continue
+            lines = [x.strip() for x in body.splitlines() if x.strip()]
+            if "audiochecker" not in body or not ("cdda" in body or "mpeg" in body):
+                continue
+            if not lines or not re.fullmatch(r"\d+", lines[-1]):
+                continue
+            if all(track.name.casefold() in body.casefold() for track in tracks):
+                return True
+        return False
     except OSError:
         return False
+
 
 
 def windows_for_pid(pid):
