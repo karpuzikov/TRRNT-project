@@ -4,9 +4,6 @@
 from __future__ import annotations
 
 import hashlib
-import array
-import math
-import statistics
 import logging
 import urllib.request
 import urllib.parse
@@ -1820,7 +1817,7 @@ def completion_reasons(info, export_warnings, checker):
     if not bool(info.get("physical")) and not (info.get("barcode") or info.get("catalog")):
         reasons.append("Neither barcode nor catalog verified for WEB edition")
     if not bool(info.get("physical")) and not checker:
-        reasons.append("Integrated AudioChecker report missing")
+        reasons.append("Original auCDtect report missing")
     elif not bool(info.get("physical")) and any(
             x.get("results", 0) < 1 for x in checker):
         reasons.append("Original auCDtect report has incomplete coverage")
