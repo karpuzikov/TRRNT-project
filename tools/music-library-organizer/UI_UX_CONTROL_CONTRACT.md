@@ -1,6 +1,12 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.2.0 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.0 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.0 UI amendments
+
+- **AudioChecker executable** input (path) + Browse file selector. Auto-detect `achkgui.exe`, persist under this app, avoid changing shared app settings. Disabled while batch runs. Invalid path error must not be hidden.
+- **Compliant/DONE vs PARTIAL** result separation. A release exported without genuine AudioChecker, with unresolved MusicBrainz catalog/metadata provenance, or without checked physical pressing cannot be reported fully completed. Show resulting rename source -> output, metadata source/provenance and complete per-release warning/reason in the run JSON and activity.
+- Preserve v0.2.0 no-REVIEW automatic approach and MCC colors/buttons. Follow real visual testing gate; **all Windows test slots remain NOT RUN**.
 
 ## Active controls
 
