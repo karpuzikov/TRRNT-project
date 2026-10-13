@@ -30,7 +30,7 @@ Canonical decision rules: [`RULES.md`](RULES.md). All duplicate/edition/source-s
    - priority is the greatest number of useful original recordings, not remixes/live recordings;
    - source preference: CD rip with LOG+CUE > WEB.
 3. Run AudioChecker for releases without an appropriate rip log, including WEB releases as required.
-4. Convert everything to ALAC using refalac through CUETools and/or xrecode2.
+4. Convert supported lossless audio to the user-selected **ALAC or FLAC** format; whole-album image files with valid CUEs must be split into individual tracks. Use refalac/CUETools for ALAC where appropriate and a verified lossless FLAC encoder for FLAC.
 5. CUETools creates release folders using:
    `%artist%\\[%year% ]- %album%[ '('disc %discnumberandname%')'][' ['%releasedateandlabel%']'][' ('%unique%')']`
 6. Fix and standardize tags with MusicBrainz Picard and/or Mp3tag.
@@ -117,7 +117,7 @@ Primary automation targets:
 - scan and classify everything under `recycle`;
 - assist duplicate/edition comparison;
 - detect releases that require AudioChecker;
-- route sources to the correct ALAC conversion path;
+- route lossless sources to the chosen ALAC/FLAC conversion and CUE-image-splitting path;
 - enforce tag/title consistency;
 - automate cover renaming, processing, and placement;
 - automate CUE DiscID review and MusicBrainz import;
@@ -361,25 +361,25 @@ Required behavior:
 9. If an existing `audiochecker.log` is stale/invalid, preserve it temporarily outside the release folder while regenerating it; restore it if generation fails.
 10. Normal UI is automatic: one folder, progress, final counts. No per-release review.
 
-## ALAC conversion automation
+## Lossless audio conversion and CUE image splitting (ALAC / FLAC)
 
-Current stage after AudioChecker.
+**Planned upgrade of the conversion script**, after AudioChecker. The earlier ALAC-only behavior is no longer sufficient: the script must expose an **Output format selector** with **ALAC** or **FLAC**, remember the selected choice, and correctly split a single-file whole-album CD image into per-track files using its CUE. Lossy output is reserved for future development and must not be shown as an implemented option.
 
 Required behavior:
 
-1. Reuse the filtered recycle/update artist folder from the appropriate per-program persistent settings.
-2. Convert supported lossless audio to ALAC in place.
-3. Use refalac for the ALAC encode.
-4. For normal track-based releases, preserve metadata/artwork and verify decoded PCM before removing the source file.
-5. For CD releases identified by `.cue` + real rip `.log`, use the CUE as the authoritative split input so image rips and file-per-track CUEs are handled correctly.
-6. Preserve CUE, LOG, artwork, and all other non-audio files.
-7. Skip files already encoded as ALAC.
-8. Refuse lossy/unknown codecs instead of wrapping them in ALAC.
-9. Remove/replace source audio only after verified output exists.
-10. Use up to four simultaneous conversion jobs.
-11. Reuse that program's own `Documents\\Karpuzikov Tools\\<Program Name>\\settings.json` and remember all repeatable paths.
-12. Bootstrap required dependencies automatically: check/install winget first when needed, install FFmpeg through winget, and obtain refalac automatically when missing.
-13. Normal UI is automatic: choose/reuse one root folder, convert, then show only summary counts/errors.
+1. Reuse the filtered recycle/update artist folder from this program's own persistent settings, with an explicit, safely validated output destination; never silently write FLAC tracks into an `Artist ALAC` collection root.
+2. Select output codec: **ALAC** (`.m4a`, refalac) or **FLAC** (`.flac`, appropriate lossless encoder). Persist the choice. Apply it to both existing split-track files and CUE-based image inputs. The existing ALAC collection-folder convention applies only to the ALAC target; FLAC destination hierarchy remains to be specified.
+3. Inspect the CUE and audio paths to recognize a **single image with multiple `TRACK ... AUDIO` references to one physical audio file**. Support lossless input images such as FLAC, APE, WavPack, WAV with proven decoders. Already split-file CUEs remain split-file releases; do not re-split them without reason.
+4. **Split whole-album images into individual tracks** according to the real CUE `TRACK`, `INDEX 01`, `INDEX 00`, pregap and HTOA information. Never guess from silence, file names or album duration. When no valid CUE/track boundary data is available, report it as unresolvable and leave the image untouched.
+5. Write each track using approved `NN Track Title.<extension>` grammar: zero-padded number (minimum two digits), exactly one space, fully standardized title, no artist prefix. Valid examples: `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].m4a` and `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].flac`.
+6. Preserve decoded PCM fidelity, native sample rate and bit depth when supported, and full album/track metadata, verified ISRC and performer credits, artwork where possible, original LOG and other supporting documents. Preserve archival CUE data when appropriate and ensure any generated/updated track-based CUE `FILE` paths and indexes refer to the new tracks correctly.
+7. **Verify a complete split before committing**: correct track count/order, sample-accurate boundaries and gaps/HTOA where applicable, decodability and decoded PCM/completeness. Do not delete or overwrite original image/CUE/LOG before verification. On failure, keep original sources and clean only temporary output. Provide an explicit failure report.
+8. For already split lossless tracks, encode to the selected format without altering the track boundaries; skip safely when output already matches the desired codec and no split is required.
+9. Reject lossy or unidentified source codecs rather than pretending that lossy audio becomes lossless after wrapping. Reserve MP3/AAC/Opus and other **lossy output options** for a later explicit implementation.
+10. Retain reasonable concurrency (the prior maximum is **four** simultaneous conversion jobs unless subsequently revised). Keep program-owned settings/dependencies isolated; automatically check/install needed dependencies using the established winget/refalac/decoder procedures.
+11. Present a compact dark UI showing output codec, source/destination, analysis/splitting/encoding/verification progress, error/review cases, and run summary. Renames, CUE rewriting, collisions and source disposal must follow the project's explicit preview/Apply and Undo standards.
+
+**Scope:** This is a requirement for a future conversion-script update. The existing MCC/DEA analyzer's virtual image tracks remain virtual for duplicate analysis; image conversion happens only at the separate selected-format conversion stage. This specification is **not** proof that image splitting or FLAC output is currently implemented or Windows-tested.
 
 ## Proposed controller
 
@@ -390,7 +390,7 @@ Per-release status columns:
 - Source
 - Duplicate review
 - Audio check
-- ALAC
+- Output format (ALAC/FLAC)
 - Tags
 - CUE
 - Lyrics
@@ -403,7 +403,7 @@ High-level stages:
 1. Analyze Recycle
 2. Compare Editions
 3. Audio Verification
-4. ALAC Conversion
+4. Lossless Conversion (ALAC/FLAC; split CUE images)
 5. Metadata
 6. CUE DiscID / MusicBrainz
 7. Lyrics
@@ -419,16 +419,16 @@ High-level stages:
 
 Duplicate / Edition Analyzer and AudioChecker automation are complete enough for now.
 
-Active implementation focus: ALAC conversion automation.
+Active implementation focus: planned lossless conversion-script upgrade with **ALAC/FLAC output selection** and **CUE-based image splitting**. Existing ALAC-only implementation notes below are superseded by this format selection and splitting requirement.
 
 Current target:
 
 1. reuse the filtered recycle/update folder automatically;
-2. convert lossless sources to ALAC in place with refalac;
-3. use CUE-aware conversion for CD releases;
+2. offer ALAC or FLAC as a persistent selectable end format (refalac for ALAC, verified lossless FLAC encoder for FLAC);
+3. detect album-image+CUE releases and split into individual numbered tracks with correct indexes, pregaps and HTOA;
 4. preserve tags/artwork and non-audio release files;
 5. verify output before deleting source audio;
-6. skip existing ALAC;
+6. skip source files already in the selected target format when no track splitting is needed;
 7. refuse lossy sources;
 8. process up to four jobs concurrently;
 9. remember all repeatable paths/settings and bootstrap dependencies.
