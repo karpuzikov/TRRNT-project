@@ -632,6 +632,183 @@ def release_folder_target(info):
         return info["folder"]
     return candidate
 
+
+# --- Authentic AudioChecker runner (never synthesize a fake report). ---
+def locate_checker(saved=""):
+    paths = []
+    if saved:
+        paths.append(Path(saved))
+    command = shutil.which("achkgui.exe")
+    if command:
+        paths.append(Path(command))
+    try:
+        paths.append(Path(sys.argv[0]).resolve().parent / "achkgui.exe")
+    except Exception:
+        pass
+    paths.extend([Path.home() / "Desktop" / "AudioChecker" / "achkgui.exe",
+                  Path.home() / "Downloads" / "AudioChecker" / "achkgui.exe",
+                  documents() / "AudioChecker" / "achkgui.exe"])
+    for name in ("ProgramFiles", "ProgramFiles(x86)"):
+        if os.environ.get(name):
+            paths.append(Path(os.environ[name]) / "AudioChecker" / "achkgui.exe")
+    for path in paths:
+        if path.is_file():
+            return path.resolve()
+    return None
+
+
+def is_real_checker_log(log_path, tracks):
+    try:
+        lines = log_path.read_text(encoding="cp1252", errors="replace").splitlines()
+        body = "\n".join(lines).lower()
+        if "audiochecker" not in body or not ("cdda" in body or "mpeg" in body):
+            return False
+        if not lines or not re.fullmatch(r"\d+", lines[-1].strip()):
+            return False
+        return all(track.name.lower() in body for track in tracks)
+    except OSError:
+        return False
+
+
+def windows_for_pid(pid):
+    if os.name != "nt":
+        raise RuntimeError("AudioChecker GUI automation works on Windows only.")
+    import ctypes
+    from ctypes import wintypes
+    user32 = ctypes.windll.user32
+    seen = []
+    cbtype = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    @cbtype
+    def visit(hwnd, _):
+        process = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(process))
+        if process.value == pid and user32.IsWindowVisible(hwnd):
+            seen.append(hwnd)
+        return True
+    user32.EnumWindows(visit, 0)
+    return seen
+
+
+def start_checker_window(hwnd):
+    import ctypes
+    from ctypes import wintypes
+    user32 = ctypes.windll.user32
+    children = []
+    callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    @callback_type
+    def visit(child, _):
+        children.append(child)
+        return True
+    user32.EnumChildWindows(hwnd, visit, 0)
+    for child in children:
+        label = ctypes.create_unicode_buffer(512)
+        cls = ctypes.create_unicode_buffer(256)
+        user32.GetWindowTextW(child, label, 512)
+        user32.GetClassNameW(child, cls, 256)
+        if "button" in cls.value.lower() and label.value.strip().upper() in ("START", "СТАРТ"):
+            user32.SendMessageW(child, 0x00F5, 0, 0)
+            return True
+    return False
+
+
+def genuine_audiochecker(checker, folder, tracks, stop_event):
+    """Run achkgui.exe on real files; require an actual complete report."""
+    if not tracks:
+        raise RuntimeError("No FLAC tracks available for AudioChecker.")
+    existing = folder / "audiochecker.log"
+    if existing.exists() and is_real_checker_log(existing, tracks):
+        return existing
+    if existing.exists():
+        raise RuntimeError("Existing unverified AudioChecker log; do not overwrite it.")
+    creationflags = hidden() if IS_WIN else 0
+    proc = subprocess.Popen([str(checker)] + [str(p) for p in tracks],
+                            cwd=str(checker.parent), creationflags=creationflags)
+    try:
+        deadline = time.monotonic() + 35
+        windows = []
+        while time.monotonic() < deadline:
+            if stop_event.is_set():
+                raise InterruptedError("AudioChecker cancelled.")
+            windows = windows_for_pid(proc.pid)
+            if windows:
+                break
+            if proc.poll() is not None:
+                raise RuntimeError("AudioChecker closed without scanning.")
+            time.sleep(.25)
+        if not windows or not start_checker_window(windows[0]):
+            raise RuntimeError("AudioChecker window/Start action unavailable.")
+        deadline = time.monotonic() + min(4 * 3600, max(1200, len(tracks) * 480))
+        while time.monotonic() < deadline:
+            if stop_event.is_set():
+                raise InterruptedError("AudioChecker cancelled.")
+            if existing.exists() and is_real_checker_log(existing, tracks):
+                before = existing.stat().st_size
+                time.sleep(.7)
+                if existing.stat().st_size == before:
+                    return existing
+            if proc.poll() is not None and not existing.exists():
+                raise RuntimeError("AudioChecker closed without generating a report.")
+            time.sleep(.5)
+        raise RuntimeError("AudioChecker timed out.")
+    finally:
+        if IS_WIN:
+            import ctypes
+            for hwnd in windows_for_pid(proc.pid):
+                ctypes.windll.user32.PostMessageW(hwnd, 0x0010, 0, 0)
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.terminate()
+            try:
+                proc.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+
+
+def check_web_release(dest, fmt, ff, checker, stop_event):
+    """Authentic report over output FLAC or losslessly converted ALAC tracks."""
+    byfolder = {}
+    for base, _, names in os.walk(dest):
+        folder = Path(base)
+        tracks = [folder / x for x in names if Path(x).suffix.lower() in (".flac", ".m4a")]
+        if tracks:
+            byfolder[folder] = sorted(tracks)
+    if not byfolder:
+        raise RuntimeError("No output audio for AudioChecker.")
+    if not checker:
+        raise RuntimeError("achkgui.exe not found: choose AudioChecker executable in the UI.")
+    if not IS_WIN:
+        raise RuntimeError("The authentic AudioChecker GUI requires Windows.")
+    provenance = []
+    for folder, tracks in byfolder.items():
+        if stop_event.is_set():
+            raise InterruptedError("Stopped before AudioChecker.")
+        if fmt == "FLAC":
+            checked = genuine_audiochecker(checker, folder, tracks, stop_event)
+            provenance.append({"report": str(checked.relative_to(dest)), "checked_format": "FLAC"})
+            continue
+        # Original GUI AudioChecker cannot read ALAC m4a. Decode to a temporary
+        # lossless FLAC working set with matched PCM, check that set transparently.
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix="mlo_checker_", dir=str(DATA)) as temp_dir:
+            work = Path(temp_dir)
+            equivalents = []
+            for p in tracks:
+                temp_flac = work / (p.stem + ".flac")
+                convert(ff, p, temp_flac, "FLAC")
+                equivalents.append(temp_flac)
+            real_log = genuine_audiochecker(checker, work, equivalents, stop_event)
+            result = folder / "audiochecker.log"
+            if result.exists():
+                if not is_real_checker_log(result, equivalents):
+                    raise RuntimeError("Existing report incompatible with selected ALAC output.")
+            else:
+                shutil.copy2(real_log, result)
+            provenance.append({"report": str(result.relative_to(dest)),
+                               "checked_format": "temporary FLAC from output ALAC, PCM-verified",
+                               "source_output": [str(p.relative_to(dest)) for p in tracks]})
+    return provenance
+
 class Organizer:
     """One action: input -> organized output. No manual release-review gate."""
     def __init__(self):
