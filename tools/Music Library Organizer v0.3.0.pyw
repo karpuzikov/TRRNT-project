@@ -1165,7 +1165,13 @@ class Organizer:
                 raise RuntimeError("Track has no number/title: " + str(fp))
             new = dest / fp.parent.relative_to(source) / track_filename(number, title, extension)
             if new.exists():
-                raise RuntimeError("Target filename collision: " + str(new))
+                # Multiple source codecs/exports may describe the very same track.
+                # Deduplicate ONLY if decoded lossless PCM is identical.
+                if pcm_hash(ff, fp) == pcm_hash(ff, new):
+                    mapping[fp.resolve()] = new
+                    continue
+                raise RuntimeError("Different recordings resolve to the same track filename: " +
+                                   str(fp) + " -> " + str(new))
             new.parent.mkdir(parents=True, exist_ok=True)
             old_info = probe(ffprobe, fp)
             # Extension is only a hint; probe codec to avoid passing through a mislabeled file.
@@ -1213,8 +1219,23 @@ class Organizer:
                         key = rec["file"].replace("\\", "/").casefold()
                         src_audio = (fp.parent / rec["file"].replace("\\", os.sep)).resolve()
                         if src_audio not in mapping:
-                            raise RuntimeError("Unmapped CUE audio FILE: " + rec["file"])
-                        refs[key] = os.path.relpath(mapping[src_audio], target.parent).replace("/", "\\")
+                            # Old CD CUE may still name the former WAV even when
+                            # it has been split/converted to numbered FLAC files.
+                            # Match a unique track by its actual track number.
+                            matches = []
+                            for old_audio, new_audio in mapping.items():
+                                num, _, _ = extract_number_title(old_audio)
+                                if num == rec["number"] and old_audio.parent == fp.parent:
+                                    matches.append(new_audio)
+                            if len(set(matches)) != 1:
+                                raise RuntimeError("Cannot uniquely remap legacy CUE FILE: " + rec["file"])
+                            if len({r["file"].casefold() for r in cue["records"] if r["file"]}) < len(cue["records"]):
+                                raise RuntimeError("Legacy CUE uses shared missing image; no safe split boundary.")
+                            if rec["index"].get(1, -1) != 0:
+                                raise RuntimeError("Legacy CUE has nonzero indexes; cannot rewrite to split audio safely.")
+                            refs[key] = os.path.relpath(matches[0], target.parent).replace("/", "\\")
+                        else:
+                            refs[key] = os.path.relpath(mapping[src_audio], target.parent).replace("/", "\\")
                     rewritten = normal_cue_text(cue, refs)
                 target.write_text(rewritten, encoding="utf-8", newline="\r\n" if IS_WIN else "\n")
             else:
