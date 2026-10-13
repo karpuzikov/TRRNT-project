@@ -351,6 +351,8 @@ _FLAC_ZIP_URL = "https://ftp.osuosl.org/pub/xiph/releases/flac/flac-1.5.0-win.zi
 _FLAC_ZIP_SHA256 = "53f1500f0d6e7c61379d7fee50d4a9f7f504c650009506d9ba015530d76c0dde"
 _QAAC_FALLBACK_TAG = "v3.07"
 _QAAC_FALLBACK_ARCHIVE = "qaac_3.07.zip"
+_QAAC_FALLBACK_SHA256 = "1fb3ab4aa81725e2607ac1b31afa0e13d2617ee6eb5900f5070c092f5271cbb3"
+_QAAC_ACTIVE_SHA256 = [_QAAC_FALLBACK_SHA256]
 
 
 def _safe_zip_extract(content, output):
@@ -398,6 +400,7 @@ def _fetch_official_archive(url, expected_sha=None):
 
 def _qaac_official_url():
     tag, archive = _QAAC_FALLBACK_TAG, _QAAC_FALLBACK_ARCHIVE
+    _QAAC_ACTIVE_SHA256[0] = _QAAC_FALLBACK_SHA256
     # The official source publishes current release assets. The pinned version
     # remains a valid fallback if the GitHub API is briefly unreachable.
     try:
@@ -413,8 +416,11 @@ def _qaac_official_url():
         if re.fullmatch(r"v[\d.]+", t) and len(matches) == 1:
             version = matches[0]["name"]
             verified = f"https://github.com/nu774/qaac/releases/download/{t}/{version}"
-            if matches[0].get("browser_download_url") == verified:
+            digest = str(matches[0].get("digest") or "")
+            if (matches[0].get("browser_download_url") == verified and
+                    re.fullmatch(r"sha256:[0-9a-fA-F]{64}", digest)):
                 tag, archive = t, version
+                _QAAC_ACTIVE_SHA256[0] = digest[7:].lower()
     except (OSError, ValueError, KeyError, urllib.error.URLError):
         pass
     return f"https://github.com/nu774/qaac/releases/download/{tag}/{archive}"
@@ -448,19 +454,15 @@ def ensure_encoder(fmt):
                 return path
             except RuntimeError:
                 pass
-        # Accept an existing exact-name binary; never silently use qaac.exe,
-        # ffmpeg.exe, or an alternative codec backend.
-        existing = shutil.which(name)
-        if existing and Path(existing).is_file():
-            _ENCODER_CACHE[fmt] = existing
-            return existing
+        # Install only official checksum-validated encoders in this tool's
+        # isolated directory; an unrelated PATH executable is not trusted.
         if not IS_WIN:
             raise RuntimeError(name + " is required; auto-bootstrap supports Windows.")
         ensure_data()
         url = _qaac_official_url() if fmt == "ALAC" else _FLAC_ZIP_URL
         try:
             binary = _fetch_official_archive(
-                url, _FLAC_ZIP_SHA256 if fmt == "FLAC" else None)
+                url, _QAAC_ACTIVE_SHA256[0] if fmt == "ALAC" else _FLAC_ZIP_SHA256)
             # Atomically publish a complete extracted encoder set.
             location.parent.mkdir(parents=True, exist_ok=True)
             with tempfile.TemporaryDirectory(prefix="encoder_", dir=str(location.parent)) as d:
