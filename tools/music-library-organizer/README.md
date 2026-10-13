@@ -1,10 +1,19 @@
 # Music Library Organizer
 
-**Candidate: v0.3.7 - Under construction ⚠️** (feature branch, unmerged; v0.3.5 remains on main)
+**Candidate: v0.3.8 - Under construction ⚠️** (feature branch, unmerged; v0.3.5 remains on main)
 
-**[Music Library Organizer v0.3.7.pyw](../Music%20Library%20Organizer%20v0.3.7.pyw)**
+**[Music Library Organizer v0.3.8.pyw](../Music%20Library%20Organizer%20v0.3.8.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.8 - specific INNA naming/status and CUE repair
+
+- **Visible PARTIAL reasons:** An otherwise verified WEB edition may use barcode when its separate catalog is missing; it no longer gets a silent PARTIAL solely due to catalog absence. The result now includes `unmet_requirements` and an explicit message. Physical releases without verified country-of-manufacture evidence remain PARTIAL with that exact reason.
+- **Picard capitalization:** Read [English_Title_Capitalization.txt](https://github.com/karpuzikov/userscripts/blob/main/picard-tools/scripts/English_Title_Capitalization.txt). Lowercase internal English function words in track title and version descriptors while preserving proper artist names, acronyms and the script's phrasal exceptions. Examples: `10 Minutes (Club Mix by Play & Win)`, `We're Going in the Club`.
+- **Featured-credit parsing:** `More Than Friends feat. Daddy Yanke` -> `More Than Friends (ft. Daddy Yanke)`, `INNDiA feat. Play&Win` -> `INNDiA (ft. Play & Win)` in **both TITLE tags and filename**. Preserve richer filename features when TITLE tags are short.
+- **Legacy CD folders:** Clean provisional title even when the date/catalog/country is unresolved; do not preserve ugly original source-folder syntax or invent an identifier. Sanitize Windows-illegal punctuation in metadata titles rather than abandoning the whole renaming operation. Unverified naming remains PARTIAL.
+- **CUE:** A correct 16-track MusicBrainz DiscID release does not by itself verify an old full-image CUE's pregaps. When the image is missing but split tracks are present, reconstruct playable per-file CUE only if all track numbers, INDEX01 chronology and actual PCM CD-sector lengths match exactly, with no INDEX00/HTOA/pregap. Otherwise preserve documentary `Unresolved CUE` with the *specific reason*. Never touch source files.
+- **Tests:** New explicit fixtures checked into `test_organizer.py`, but full Python compilation/regressions, actual Windows WebView2 UI, native codec and real INNA 16-track audio/CUE validation remain **NOT RUN**. Test using a fresh blank destination or safe Undo; old sorted folders are skipped by design.
 
 ## v0.3.7 - integrated AudioChecker in the single-file app
 
