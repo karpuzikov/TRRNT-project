@@ -2009,9 +2009,36 @@ class Organizer:
                         raise RuntimeError("Two input editions map to identical output folder: " + out_name)
                     seen.add(out_name.casefold())
                     if os.path.lexists(target):
-                        result["status"] = "skipped"
-                        result["message"] = "Output already exists - not overwritten."
-                        self.counts["skipped"] += 1
+                        # Incompatible pre-v0.3.9 homemade FFT reports must
+                        # never be treated as successfully verified AudioChecker
+                        # results merely because the output folder exists.
+                        obsolete = []
+                        if target.is_dir():
+                            for prior in target.rglob("audiochecker.log"):
+                                if prior.is_symlink() or not prior.is_file():
+                                    continue
+                                try:
+                                    with prior.open("rb") as stream:
+                                        prefix = stream.read(60)
+                                except OSError:
+                                    continue
+                                if prefix.startswith(b"MLO Integrated AudioChecker v0.3."):
+                                    obsolete.append(prior)
+                        if obsolete:
+                            result["status"] = "partial"
+                            result["message"] = (
+                                "Existing output contains " + str(len(obsolete)) +
+                                " INVALID custom-FFT AudioChecker report(s); "
+                                "no originals or outputs changed. Recreate in "
+                                "a new empty destination with genuine auCDtect.")
+                            result["warnings"].append(result["message"])
+                            result["unmet_requirements"] = [
+                                "Original auCDtect analysis absent; previous FFT reports are invalid"]
+                            self.counts["partial"] += 1
+                        else:
+                            result["status"] = "skipped"
+                            result["message"] = "Output already exists - not overwritten."
+                            self.counts["skipped"] += 1
                     else:
                         if info["physical"]:
                             if any(fp.name.casefold() == "audiochecker.log" for fp in files):
