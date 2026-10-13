@@ -913,7 +913,7 @@ def release_folder_target(info):
 # FLAC decoder and auCDtect binary. No manual achkgui.exe location needed.
 _CHECKER_FILES = {
     "Codecs/FLAC/flac.exe": "Codecs/FLAC/flac.exe",
-    "Codecs/Analyzer/aucdtect.exe": "Codecs/Analyzer/aucdetect.exe",
+    "Codecs/Analyzer/aucdtect.exe": "Codecs/Analyzer/aucdtect.exe",
     "CDRip3.dll": "CDRip3.dll",
     "Codecs/FLAC/flac.exe.manifest": "Codecs/FLAC/flac.exe.manifest",
     "Codecs/Analyzer/aucdtect.exe.manifest": "Codecs/Analyzer/aucdtect.exe.manifest",
@@ -941,14 +941,14 @@ def setup_checker():
     Extract only known files to this application's isolated data directory.
     """
     location = DEPS / "AudioChecker"
-    exe = location / "Codecs" / "Analyzer" / "aucdetect.exe"
+    exe = location / "Codecs" / "Analyzer" / "aucdtect.exe"
     decoder = location / "Codecs" / "FLAC" / "flac.exe"
     if exe.is_file() and decoder.is_file():
         return {"analyzer": exe, "flac": decoder}
     # Also accept user's pre-extracted checker in the script/Downloads directory.
     for base in [Path(sys.argv[0]).resolve().parent, Path.home() / "Downloads", DATA]:
         for path in (base / "Audio_Checker_UTF8_Multicore", base):
-            analyzer = path / "Codecs" / "Analyzer" / "aucdetect.exe"
+            analyzer = path / "Codecs" / "Analyzer" / "aucdtect.exe"
             flac = path / "Codecs" / "FLAC" / "flac.exe"
             if analyzer.is_file() and flac.is_file():
                 return {"analyzer": analyzer, "flac": flac}
@@ -962,7 +962,7 @@ def setup_checker():
                         if normalized.endswith("/" + suffix):
                             contents[dest] = name
                 if not all(key in contents for key in (
-                        "Codecs/FLAC/flac.exe", "Codecs/Analyzer/aucdetect.exe")):
+                        "Codecs/FLAC/flac.exe", "Codecs/Analyzer/aucdtect.exe")):
                     continue
                 for destination, internal in contents.items():
                     data = zf.read(internal)
