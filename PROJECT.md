@@ -361,6 +361,14 @@ Required behavior:
 9. If an existing `audiochecker.log` is stale/invalid, preserve it temporarily outside the release folder while regenerating it; restore it if generation fails.
 10. Normal UI is automatic: one folder, progress, final counts. No per-release review.
 
+## Independent organizer prototype - Music Library Organizer v0.1.2
+
+Current prototype at [`tools/Music Library Organizer v0.1.2.pyw`](tools/Music%20Library%20Organizer%20v0.1.2.pyw) with its own [continuity](tools/music-library-organizer/CONTINUITY.md), [UI control contract](tools/music-library-organizer/UI_UX_CONTROL_CONTRACT.md), [test source](tools/music-library-organizer/test_organizer.py) and [user guide](tools/music-library-organizer/README.md). GUI matches MCC 0.5.18's dark pywebview/WebView2 component system by deliberate design; **no MCC source or persistent state changed**. The possibility of a future MCC merge is not an implemented integration or instruction to modify MCC now.
+
+Prototype function: Scan -> complete per-release proposed-path Details -> select safe releases -> explicit confirmation -> **copy** to a different non-nested output folder with lossless ALAC/FLAC target format, limited safe CUE image splitting, verified source/target fidelity and durable SHA256 Undo. Flatten obsolete category folders, preserve CD N internal structure, do not delete originals. Unresolved evidence/release naming and unsupported INDEX 00/HTOA cases become review rows rather than guesses.
+
+**Status: 0.1.2 - Under construction ⚠️.** Current gaps: no automated source-of-truth MusicBrainz/Discogs/Beatport matching, earliest worldwide date/pressing evidence resolution, formal verified barcode fallback, refalac integration, full embedded artwork parity, full pregap/HTOA support, on-Windows visual comparison or successful end-to-end run. The test script is committed but not executed here; no stable release/EXE exists. Follow the organizer-specific continuity before further edits and test only on disposable folders until Windows acceptance.
+
 ## Lossless audio conversion and CUE image splitting (ALAC / FLAC)
 
 **Planned upgrade of the conversion script**, after AudioChecker. The earlier ALAC-only behavior is no longer sufficient: the script must expose an **Output format selector** with **ALAC** or **FLAC**, remember the selected choice, and correctly split a single-file whole-album CD image into per-track files using its CUE. Lossy output is reserved for future development and must not be shown as an implemented option.
