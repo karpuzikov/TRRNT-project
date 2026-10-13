@@ -31,6 +31,23 @@ Example: `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is an **individual Remix 
 - The explicit numbering scope for multi-disc albums (e.g. whether numbering resets in each `CD N` folder) and the handling of unusual zero-number/three-digit cases should be specified separately rather than guessed. Keep structural disc folders, metadata, original files, and CUE `FILE` references intact until these edge cases are resolved and the changes have been previewed and approved.
 - Preserve the audio extension matching the actual encoded file; do not rename non-ALAC audio to `.m4a` without conversion. Normalization changes filenames and related CUE references, not audio content.
 
+## Supporting files - physical CD CUE/LOG and WEB AudioChecker naming (2026-10-13)
+
+**Physical CD releases:**
+- Physical CD releases **usually**, but not always, contain a rip log (`.log`) and a CUE sheet (`.cue`). Do **not** make their existence a mandatory precondition for recognizing a CD release, and do not fabricate missing rip documentation.
+- Name an existing CD rip log and CUE sheet with the **catalog number of the exact physical edition**, using the same basename: `<Catalog Number>.log` and `<Catalog Number>.cue`. If that edition's catalog number is unavailable, **fall back to its barcode**: `<Barcode>.log` and `<Barcode>.cue`. Use catalog number over barcode even when both are known.
+- Example: catalog number `TOCP-66683` -> `TOCP-66683.log` and `TOCP-66683.cue`. If catalog number is absent and barcode `1234567890123` is verified, use `1234567890123.log` and `1234567890123.cue`. Do not replace genuine catalog numbers with guessed identifiers or store IDs.
+- Match the identifier to the **specific physical pressing/edition**, not an unrelated release. For uncertain edition identification, use the existing MusicBrainz DiscID/TOC matching flow with explicit user selection and Discogs fallback. If neither catalog number nor barcode is known, **flag for review** rather than inventing a CUE/LOG basename.
+- For multi-disc releases, preserve each disc's actual CUE/LOG contents and their per-disc placement. Never overwrite two different disc logs or CUE sheets just because they share a catalog number: detect name collisions and require review instead of inventing an unapproved suffix.
+- If changing an existing CUE filename, preserve its bytes/content unless explicit CUE `FILE` reference repairs are needed because audio files were renamed. Never replace, regenerate, or misrepresent an authentic CD rip log just to satisfy a filename rule. A missing CUE or log is an absence to report, **not** license to fabricate one.
+
+**WEB/digital releases:**
+- Every verified WEB/digital release **should have an actual AudioChecker analysis report named exactly `audiochecker.log`** (lowercase). The name is independent of the release's catalog number and barcode.
+- If the report is absent, **flag the missing analysis** and run the genuine AudioChecker workflow before considering the report complete; do not create a fake or empty `audiochecker.log` simply to satisfy naming.
+- `audiochecker.log` is an **audio quality-check report**, not an EAC/XLD/CD ripping log and not evidence that the WEB release is a physical CD. Do not rename physical rip logs to `audiochecker.log`; do not rename WEB reports to catalog-number-based CD rip-log names.
+
+**File operation safety:** Show proposed renames before Apply; preserve real source files, timestamps where feasible, log text, disc data and Undo records. Do not overwrite files, invalidate CUE references, or modify the audio data. These supporting-file rules supplement the `NN Track Title.m4a` audio filename standard.
+
 ## Track filename and artist-credit formatting (2026-10-13)
 
 **Authoritative shared semantics and tests:** [MUSIC_GLOSSARY.md](MUSIC_GLOSSARY.md), using the existing MCC recording-root and featured-artist taxonomy. Track-file naming is distinct from the release-directory grammar below.
