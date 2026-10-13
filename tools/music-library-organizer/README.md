@@ -1,10 +1,17 @@
 # Music Library Organizer
 
-**Current: v0.3.5 - Under construction ⚠️**
+**Candidate: v0.3.6 - Under construction ⚠️** (feature branch, unmerged; v0.3.5 remains on main)
 
-**[Download Music Library Organizer v0.3.5.pyw](../Music%20Library%20Organizer%20v0.3.5.pyw)**
+**[Music Library Organizer v0.3.6.pyw](../Music%20Library%20Organizer%20v0.3.6.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.6 - AudioChecker archive and copyable Results fixes
+
+- Correctly install and accept the supplied AudioChecker ZIP whether `Codecs/Analyzer/aucdtect.exe` is stored at archive root or beneath an enclosing directory. Reject traversal, absolute ZIP members and conflicting duplicate binary entries; no third-party executables are committed.
+- Prevent the 1.5-second Results status poll from destroying text selection before Ctrl+C. Keep explicit Copy results, and show an Open folder control before each reported output path.
+- Add Open file location icon directly before the remembered ZIP path. Preserve adjacent Open log / Open log folder actions.
+- **Only WebView2 JavaScript syntax was checked.** Full Python compile/tests, native checker binaries, Windows UI/clipboard and INNA 94-release acceptance **NOT RUN**. Status remains Under construction ⚠️. Branch `mlo-v0.3.6-checker-results-fixes` is a candidate, not a stable download.
 
 ## v0.3.5 - INNA naming, DiscID, AudioChecker, results
 
