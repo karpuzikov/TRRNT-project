@@ -22,6 +22,18 @@ Preserve reference DEA `tools/Duplicate Edition Analyzer v0.22.12.pyw` on `main`
 - Examples from the user's naming convention: `2018-02-16 - El Pintor Bonus Tracks [OLE13186]` is **digital (WEB)** with pressing country **N/A**; `[US - none]` asserts US manufacture/pressing only if verified; `[JP - TOCP-66683]` asserts Japanese manufacture/pressing only if verified. Existing physical-release folder names are examples, not verification of their pressing locations.
 - This is a **filesystem naming rule**, independent of duplicate identity, country of release, and CD-rip provenance classification. Renaming must be previewed and must not silently alter or corrupt CUE references.
 
+### Physical CD release folder grammar - initial date and reissues
+
+- Standard physical CD: `YYYY-MM-DD - Release Title [Pressing Country - Catalog Number]`.
+- Reissued physical CD: `YYYY-MM-DD - Release Title [Pressing Country - Catalog Number - Reissue Year]` **if and only if the reissue's release year differs from the initial release year**. If the years are the same, omit the extra year entirely.
+- The leading `YYYY-MM-DD` is the **initial release date**, not the manufacturing date, date of a particular pressing, or date of the later reissue. Keep it unchanged when describing a reissue. Existing cases with only a known initial year remain separate pending clarification; never invent a month/day.
+- The first exact ` - ` separates the initial release date from the release title. Preserve the release title, including meaningful edition wording such as `(The Tenth Anniversary Edition)`.
+- `[` and `]` delimit the release data. Within the brackets, ` - ` separates the **physical CD's manufacturing/pressing country** from the catalog number; when a different-year reissue is involved, a second ` - ` separates the catalog number from the **four-digit reissue year**. Preserve the actual catalog-number text, e.g. `TOCP-66683` or `OLE 993-2`.
+- The manufacturing/pressing country is included **only for physical CD releases**. It must not be confused with the MusicBrainz release country or distribution region. WEB/digital folder grammar remains `YYYY-MM-DD - Release Title [Identifier]` (for example `[OLE13186]`); manufacturing country is N/A.
+- Reference physical release: `2007-07-09 - Our Love to Admire [JP - TOCP-66683]`: initial date `2007-07-09`, title `Our Love to Admire`, pressing country `JP`, catalog `TOCP-66683`.
+- Reference physical reissue: `2002-08-19 - Turn on the Bright Lights (The Tenth Anniversary Edition) [US - OLE 993-2 - 2012]`: initial date `2002-08-19`, title `Turn on the Bright Lights (The Tenth Anniversary Edition)`, pressing country `US`, catalog `OLE 993-2`, reissue year `2012` (different from initial year `2002`).
+- These are **filesystem naming** requirements. A preexisting folder label is not independent proof of pressing location; keep the existing provenance checks and safe preview/Undo requirements.
+
 ## 1. Core objective
 
 Build the most complete practical discography while minimizing unnecessary retained tracks.
