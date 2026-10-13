@@ -3,6 +3,15 @@
 Last updated: 2026-10-07
 Status: Under construction ⚠️
 
+## Repository migration checkpoint - 2026-10-13
+
+- **Canonical GitHub repository:** `karpuzikov/TRRNT-project`; regular production/reference source remains `tools/Duplicate Edition Analyzer v0.22.12.pyw` on `main`, at status `0.22.12 - Under construction ⚠️` (not Windows-verified in this migration).
+- On `main`, the full 20-file `audio-tools/discography-torrent-project/` source subtree from `karpuzikov/userscripts` was moved to repository root. `README.md`, `PROJECT.md` and this file had their canonical path text updated. The 17 other original project files, original `RULES.md`, and two archived workflows are byte-identical. Shared canonical SOFTWARE/UI UX rules and original MIT LICENSE are also mirrored. See `MIGRATION.md` for source Git blob IDs.
+- Three independent development branches with historically distinct sources and rules were reconstructed: `dea-lightweight-modern` (v0.4.1-0.4.9), `dea-lightweight-ascii-ui-test` (v0.4.0), `dea-native-light-test` (rejected native prototype). These contain byte-identical branch-specific files, but their Git ancestry was not imported. Original historical branch heads/releases remain at the old repo.
+- `userscripts/main` now contains only a redirect; its dedicated project directory and the two old DEA action workflow definitions have been removed after exact-hash verification. The new repo archives the workflows outside `.github/workflows/` so no new builds are triggered. **Do not reenable workflows without user request.**
+- Known limitations of GitHub-to-GitHub file migration: Git commit ancestry, Issues/PR discussions, tags and compiled EXE Release assets were not moved; historical links to `userscripts/releases` remain valid. Independently maintained RuTracker Digital Release Linker, Picard, qBittorrent backup, and MCC are not relocated.
+- Continue future changes only in `TRRNT-project`. Any proposed version/status changes require the normal GitHub rules and real Windows validation; no automatic stability promotion was made.
+
 ## Purpose
 
 Duplicate Edition Analyzer (DEA) compares an existing discography with incoming/new releases, identifies exact acoustic duplicates and distinct versions, optimizes which releases should be retained, lets the user inspect and override the proposed plan in Release Map, and only changes files after explicit Apply. Undo must remain available after applying changes.
