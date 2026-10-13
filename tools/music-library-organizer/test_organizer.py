@@ -12,7 +12,7 @@ import threading
 import unittest
 import wave
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.3.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.4.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -219,6 +219,105 @@ class AutomaticBatch(unittest.TestCase):
             self.assertEqual(number, 1)
             self.assertEqual(title, "OK (Extended Version)")
 
+
+
+
+class DesktopStartupRecovery(unittest.TestCase):
+    def test_bridge_exposes_only_safe_explicit_methods(self):
+        class Engine:
+            def __init__(self):
+                self.window = object()  # Must not enter recursive pywebview scan.
+                self.lock = threading.RLock()
+                self.stop = threading.Event()
+            def state(self):
+                return {"alive": True}
+            def browse(self, which):
+                return which
+            def open_folder(self, where):
+                return {"opened": where}
+            def open_log(self):
+                return {"log": True}
+            def organize(self, *args):
+                return {"count": len(args)}
+            def cancel(self):
+                return {"cancelled": True}
+            def undo(self):
+                return {"undone": True}
+            def info(self, text):
+                self.last_log = text
+        engine = Engine()
+        bridge = mlo.DesktopBridge(engine)
+        exported = [key for key in dir(bridge) if not key.startswith("_")]
+        self.assertEqual(set(exported), {
+            "state", "browse", "open_folder", "open_log", "organize",
+            "cancel", "undo", "diagnostics"})
+        self.assertEqual(bridge.state(), {"alive": True})
+        self.assertEqual(bridge.browse("source"), "source")
+        self.assertEqual(bridge.open_folder("C:\\Music"), {"opened":"C:\\Music"})
+        self.assertEqual(bridge.organize("in","out","ALAC",2,4), {"count":5})
+        self.assertEqual(bridge.diagnostics("bridge connected"), {"ok":True})
+        self.assertIn("bridge connected", engine.last_log)
+        self.assertNotIn("window", exported)
+        self.assertNotIn("lock", exported)
+
+    def test_each_startup_uses_distinct_app_private_webview2_profile(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            with patch.object(mlo, "DATA", Path(td)):
+                first = mlo._session_profile()
+                second = mlo._session_profile()
+                self.assertNotEqual(first, second)
+                self.assertTrue(second.is_dir())
+                self.assertEqual(first.parent, second.parent)
+                self.assertTrue(str(first).startswith(str(Path(td))))
+
+    def test_main_exposes_bridge_not_organizer_and_isolates_webview_profile(self):
+        from unittest.mock import patch
+        class Event:
+            def __iadd__(self, value):
+                return self
+        class FakeWindow:
+            def __init__(self):
+                self.events = type("Events", (), {
+                    "shown":Event(),"loaded":Event(),"closed":Event()})()
+        class Backend:
+            def __init__(self):
+                self.window = FakeWindow()
+                self.args = None
+            def create_window(self, title, **kwargs):
+                self.args = kwargs
+                return self.window
+            def start(self, **kwargs):
+                self.start_opts = kwargs
+        class Log:
+            def info(self, *args):
+                pass
+            def exception(self, *args):
+                pass
+        with tempfile.TemporaryDirectory() as td:
+            backend = Backend()
+            instance = mlo.Organizer()
+            root = Path(td)/"one-session"
+            with patch.object(mlo, "ensure_data"), \
+                 patch.object(mlo, "_startup_logger", return_value=Log()), \
+                 patch.object(mlo, "_single_instance", return_value=None), \
+                 patch.object(mlo, "_session_profile", return_value=root), \
+                 patch.object(mlo, "load_ui", return_value=backend), \
+                 patch.object(mlo, "Organizer", return_value=instance), \
+                 patch.object(mlo.shutil, "rmtree"):
+                mlo.main()
+            self.assertIsInstance(backend.args["js_api"], mlo.DesktopBridge)
+            self.assertIsNot(backend.args["js_api"], instance)
+            self.assertEqual(backend.start_opts["gui"], "edgechromium")
+            self.assertEqual(backend.start_opts["storage_path"], str(root))
+            self.assertFalse(backend.start_opts["private_mode"])
+
+    def test_html_uses_ready_event_and_single_flight_poll(self):
+        self.assertIn('window.addEventListener("pywebviewready"', mlo.HTML)
+        self.assertIn("if(pollBusy", mlo.HTML)
+        self.assertIn("Promise.race", mlo.HTML)
+        self.assertIn('id="reconnect"', mlo.HTML)
+        self.assertNotIn('throw Error("Desktop connection failed.")', mlo.HTML)
 
 
 class NativeEncoderCompliance(unittest.TestCase):
