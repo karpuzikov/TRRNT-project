@@ -1533,39 +1533,54 @@ class Organizer:
                 convert(ff, src_img, output, fmt, start, end, rec["title"], rec["number"])
                 names[rec["number"]] = (name, ticks[k], ticks[k + 1] if k + 1 < len(ticks) else None)
             new_cues[cp] = image_cue_text(parsed, names)
-        # Copy or transcode normal track audio. Map old paths to newly named paths.
+        # Prepare all ordinary tracks before encoding. Duplicate target names
+        # are verified against decoded PCM; never drop different audio.
+        audio_jobs = {}
         for fp in files:
             if self.stop.is_set():
-                raise InterruptedError("Cancelled.")
+                raise InterruptedError("Encoding cancelled.")
             if fp.resolve() in source_images or fp.suffix.lower() not in AUDIO:
                 continue
             number, title, _ = extract_number_title(fp)
             if number <= 0 or not title:
-                raise RuntimeError("Track has no number/title: " + str(fp))
-            new = dest / fp.parent.relative_to(source) / track_filename(number, title, extension)
-            if new.exists():
-                # Multiple source codecs/exports may describe the very same track.
-                # Deduplicate ONLY if decoded lossless PCM is identical.
-                if pcm_hash(ff, fp) == pcm_hash(ff, new):
-                    mapping[fp.resolve()] = new
-                    continue
-                raise RuntimeError("Different recordings resolve to the same track filename: " +
-                                   str(fp) + " -> " + str(new))
-            new.parent.mkdir(parents=True, exist_ok=True)
-            old_info = probe(ffprobe, fp)
-            # Extension is only a hint; probe codec to avoid passing through a mislabeled file.
-            codec = str(old_info.get("codec_name", "")).lower()
-            if codec not in {"alac", "flac", "pcm_s16le", "pcm_s24le", "pcm_s32le",
-                             "pcm_f32le", "pcm_f64le", "ape", "wavpack", "pcm_s16be",
-                             "pcm_s24be", "pcm_s32be"}:
-                raise RuntimeError("Source codec is not verified lossless: " + codec)
+                raise RuntimeError("Track has no valid number/title: " + str(fp))
+            dst = dest / fp.parent.relative_to(source) / track_filename(number, title, extension)
+            audio_jobs.setdefault(str(dst).casefold(), (dst, []) )[1].append(
+                (fp, number, title))
+        jobs = list(audio_jobs.values())
+
+        def encode_normal(entry):
+            dst, variants = entry
+            if os.path.lexists(dst):
+                raise RuntimeError("Audio target exists: " + str(dst))
+            src, number, title = variants[0]
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            source_info = probe(ffprobe, src)
+            codec = str(source_info.get("codec_name", "")).lower()
+            if codec not in _MB_LOSSLESS:
+                raise RuntimeError("Refusing to encode non-lossless audio: " + str(src))
             if (fmt == "ALAC" and codec == "alac") or (fmt == "FLAC" and codec == "flac"):
-                shutil.copy2(fp, new)
-                if sha(fp) != sha(new):
-                    raise RuntimeError("Copied audio differs: " + str(fp))
+                shutil.copy2(src, dst)
+                if sha(src) != sha(dst):
+                    raise RuntimeError("Source copy hash mismatch: " + str(src))
             else:
-                convert(ff, fp, new, fmt, title=title, number=number)
-            mapping[fp.resolve()] = new
+                convert(ff, src, dst, fmt, title=title, number=number)
+            # Additional files mapping to this name are discarded ONLY when
+            # the decoded PCM equals the successfully verified first copy.
+            for variant, _, _ in variants[1:]:
+                if pcm_hash(ff, variant) != pcm_hash(ff, dst):
+                    raise RuntimeError("Distinct tracks collide: " + str(variant) + " -> " + str(dst))
+            return dst, [x[0].resolve() for x in variants]
+
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=max(1, int(self.encoding_workers))) as pool:
+            futures = [pool.submit(encode_normal, job) for job in jobs]
+            for future in concurrent.futures.as_completed(futures):
+                completed, originals = future.result()
+                for original in originals:
+                    mapping[original] = completed
+                if self.stop.is_set():
+                    raise InterruptedError("Encoding cancelled.")
         # Preserve CUE text, rewriting only correct FILE paths; keep originals in source.
         destinations = set()
         for fp in files:
