@@ -6,7 +6,7 @@ Migrated from `karpuzikov/userscripts/audio-tools/discography-torrent-project/` 
 
 ## Current tools
 
-- **[Music Library Organizer v0.3.1.pyw](tools/Music%20Library%20Organizer%20v0.3.1.pyw)** - standalone automatic MCC-style organizer, automatic `<Input> - Sorted` output, ALAC/FLAC, independent Encoding/AudioChecker worker selectors, ZIP-based bundled checker discovery without exe path, MusicBrainz DiscID plus barcode, genuine per-release `audiochecker.log`, source-safe Undo. **Under construction ⚠️; Windows tests not yet run.** [Guide](tools/music-library-organizer/README.md).
+- **[Music Library Organizer v0.3.2.pyw](tools/Music%20Library%20Organizer%20v0.3.2.pyw)** - standalone automatic MCC-style organizer, automatic `<Input> - Sorted` output, ALAC/FLAC, independent Encoding/AudioChecker worker selectors, ZIP-based bundled checker discovery without exe path, MusicBrainz DiscID plus barcode, genuine per-release `audiochecker.log`, source-safe Undo. **Under construction ⚠️; Windows tests not yet run.** [Guide](tools/music-library-organizer/README.md).
 - `tools/Duplicate Edition Analyzer v0.22.12.pyw` - Groups Suggested Callout Hook, Call Out Hook, and Suggested Call Out Research Hook as one Unusual track pattern choice (`Callout hook`) instead of three separate rows. Includes a release-blocking regression test for alias grouping. [Download standalone EXE](https://github.com/karpuzikov/userscripts/releases/download/duplicate-edition-analyzer-v0.22.12/Duplicate.Edition.Analyzer.0.22.12.exe). Under construction ⚠️
 - `tools/AudioChecker Automation v0.1.pyw` - AudioChecker batch automation.
 - `tools/ALAC Conversion Automation v0.2.pyw` - lossless -> ALAC conversion. Under construction ⚠️
