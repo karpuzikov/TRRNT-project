@@ -806,104 +806,87 @@ class Organizer:
 HTML = r"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Music Library Organizer</title>
 <style>
-:root{color-scheme:dark;--bg:#0b0c0f;--panel:#11141a;--panel2:#171b22;--field:#181c23;--line:#2a303a;--text:#f3f6fb;--muted:#9ca7b8;--blue:#66a9ff;--red:#ef4444;--yellow:#f59e0b;--green:#22c55e}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:13px "Segoe UI Variable","Segoe UI",system-ui,sans-serif}
-body{display:flex;flex-direction:column}button,input,select{font:inherit}#bar{height:58px;min-height:58px;background:#101319;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;padding:0 18px}
-#brand{font-size:18px;font-weight:780}#version{color:#9ca7b8;font-size:12px}.space{flex:1}
-#main{display:grid;grid-template-rows:auto minmax(180px,1fr) auto;gap:12px;flex:1;min-height:0;padding:12px 18px;overflow:hidden}
+:root{color-scheme:dark;--bg:#0b0c0f;--panel:#11141a;--field:#181c23;--line:#2a303a;--text:#f3f6fb;--muted:#9ca7b8;--blue:#66a9ff;--yellow:#f59e0b;--green:#22c55e;--red:#ef4444}
+*{box-sizing:border-box}html,body{height:100%;width:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font:13px "Segoe UI Variable","Segoe UI",system-ui,sans-serif}body{display:flex;flex-direction:column}
+button,input,select{font:inherit}button{user-select:none}
+#top{height:58px;flex:0 0 58px;display:flex;align-items:center;gap:10px;padding:0 18px;background:#101319;border-bottom:1px solid var(--line)}
+#brand{font-size:18px;font-weight:780}.muted{color:var(--muted);font-size:11px}.space{flex:1}
+main{display:grid;grid-template-rows:auto auto minmax(130px,1fr);gap:12px;flex:1;min-height:0;overflow:hidden;padding:12px 18px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
-.head{padding:10px 13px;display:flex;align-items:baseline;gap:12px}.title{font-size:14px;font-weight:760}.hint{font-size:11px;color:var(--muted)}
-.sources{padding:0 13px 12px}.fieldlabel{font-weight:650;display:block;margin-bottom:4px}.pathrow{display:grid;grid-template-columns:34px minmax(0,1fr) 87px;gap:7px;margin-bottom:8px}
-input[type=text]{width:100%;height:34px;background:var(--field);border:1px solid #37404d;border-radius:8px;color:var(--text);padding:0 10px;outline:none}
-button,select{height:34px;background:#1b2028;color:var(--text);border:1px solid #3a4351;border-radius:8px;padding:0 11px;cursor:pointer}
+.head{padding:10px 13px;display:flex;align-items:baseline;gap:12px}.head strong{font-size:14px}
+.form{padding:0 13px 12px}.label{display:block;font-weight:650;margin:2px 0 5px}
+.path{display:grid;grid-template-columns:34px minmax(0,1fr) 85px;gap:7px;margin-bottom:9px}
+input[type=text]{width:100%;height:34px;border:1px solid #37404d;background:var(--field);border-radius:8px;padding:0 10px;color:var(--text);outline:none}
+button,select{height:34px;border:1px solid #3a4351;background:#1b2028;color:var(--text);border-radius:8px;padding:0 11px;cursor:pointer}
 button:hover:not(:disabled),select:hover:not(:disabled){background:#252c36;border-color:#596579}button:disabled{opacity:.38;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #8cc8ff;outline-offset:2px}
 button.primary{background:#17324c;border-color:#3e78aa;color:#dff1ff;font-weight:720}button.primary:hover:not(:disabled){background:#1e4265;border-color:#66a9ff}
-button.icon{padding:0;width:34px;text-align:center}#opts{display:flex;align-items:center;gap:10px;border-top:1px solid #252b34;padding-top:10px;flex-wrap:wrap}select{min-width:115px}
-#preview{min-height:0;display:flex;flex-direction:column;overflow:hidden}.tools{padding:0 13px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-#query{max-width:260px}#counts{color:var(--muted);font-size:12px}.tablewrap{flex:1;overflow:auto;min-height:80px;border-top:1px solid var(--line)}
-table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{padding:8px 10px;border-bottom:1px solid #242b34;text-align:left;vertical-align:top;overflow-wrap:anywhere}
-th{position:sticky;top:0;background:#171b22;color:#aeb9c8;font-size:11px;text-transform:uppercase;letter-spacing:.04em}tr:hover{background:#1a2029}
-.dim{font-size:11px;color:var(--muted);margin-top:3px}.ready{color:#a8f5bf}.review{color:#ffd88b}.check{accent-color:var(--blue);width:16px;height:16px}.empty{padding:24px;color:var(--muted);text-align:center}
-#bottom{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:12px;min-height:154px;max-height:210px}
-.prog{padding:13px}.progressrow{display:flex;justify-content:space-between;font-weight:650}.track{height:9px;margin:13px 0;background:#252d36;border-radius:99px;overflow:hidden}.fill{height:100%;width:0;background:var(--blue);transition:width .2s}.status{color:#c8d3e1;font-size:12px}
-#activity{height:125px;overflow:auto;white-space:pre-wrap;padding:4px 13px 12px;color:#bec9d7;font:11px/1.4 Consolas,monospace}
-#foot{height:58px;min-height:58px;background:#101319;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;padding:0 18px}
-#message{color:var(--yellow);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:38vw}
-#details{border:1px solid #465262;background:#11151b;color:var(--text);border-radius:11px;padding:0;width:min(920px,94vw);max-height:86vh}#details::backdrop{background:rgba(0,0,0,.7)}#details header{display:flex;gap:8px;align-items:center;padding:12px 15px;border-bottom:1px solid var(--line)}#details pre{padding:12px 16px;white-space:pre-wrap;word-break:break-all;font:11px/1.5 Consolas,monospace;overflow:auto;max-height:64vh}#details footer{padding:10px 14px;border-top:1px solid var(--line);display:flex;justify-content:flex-end}
-.drop{outline:2px dashed var(--blue);outline-offset:-4px}
-@media(max-width:760px){#main{padding:8px;gap:8px}#bottom{grid-template-columns:1fr;min-height:120px}#activity{height:75px}#brand{font-size:15px}th,td{padding:6px}#version{display:none}}
-</style></head>
-<body><header id="bar"><strong id="brand">Music Library Organizer</strong><span id="version">v0.2.0 - Under construction ⚠️</span><span class="space"></span><span class="hint">MCC-style · standalone · originals untouched</span></header>
-<main id="main">
-<section class="card"><div class="head"><span class="title">Collection folders</span><span class="hint">Choose different source and output roots. Apply copies and validates before finalizing.</span></div>
-<div class="sources">
-<label class="fieldlabel" for="source">Source artist / brand collection</label>
-<div class="pathrow" id="srcdrop"><button class="icon" id="openSrc" title="Open source folder" aria-label="Open source folder">📁</button><input type="text" id="source" placeholder="Drop folder or Browse source..." aria-label="Source collection path"><button id="browseSrc">Browse...</button></div>
-<label class="fieldlabel" for="dest">Output artist / brand collection</label>
-<div class="pathrow" id="dstdrop"><button class="icon" id="openDst" title="Open destination folder" aria-label="Open destination folder">📁</button><input type="text" id="dest" placeholder="Choose different output folder..." aria-label="Destination collection path"><button id="browseDst">Browse...</button></div>
-<div id="opts"><label for="format"><b>Output format</b></label><select id="format" aria-label="Output codec"><option value="ALAC">ALAC (.m4a)</option><option value="FLAC">FLAC (.flac)</option></select><span class="hint">Lossless only. CUE images split into tracks. Undecidable cases require review.</span></div>
+button.folder{width:34px;padding:0}.options{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #252b34;padding-top:10px}.options label{font-weight:650}select{min-width:110px}
+#progress{padding:12px 14px}.progress-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:650;min-height:17px}
+.track{height:9px;background:#252d36;border-radius:30px;margin:11px 0;overflow:hidden}.fill{height:100%;width:0;background:var(--blue);transition:width .2s}
+.counts{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.counts b{font-size:16px;color:var(--text)}#detail{font-size:11px;color:#c2cddd;margin-top:8px}
+#results{min-height:0;display:flex;flex-direction:column;overflow:hidden}.tools{display:flex;align-items:center;gap:8px;padding:0 13px 10px}.tools input{max-width:280px}.tablewrap{flex:1;overflow:auto;min-height:50px}
+table{border-collapse:collapse;table-layout:fixed;width:100%}th,td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:1px solid #252b35;word-break:break-word}th{position:sticky;top:0;background:#171b22;color:var(--muted);font-size:11px}tr:hover{background:#19212a}
+.done{color:#a8f5bf}.skipped{color:#b6c4d2}.failed{color:#ffb0b6}.warning{color:#ffd88b}.small{color:var(--muted);font-size:11px;margin-top:3px}.empty{padding:25px;text-align:center;color:var(--muted)}
+#foot{height:58px;flex:0 0 58px;background:#101319;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 18px}
+#message{color:var(--yellow);max-width:42vw;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px}
+.drag{outline:2px dashed var(--blue);outline-offset:-3px}
+@media(max-width:750px){main{padding:8px;gap:8px}.counts{gap:9px}#top{padding:0 9px}#top .muted{display:none}#foot{padding:0 8px}th,td{padding:6px}}
+</style></head><body>
+<header id="top"><strong id="brand">Music Library Organizer</strong><span class="muted">v0.2.0 - Under construction ⚠️</span><span class="space"></span><span class="muted">Automatic · MCC-style · originals untouched</span></header>
+<main>
+<section class="card"><div class="head"><strong>Input and output folders</strong><span class="muted">Choose folders, then Organize. No review or second confirmation.</span></div><div class="form">
+<label for="source" class="label">Input collection</label><div class="path" id="sourceDrop"><button class="folder" id="openSource" title="Open input folder" aria-label="Open input folder">📁</button><input type="text" id="source" aria-label="Input folder" placeholder="Choose input folder..."><button id="browseSource">Browse...</button></div>
+<label for="dest" class="label">Organized output</label><div class="path" id="destDrop"><button class="folder" id="openDest" title="Open output folder" aria-label="Open output folder">📁</button><input type="text" id="dest" aria-label="Output folder" placeholder="Choose separate output folder..."><button id="browseDest">Browse...</button></div>
+<div class="options"><label for="format">Output format</label><select id="format" aria-label="Output format"><option value="ALAC">ALAC (.m4a)</option><option value="FLAC">FLAC (.flac)</option></select><span class="muted">Missing AudioChecker reports are warnings, not blockers. Existing output is never overwritten.</span></div>
 </div></section>
-<section class="card" id="preview"><div class="head"><span class="title">Proposed release changes</span><span class="hint">No files change during Scan. Review rows are excluded from Apply.</span></div>
-<div class="tools"><input id="query" type="text" placeholder="Filter releases..." aria-label="Filter preview"><button id="selectAll">Select ready</button><button id="selectNone">Select none</button><span class="space"></span><span id="counts">No scan yet</span></div>
-<div class="tablewrap"><table><thead><tr><th style="width:44px">✓</th><th style="width:34%">Release / output</th><th style="width:15%">State</th><th>Preview / reason</th></tr></thead><tbody id="rows"></tbody></table></div></section>
-<div id="bottom"><section class="card prog"><div class="progressrow"><span id="status">Ready</span><span id="percent">0%</span></div><div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress"><div class="fill" id="fill"></div></div><div class="status" id="detail">Select folders and Scan to preview.</div></section><section class="card"><div class="head"><span class="title">Activity</span></div><div id="activity" role="log" aria-live="polite"></div></section></div>
-</main><dialog id="details" aria-label="Full proposed source and destination mapping"><header><b id="detailtitle">Release preview</b><span class="space"></span><button id="detailClose" aria-label="Close preview">✕ Close</button></header><pre id="detailrows"></pre><footer><button id="detailDone">Close</button></footer></dialog><footer id="foot"><button class="primary" id="scan">◴ Scan / Preview</button><button class="primary" id="apply" disabled>✓ Apply selected</button><button id="cancel" disabled>✕ Cancel</button><button id="undo" disabled>↶ Undo last run</button><span class="space"></span><span id="message" role="status" aria-live="polite"></span></footer>
+<section class="card" id="progress"><div class="progress-head"><span id="status" role="status" aria-live="polite">Ready</span><span id="percent">0%</span></div><div class="track" id="progressBar" role="progressbar" aria-label="Organization progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill"></div></div>
+<div class="counts"><span><b id="total">0</b> found</span><span><b id="done">0</b> organized</span><span><b id="skipped">0</b> already present</span><span><b id="failed">0</b> failed</span><span><b id="warnings">0</b> warnings</span></div>
+<div id="detail">Input files remain untouched. Any genuine errors will appear below.</div></section>
+<section class="card" id="results"><div class="head"><strong>Results</strong><span class="muted">Automatic results. No approval step.</span></div><div class="tools"><input type="text" id="query" placeholder="Filter results..." aria-label="Filter results"><button id="openLog">↗ Open log</button><button id="openOutput">📁 Open output</button><span class="space"></span><span id="resultCount" class="muted">Not started</span></div>
+<div class="tablewrap"><table><thead><tr><th style="width:14%">Result</th><th style="width:31%">Release</th><th>Details</th></tr></thead><tbody id="rows"><tr><td colspan="3" class="empty">Press Organize to begin.</td></tr></tbody></table></div></section>
+</main>
+<footer id="foot"><button class="primary" id="organize">▶ Organize</button><button id="cancel" disabled>✕ Cancel</button><button id="undo" disabled>↶ Undo last run</button><span class="space"></span><span id="message" aria-live="polite" role="status"></span></footer>
 <script>
-let state=null, selected=new Set(), oldSig="", busy=false;
+let state=null,initialized=false,working=false,query="";
 const $=id=>document.getElementById(id);
-function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
-async function api(name,...args){for(let i=0;i<100;i++){if(window.pywebview&&window.pywebview.api&&window.pywebview.api[name])return await window.pywebview.api[name](...args);await new Promise(r=>setTimeout(r,50));}throw Error("Desktop API not ready.");}
-function err(e){$('message').textContent=String(e&&e.message||e);}
-async function call(name,...args){try{let result=await api(name,...args);if(result&&result.error)throw Error(result.error);await update();return result;}catch(e){err(e);return null;}}
-async function choose(which){let p=await call("browse",which);if(p){$(which==="source"?"source":"dest").value=p;}}
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function api(method,...args){for(let j=0;j<120;j++){let a=window.pywebview&&window.pywebview.api;if(a&&typeof a[method]==="function")return a[method](...args);await new Promise(r=>setTimeout(r,50));}throw Error("Desktop connection failed.");}
+function error(e){$('message').textContent=String(e&&e.message||e);}
+async function call(name,...args){try{const out=await api(name,...args);if(out&&out.error)throw Error(out.error);await refresh();return out;}catch(e){error(e);return null;}}
 function render(){
  if(!state)return;
- if(document.activeElement!==$('source')&&state.source)$('source').value=state.source;
- if(document.activeElement!==$('dest')&&state.dest)$('dest').value=state.dest;
- if(!busy)$('format').value=state.format;
- busy=state.running;
- $('status').textContent=state.status||"Ready";$('percent').textContent=Math.round(state.progress||0)+"%";
- $('fill').style.width=String(state.progress||0)+"%";$('progress').setAttribute("aria-valuenow",String(state.progress||0));
- $('detail').textContent=busy?"Working. Cancel will stop at a safe checkpoint.":"Sources are read only. Only selected ready releases can be exported.";
- $('activity').textContent=(state.activity||[]).slice(-22).join("\n");
- $('scan').disabled=busy;$('cancel').disabled=!busy;$('undo').disabled=busy||!state.undo;
- ['browseSrc','browseDst','source','dest','format'].forEach(x=>$(x).disabled=busy);
- const records=state.plan||[];
- const signature=records.map(x=>x.id+":"+x.source+":"+x.status).join("|");
- if(signature!==oldSig){oldSig=signature;selected=new Set(records.filter(x=>x.status==="ready").map(x=>x.id));}
- let ready=records.filter(x=>x.status==="ready").length;
- $('counts').textContent=records.length+" releases · "+ready+" ready · "+(records.length-ready)+" review · "+selected.size+" selected";
- $('apply').disabled=busy||selected.size===0||state.undo;
- $('selectAll').disabled=busy;$('selectNone').disabled=busy;
+ if(!initialized){$('source').value=state.source||"";$('dest').value=state.dest||"";$('format').value=state.format||"ALAC";initialized=true;}
+ working=!!state.running;
+ $('status').textContent=state.status||"Ready";
+ const pct=Number(state.progress||0);$('percent').textContent=pct+"%";$('fill').style.width=pct+"%";$('progressBar').setAttribute("aria-valuenow",String(pct));
+ let c=state.counts||{};for(let name of ["total","done","skipped","failed","warnings"])$(name).textContent=c[name]||0;
+ $('detail').textContent=working?"Organizing all discovered releases automatically. Genuine errors do not block later releases.":"Originals are untouched. Missing audiochecker.log is not a reason to skip a release.";
+ for(let id of ["source","dest","format","browseSource","browseDest"])$(id).disabled=working;
+ $('organize').disabled=working;$('cancel').disabled=!working;$('undo').disabled=working||!state.undo;
+ $('openOutput').disabled=!$('dest').value.trim();
  if(state.error)$('message').textContent=state.error;
- let q=$('query').value.toLowerCase().trim();
- let visible=records.filter(x=>!q||[x.title,x.source,x.target,x.status].join(" ").toLowerCase().includes(q));
- let html=visible.slice(0,250).map(x=>'<tr><td><input class="check" type="checkbox" data-id="'+esc(x.id)+'" aria-label="Select '+esc(x.title)+'" '+(selected.has(x.id)?"checked ":"")+(busy||x.status!=="ready"?"disabled":"")+'></td><td><b>'+esc(x.title)+'</b><div class="dim">'+esc(x.source)+'</div><div class="dim">→ '+esc(x.target)+'</div></td><td><span class="'+esc(x.status)+'">'+esc(x.status.toUpperCase())+'</span><div class="dim">'+x.files+' files · '+x.images+' image(s)</div></td><td><div>'+esc((x.changes||[]).slice(0,3).join(" | ")||"Naming already matches")+'</div><div class="dim">'+esc((x.notes||[]).join(" | "))+'</div><button class="detailsButton" data-details="'+esc(x.id)+'" aria-label="Show all planned paths for '+esc(x.title)+'">Details...</button></td></tr>').join("");
- $('rows').innerHTML=html||'<tr><td colspan="4" class="empty">'+(records.length?"No matching releases":"Nothing scanned yet")+'</td></tr>';
- if(visible.length>250)$('rows').innerHTML+='<tr><td colspan="4" class="empty">Showing first 250 matches - use Filter to narrow.</td></tr>';
- document.querySelectorAll('input[data-id]').forEach(x=>x.onchange=()=>{if(x.checked)selected.add(x.dataset.id);else selected.delete(x.dataset.id);render();});
- document.querySelectorAll('button[data-details]').forEach(b=>b.onclick=()=>{let x=records.find(z=>z.id===b.dataset.details);if(!x)return;$('detailtitle').textContent=x.title;$('detailrows').textContent='Source: '+x.source+'\nTarget: '+x.target+'\nStatus: '+x.status+'\n\n'+(x.notes||[]).join('\n')+'\n\n'+(x.mapping||[]).join('\n');$('details').showModal();});
+ let list=(state.results||[]).filter(x=>[x.name,x.message,(x.warnings||[]).join(" ")].join(" ").toLowerCase().includes(query));
+ $('resultCount').textContent=list.length+" shown / "+(state.results||[]).length+" processed";
+ $('rows').innerHTML=list.slice(-500).map(x=>'<tr><td class="'+esc(x.status)+'"><b>'+esc(x.status.toUpperCase())+'</b></td><td><b>'+esc(x.name)+'</b><div class="small">'+esc(x.target)+'</div></td><td>'+esc(x.message)+(x.warnings&&x.warnings.length?'<div class="small warning">'+esc(x.warnings.join(" | "))+'</div>':"")+'</td></tr>').join("")||'<tr><td colspan="3" class="empty">'+(working?"Working...":"No releases processed yet.")+'</td></tr>';
 }
-async function update(){try{state=await api("state");render();}catch(e){err(e);}}
-$('detailClose').onclick=()=>{$('details').close();};$('detailDone').onclick=()=>{$('details').close();};
-$('browseSrc').onclick=()=>choose("source");$('browseDst').onclick=()=>choose("dest");
-$('openSrc').onclick=()=>call("open_folder",$('source').value);
-$('openDst').onclick=()=>call("open_folder",$('dest').value);
-$('scan').onclick=async()=>{selected.clear();oldSig="";await call("scan",$('source').value,$('dest').value,$('format').value);};
-$('apply').onclick=()=>{if(!selected.size)return;if(confirm("Export "+selected.size+" selected releases to the destination? Originals will remain untouched."))call("apply",Array.from(selected));};
-$('undo').onclick=()=>{if(confirm("Undo the last export? Only unchanged generated output will be deleted."))call("undo");};
+async function refresh(){try{state=await api("state");render();}catch(e){error(e);}}
+async function browse(which){let selected=await call("browse",which);if(selected)$(which).value=selected;}
+$('browseSource').onclick=()=>browse("source");$('browseDest').onclick=()=>browse("dest");
+$('openSource').onclick=()=>call("open_folder",$('source').value);
+$('openDest').onclick=()=>call("open_folder",$('dest').value);
+$('openOutput').onclick=()=>call("open_folder",$('dest').value);
+$('openLog').onclick=()=>call("open_log");
+$('organize').onclick=()=>{$('message').textContent="";call("organize",$('source').value,$('dest').value,$('format').value);};
 $('cancel').onclick=()=>call("cancel");
-$('selectAll').onclick=()=>{selected=new Set((state.plan||[]).filter(x=>x.status==="ready").map(x=>x.id));render();};
-$('selectNone').onclick=()=>{selected.clear();render();};
-$('query').oninput=render;
-for(let [id,target] of [['srcdrop','source'],['dstdrop','dest']]){
- let el=$(id);
- el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drop');});
- el.addEventListener('dragleave',e=>{el.classList.remove('drop');});
- el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drop');let f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];let value=f&&(f.pywebviewFullPath||f.path);if(value)$(target).value=value;else err("Use Browse or paste a full folder path.");});
+$('undo').onclick=()=>{if(confirm("Remove unchanged output from the last run? Original files are not touched."))call("undo");};
+$('query').oninput=()=>{query=$('query').value.trim().toLowerCase();render();};
+for(let [zone,input] of [["sourceDrop","source"],["destDrop","dest"]]){
+let z=$(zone);z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("drag");});
+z.addEventListener("dragleave",()=>z.classList.remove("drag"));
+z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("drag");let f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];let path=f&&(f.pywebviewFullPath||f.path);if(path)$(input).value=path;else error("Folder drop unsupported here; use Browse.");});
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state&&state.running)call("cancel");});
-setInterval(update,750);update();
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&state&&state.running)call("cancel");});
+setInterval(refresh,900);refresh();
 </script></body></html>"""
 
 
