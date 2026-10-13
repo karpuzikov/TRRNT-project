@@ -175,6 +175,45 @@ class CheckerArchiveRegression(unittest.TestCase):
                        "C:/Codecs/Analyzer/aucdtect.exe"):
             self.assertEqual(mlo._checker_member_key(unsafe), "")
 
+    def test_missing_historical_cue_image_keeps_split_tracks_partial(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "physical"
+            dest = Path(tmp) / "sorted"
+            source.mkdir()
+            for number in (1, 2):
+                (source / f"{number:02d} Track {number}.flac").write_bytes(
+                    b"source-must-survive-" + str(number).encode())
+            (source / "INNA.cue").write_text(
+                'FILE "Missing Album Image.wav" WAVE\\n'
+                '  TRACK 01 AUDIO\\n'
+                '    TITLE "Track 1"\\n'
+                '    INDEX 01 00:00:00\\n'
+                '  TRACK 02 AUDIO\\n'
+                '    TITLE "Track 2"\\n'
+                '    INDEX 01 03:00:00\\n', encoding="utf-8")
+            app = mlo.Organizer()
+            app._current_identity = {"physical": True,
+                                     "catalog": "", "barcode": "",
+                                     "metadata_verified": False}
+            app._artist_root = "INNA"
+            app._credit_consensus = {}
+            app._export_warnings = []
+            app.encoding_workers = 1
+            def fake_meta(path):
+                num = int(Path(path).name[:2])
+                return str(num), f"Track {num}", "INNA"
+            with patch.object(mlo, "metadata", side_effect=fake_meta), \
+                 patch.object(mlo, "probe", return_value={"codec_name": "flac"}), \
+                 patch.object(mlo, "_update_copied_track_tags"):
+                app._export_release(source, dest, "FLAC", "ffmpeg", "ffprobe")
+            self.assertFalse((dest / "INNA.cue").exists())
+            self.assertTrue((dest / "Unresolved CUE - INNA.cue").is_file())
+            self.assertTrue((dest / "01 Track 1.flac").is_file())
+            self.assertTrue((dest / "02 Track 2.flac").is_file())
+            self.assertTrue(app._export_warnings)
+            self.assertTrue((source / "INNA.cue").is_file())
+
     def test_result_selection_survives_status_poll_and_has_path_icon(self):
         self.assertIn("renderedResultMarkup", mlo.HTML)
         self.assertIn("selectingResults", mlo.HTML)
