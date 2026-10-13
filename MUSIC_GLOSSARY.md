@@ -44,6 +44,10 @@ The approved ALAC audio filename grammar is **`NN Track Title.m4a`**: minimum tw
 - The on-disk album track filename has **no artist prefix**. A `The Weeknd - Reminder ...` display example describes the separate `artist` and `title` fields rather than requiring those words in the filename.
 - A file's extension must reflect its real format, and CD CUE `FILE` entries must remain valid when a file is renamed. Disc-specific numbering/exception cases will be finalized separately.
 
+## Codec-specific extensions after splitting (ALAC and FLAC)
+
+The file-name **stem** is codec-independent: zero-padded `NN`, exactly one space, then the full standardized track title (no artist prefix). With the newly requested image-splitter/output-format option, the real encoded output determines the extension: `NN Track Title.m4a` for ALAC or `NN Track Title.flac` for FLAC. Example: `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].m4a` versus `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].flac`. This is a *filename* rule; see `RULES.md` for CUE-image splitting, PCM preservation, verification and source safety. Lossy outputs are a future possibility only.
+
 ## Track filename composition, feature provenance, and positional delimiters (user-approved)
 
 This is a **track-level filename/title** standard, separate from the **release-folder** grammar. First classify the real attributes, *then* render them. A featured performer is never interchangeable with a remixer, even when both occur in one title.
