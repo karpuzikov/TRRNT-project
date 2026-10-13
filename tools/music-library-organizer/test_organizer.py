@@ -244,6 +244,20 @@ class UserCorrections20261014(unittest.TestCase):
         self.assertEqual((num, title, artist),
                          (3, "More Than Friends (ft. Daddy Yanke)", "INNA"))
 
+    def test_legacy_maxi_cd_single_type_kept_without_online_metadata(self):
+        with tempfile.TemporaryDirectory() as td:
+            release = Path(td) / "Inna - Déjá Vu (Maxi CD Single) (Promo)"
+            release.mkdir()
+            (release / "original.cue").write_text(
+                'FILE "missing.wav" WAVE\n'
+                '  TRACK 01 AUDIO\n'
+                '    TITLE "Déjá Vu"\n'
+                '    INDEX 01 00:00:00\n', encoding="utf-8")
+            info = mlo.release_identity(release, mlo.collect_files(release),
+                                        default_artist="INNA", allow_network=False)
+            self.assertEqual(info["release_type"], "Single")
+            self.assertEqual(mlo.release_folder_target(info), "Déjá Vu - Single")
+
     def test_unknown_cd_legacy_names_are_cleaned_not_retained(self):
         example = {"folder": "Inna - Déjá Vu (Maxi CD Single) (Promo)",
                    "title": "Inna - Déjá Vu (Maxi CD Single) (Promo)",
