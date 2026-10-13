@@ -2630,7 +2630,7 @@ HTML = r"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name
 <style>
 :root{color-scheme:dark;--bg:#0b0c0f;--panel:#11141a;--field:#181c23;--line:#2a303a;--text:#f3f6fb;--muted:#9ca7b8;--blue:#66a9ff;--yellow:#f59e0b;--green:#22c55e;--red:#ef4444}
 *{box-sizing:border-box}html,body{height:100%;width:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font:13px "Segoe UI Variable","Segoe UI",system-ui,sans-serif}body{display:flex;flex-direction:column}
-button,input,select{font:inherit}button{user-select:none}
+button,input,select{font:inherit}button{user-select:none}.processing-toggles{display:flex;flex-wrap:wrap;gap:8px 20px;padding:7px 0 11px}.processing-check{display:inline-flex;align-items:center;gap:8px;font-weight:650;cursor:pointer;min-height:25px}.processing-check input{width:16px;height:16px;accent-color:var(--blue);cursor:pointer}.processing-check input:disabled{cursor:default}.processing-check:focus-within{outline:2px solid #8cc8ff;outline-offset:3px;border-radius:3px}
 #top{height:58px;flex:0 0 58px;display:flex;align-items:center;gap:10px;padding:0 18px;background:#101319;border-bottom:1px solid var(--line)}
 #brand{font-size:18px;font-weight:780}.muted{color:var(--muted);font-size:11px}.space{flex:1}
 main{display:grid;grid-template-rows:auto auto minmax(130px,1fr);gap:12px;flex:1;min-height:0;overflow:hidden;padding:12px 18px}
@@ -2659,10 +2659,11 @@ button.folder{width:34px;padding:0}.options{display:flex;align-items:center;gap:
 <section class="card"><div class="head"><strong>Input and output folders</strong><span class="muted">Choose folders, then Organize. No review or second confirmation.</span></div><div class="form">
 <label for="source" class="label">Input collection</label><div class="path" id="sourceDrop"><button class="folder" id="openSource" title="Open input folder" aria-label="Open input folder">📁</button><input type="text" id="source" aria-label="Input folder" placeholder="Choose input folder..."><button id="browseSource">Browse...</button></div>
 <label for="dest" class="label">Organized output</label><div class="path" id="destDrop"><button class="folder" id="openDest" title="Open output folder" aria-label="Open output folder">📁</button><input type="text" id="dest" aria-label="Output folder" placeholder="Choose separate output folder..."><button id="browseDest">Browse...</button></div>
+<div class="processing-toggles" role="group" aria-label="Optional processing stages"><label class="processing-check"><input type="checkbox" id="doEncode" checked> Encode audio</label><label class="processing-check"><input type="checkbox" id="doChecker" checked> AudioChecker</label><label class="processing-check"><input type="checkbox" id="doSplit" checked> Split album images (CUE)</label></div>
 <div class="options"><label for="format">Output format</label><select id="format" aria-label="Output format"><option value="ALAC">ALAC (.m4a)</option><option value="FLAC">FLAC (.flac)</option></select>
 <label for="encodeWorkers">Encoding workers</label><select id="encodeWorkers" aria-label="Number of simultaneous encoding workers"></select>
 <label for="checkWorkers">AudioChecker workers</label><select id="checkWorkers" aria-label="Number of simultaneous AudioChecker workers"></select>
-<span class="muted">Worker choices saved.</span></div><div class="muted" style="padding-top:8px">AudioChecker: original auCDtect engine. Automatic when installed; unavailable analysis is explicitly marked PARTIAL.</div></div></section>
+<span class="muted">Worker choices and checkboxes saved.</span></div><div class="muted" style="padding-top:8px">Encoding off preserves each track\u0027s codec; Split off keeps album-image tracks whole. AudioChecker uses original auCDtect when enabled and available. Missing engine never creates a fake report.</div></div></section>
 <section class="card" id="progress"><div class="progress-head"><span id="status" role="status" aria-live="polite">Connecting to desktop...</span><span id="percent">0%</span></div><div class="track" id="progressBar" role="progressbar" aria-label="Organization progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill"></div></div>
 <div class="counts"><span><b id="total">0</b> found</span><span><b id="done">0</b> compliant</span><span><b id="partial">0</b> partial</span><span><b id="skipped">0</b> already present</span><span><b id="failed">0</b> failed</span><span><b id="warnings">0</b> warnings</span></div>
 <div id="detail">Input files remain untouched. Any genuine errors will appear below.</div></section>
@@ -2696,7 +2697,7 @@ async function deadline(promise,ms){
 function setBridgeState(ready){
  connected=ready;
  if(!ready){
-  for(const id of ["organize","browseSource","browseDest","openLog","openLogFolder","copyResults","openSource","openDest","undo","cancel"])$(id).disabled=true;
+  for(const id of ["organize","browseSource","browseDest","openLog","openLogFolder","copyResults","openSource","openDest","undo","cancel","doEncode","doChecker","doSplit"])$(id).disabled=true;
   if(!state)$('status').textContent="Connecting to desktop...";
   if(Date.now()-bootTime>8000){
    $('status').textContent="Desktop connection unavailable - retrying";
@@ -2722,6 +2723,13 @@ async function call(name,...args){
   return null;
  }
 }
+function updateTaskControls(){
+ const locked=!connected||working;
+ for(const id of ['doEncode','doChecker','doSplit'])$(id).disabled=locked;
+ $('encodeWorkers').disabled=locked||!$('doEncode').checked;
+ $('checkWorkers').disabled=locked||!$('doChecker').checked;
+ $('format').disabled=locked||(!$('doEncode').checked&&!$('doSplit').checked);
+}
 function render(){
  if(!state)return;
  if(!initialized){
@@ -2731,6 +2739,9 @@ function render(){
   $('format').value=state.format||"ALAC";
   setupWorkers('encodeWorkers',state.worker_limit,state.encoding_workers);
   setupWorkers('checkWorkers',state.worker_limit,state.checker_workers);
+  $('doEncode').checked=state.enable_encoding!==false;
+  $('doChecker').checked=state.enable_checker!==false;
+  $('doSplit').checked=state.enable_splitting!==false;
   initialized=true;
  }
  working=!!state.running;
@@ -2738,7 +2749,8 @@ function render(){
  const pct=Number(state.progress||0);$('percent').textContent=pct+"%";$('fill').style.width=pct+"%";$('progressBar').setAttribute("aria-valuenow",String(pct));
  let c=state.counts||{};for(let name of ["total","done","partial","skipped","failed","warnings"])$(name).textContent=c[name]||0;
  $('detail').textContent=working?"Organizing all discovered releases automatically. Genuine errors do not block later releases.":"Originals are untouched. Missing audiochecker.log is not a reason to skip a release.";
- for(let id of ["source","dest","format","encodeWorkers","checkWorkers","browseSource","browseDest"])$(id).disabled=working;
+ for(let id of ["source","dest","browseSource","browseDest"])$(id).disabled=working;
+ updateTaskControls();
  $('organize').disabled=working;$('cancel').disabled=!working;$('undo').disabled=working||!state.undo;
  $('openSource').disabled=!String($('source').value||"").trim();
  $('openDest').disabled=!String($('dest').value||"").trim();
@@ -2839,7 +2851,8 @@ $('copyResults').onclick=async()=>{
   $('message').textContent=rows.length+" result rows copied.";
  }catch(e){error("Clipboard unavailable; select Results with your mouse and press Ctrl+C.");}
 };
-$('organize').onclick=()=>{$('message').textContent="";call("organize",$('source').value,$('dest').value,$('format').value,Number($('encodeWorkers').value),Number($('checkWorkers').value));};
+for(const id of ['doEncode','doChecker','doSplit'])$(id).addEventListener('change',updateTaskControls);
+$('organize').onclick=()=>{$('message').textContent="";call("organize",$('source').value,$('dest').value,$('format').value,Number($('encodeWorkers').value),Number($('checkWorkers').value),$('doEncode').checked,$('doChecker').checked,$('doSplit').checked);};
 $('cancel').onclick=()=>call("cancel");
 $('undo').onclick=()=>{if(confirm("Remove unchanged output from the last run? Original files are not touched."))call("undo");};
 $('query').oninput=()=>{query=$('query').value.trim().toLowerCase();render();};
