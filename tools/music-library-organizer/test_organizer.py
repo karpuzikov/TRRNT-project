@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.8 - INNA naming and CUE recovery regressions.
+# Music Library Organizer v0.3.9 - original auCDtect integration regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.8.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.9.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -139,34 +139,72 @@ class UserExamples20261014(unittest.TestCase):
         self.assertNotIn('id="chooseChecker"', mlo.HTML)
 
 
-class BuiltinCheckerRegression(unittest.TestCase):
-    def test_no_external_analyzer_zip_or_browse(self):
-        self.assertNotIn("AudioChecker ZIP", mlo.HTML)
-        self.assertNotIn('id="chooseChecker"', mlo.HTML)
-        self.assertFalse(hasattr(mlo, "setup_checker"))
-        self.assertTrue(callable(mlo.integrated_check_web_release))
+class OriginalCheckerRegression(unittest.TestCase):
+    def test_homemade_spectral_analysis_removed(self):
+        self.assertNotIn("MLO Integrated AudioChecker", mlo.HTML)
+        self.assertFalse(hasattr(mlo, "_spectral_summary"))
+        self.assertFalse(hasattr(mlo, "_integrated_checker_job"))
+        self.assertTrue(callable(mlo.native_check_web_release))
 
-    def test_spectral_classifier_has_explicit_uncertainty(self):
-        broad = [1e9] * (mlo._FFT_N // 2 + 1)
-        self.assertEqual(mlo._spectral_summary([broad] * 8, 44100)[0], "NO_STRONG_CUTOFF")
-        limited = list(broad)
-        for index in range(len(limited)):
-            if index * 44100 / mlo._FFT_N > 17500:
-                limited[index] = 10
-        self.assertEqual(mlo._spectral_summary([limited] * 8, 44100)[0], "BANDLIMIT_SIGNATURE")
-        self.assertEqual(mlo._spectral_summary([broad] * 8, 32000)[0], "INCONCLUSIVE")
-
-    def test_integrated_report_integrity_and_unicode(self):
+    def test_no_proprietary_binary_provisioning_from_untrusted_mirror(self):
+        from unittest.mock import patch
         with tempfile.TemporaryDirectory() as td:
-            folder = Path(td)
-            paths = [folder / "01 Déjà Vu.flac", folder / "02 Ночь.m4a"]
-            items = [(paths[0], "NO_STRONG_CUTOFF", -2.0, 20, 44100, "No cutoff"),
-                     (paths[1], "INCONCLUSIVE", None, 4, 44100, "No evidence")]
-            log = folder / "audiochecker.log"
-            log.write_bytes(mlo._integrated_checker_report(folder, items, mlo.VERSION).encode("utf-8"))
-            self.assertTrue(mlo._validate_integrated_report(log, paths, mlo.VERSION))
-            log.write_bytes(log.read_bytes() + b"tamper")
-            self.assertFalse(mlo._validate_integrated_report(log, paths, mlo.VERSION))
+            with patch.object(mlo, "DEPS", Path(td)):
+                with self.assertRaisesRegex(RuntimeError, "Original auCDtect"):
+                    mlo._native_aucdtect()
+        self.assertNotIn("chooseChecker", mlo.HTML)
+
+    def test_native_output_parser_real_probabilities_only(self):
+        self.assertEqual(mlo._parse_native_aucdtect(
+            "This track looks like MPEG with probability 95%"), ("MPEG", 95))
+        self.assertEqual(mlo._parse_native_aucdtect(
+            "This track looks like CDDA with probability 100%"), ("CDDA", 100))
+        with self.assertRaisesRegex(RuntimeError, "no valid"):
+            mlo._parse_native_aucdtect("NO_STRONG_CUTOFF")
+        with self.assertRaisesRegex(RuntimeError, "invalid probability"):
+            mlo._parse_native_aucdtect(
+                "This track looks like MPEG with probability 120%")
+
+    def test_exact_fifty_five_track_audiochecker_checksum(self):
+        # Verified verbatim against user's original 55-track AudioChecker
+        # v2.0 build 457 report: 145533892, Summary 94,76% CDDA.
+        titles = [
+            "Comme une ombre", "Mets-moi bien", "Te Quiero",
+            "Ceci n'est pas du rap", "Pirate", "En secret", "10 - 10",
+            "Le prix à payer", "Jasmine", "Dans la cité", "Miami vice",
+            "Naïf", "Na Lingui Yo", "Je sais qui t'es", "Reste",
+            "VBT (Very Bad Trip)", "Tant pis", "Caméléon", "Fuegolando",
+            "La même", "Loup garou", "Entre nous c'est mort",
+            "Laissez-moi tranquille", "Mi gna", "Tu reviendras",
+            "Nos valeurs", "Tu ne le vois pas", "Merci maman",
+            "T'es partie", "Tu m'as dit", "Oulala", "Bonita",
+            "Le pire", "Où aller", "Tu m'as mis dans la merde",
+            "Anakin", "Malheur, malheur", "Mon cœur meurtri",
+            "Gunshot", "La nuit c'est fait pour dormir",
+            "Tu me l'avais promis", "Ana fi dar", "Skyfall",
+            "Appelez la police", "Ps", "Chien de la casse",
+            "Je t'en veux", "Everytime", "La vérité",
+            "Les roses ont des épines", "60%", "Je n'ai rien promis",
+            "Corazón", "Christophe", "Bella ciao",
+        ]
+        self.assertEqual(len(titles), 55)
+        checked = []
+        for idx, title in enumerate(titles, 1):
+            category = "MPEG" if idx in (30, 45, 49) else "CDDA"
+            prob = 95 if category == "MPEG" else (99 if idx in (7, 19, 20) else 100)
+            checked.append((Path(f"{idx:02d} {title}.flac"), category, prob))
+        self.assertEqual(mlo._original_checker_checksum(checked), 145533892)
+        body = mlo._original_checker_report("New folder", checked)
+        self.assertIn("Summary 94,76% CDDA", body)
+        self.assertTrue(body.endswith("\r\n145533892\r\n"))
+        with tempfile.TemporaryDirectory() as td:
+            log = Path(td) / "audiochecker.log"
+            log.write_bytes(body.encode("utf-8"))
+            self.assertTrue(mlo._verify_original_checker_report(
+                log, [r[0] for r in checked], "New folder"))
+            log.write_bytes(log.read_bytes() + b"tampering")
+            self.assertFalse(mlo._verify_original_checker_report(
+                log, [r[0] for r in checked], "New folder"))
 
     def test_missing_historical_cue_image_keeps_split_tracks_partial(self):
         from unittest.mock import patch
@@ -285,7 +323,7 @@ class UserCorrections20261014(unittest.TestCase):
         self.assertEqual(mlo.completion_reasons(verified, [], checker), [])
         self.assertIn("WEB", " ".join(mlo.completion_reasons(
             dict(verified, barcode=""), [], checker)))
-        self.assertIn("Integrated AudioChecker report missing",
+        self.assertIn("Original auCDtect report missing",
                       mlo.completion_reasons(verified, [], []))
         self.assertTrue(mlo.completion_reasons(
             dict(verified, physical=True, country_provenance=
@@ -388,7 +426,7 @@ class NamingRules(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             log = Path(td) / "audiochecker.log"
             log.write_text("AudioChecker fake output\\n100", encoding="utf-8")
-            self.assertFalse(mlo._validate_integrated_report(log, [Path("01 Example.flac")], mlo.VERSION))
+            self.assertFalse(mlo._verify_original_checker_report(log, [Path("01 Example.flac")], "New folder"))
 
     def test_cd_reissue_year_suffix_from_concrete_edition(self):
         info = {"folder": "Legacy", "title": "I Am the Club Rocker",
@@ -510,7 +548,7 @@ class AutomaticBatch(unittest.TestCase):
                     inp / "01 Track.flac", out / "01 Track.flac")
                 with patch.object(mlo, "release_identity", side_effect=self.identity), \
                      patch.object(mlo, "ensure_ffmpeg", return_value=("ff", "ffprobe")), \
-                     patch.object(mlo, "integrated_check_web_release", side_effect=RuntimeError("analyzer failed")):
+                     patch.object(mlo, "native_check_web_release", side_effect=RuntimeError("analyzer failed")):
                     app._organize(source, output, "FLAC")
                     self.assertEqual(app.counts["partial"], 1)
                     self.assertEqual(app.counts["done"], 0)
@@ -545,7 +583,7 @@ class AutomaticBatch(unittest.TestCase):
                 app._export_release = export
                 with patch.object(mlo, "release_identity", side_effect=self.identity), \
                      patch.object(mlo, "ensure_ffmpeg", return_value=("ff", "ffprobe")), \
-                     patch.object(mlo, "integrated_check_web_release", side_effect=RuntimeError("analyzer failed")):
+                     patch.object(mlo, "native_check_web_release", side_effect=RuntimeError("analyzer failed")):
                     app._organize(source, dest, "FLAC")
                 self.assertEqual(app.counts["failed"], 1)
                 self.assertEqual(app.counts["partial"], 1)
@@ -821,23 +859,29 @@ class DiscIDAndWorkers(unittest.TestCase):
             self.assertFalse(info["metadata_verified"])
             self.assertEqual(mlo.release_folder_target(info), folder.name)
 
-    def test_worker_count_in_parallel_integrated_checker_log(self):
+    def test_parallel_original_checker_report_requires_native_verdicts(self):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as td:
-            dest = Path(td)
-            tracks = [dest / "01 Track.flac", dest / "02 Song.flac"]
-            for track in tracks:
-                track.write_bytes(b"fixture PCM decoding mocked")
-            def fake_job(track, ff, ffprobe, event):
-                return track, "NO_STRONG_CUTOFF", -4.0, 24, 44100, "No cutoff"
-            with patch.object(mlo.shutil, "which", return_value="ffprobe"), \
-                 patch.object(mlo, "_integrated_checker_job", side_effect=fake_job):
-                reports = mlo.integrated_check_web_release(
-                    dest, "FLAC", "ffmpeg", threading.Event(), workers=2)
-            self.assertEqual(reports[0]["workers"], 2)
-            self.assertEqual(reports[0]["results"], 2)
-            self.assertTrue(mlo._validate_integrated_report(
-                dest / "audiochecker.log", tracks, mlo.VERSION))
+            root = Path(td)
+            tracks = [root / "01 Track.flac", root / "02 Song.flac"]
+            for p in tracks:
+                p.write_bytes(b"mock PCM input")
+            def original_job(path, ff, ffprobe, native, stop):
+                return path, "CDDA", 100
+            private = root / "aucdtect.exe"
+            private.write_bytes(b"fake runner not executed")
+            with patch.object(mlo, "_native_aucdtect", return_value=private), \
+                 patch.object(mlo.shutil, "which", return_value="ffprobe"), \
+                 patch.object(mlo, "_original_checker_job", side_effect=original_job):
+                results = mlo.native_check_web_release(
+                    root, "ALAC", "ffmpeg", threading.Event(), workers=2,
+                    release_name="Actual Album")
+            self.assertEqual(results[0]["workers"], 2)
+            self.assertEqual(results[0]["results"], 2)
+            self.assertIn("original auCDtect", results[0]["analyzer"])
+            log = root / "audiochecker.log"
+            self.assertTrue(mlo._verify_original_checker_report(
+                log, tracks, "Actual Album"))
 
     def test_encoding_worker_parallel_copy_and_title_fidelity(self):
         from unittest.mock import patch
