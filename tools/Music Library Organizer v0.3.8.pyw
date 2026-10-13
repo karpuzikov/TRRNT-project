@@ -1817,6 +1817,31 @@ def integrated_check_web_release(dest, fmt, ff, stop_event, workers=4):
     return provenance
 
 
+def completion_reasons(info, export_warnings, checker):
+    """Return every unresolved release requirement. No unexplained PARTIAL."""
+    reasons = []
+    if not info.get("metadata_verified"):
+        reasons.append("Exact release edition metadata not verified")
+    if any("unresolved" in n.lower() or "not auto-selected" in n.lower()
+           for n in info.get("notes", [])):
+        reasons.append("Original metadata/media reference unresolved")
+    if export_warnings:
+        reasons.append("CUE or supporting-file fidelity not fully verified")
+    if bool(info.get("physical")) and info.get("country_provenance") != "verified-pressing":
+        reasons.append("Physical pressing country not verified (release territory is not manufacture)")
+    if not bool(info.get("physical")) and not (info.get("barcode") or info.get("catalog")):
+        reasons.append("Neither barcode nor catalog verified for WEB edition")
+    if not bool(info.get("physical")) and not checker:
+        reasons.append("Integrated AudioChecker report missing")
+    elif not bool(info.get("physical")) and any(
+            x.get("possible_bandlimited") or x.get("inconclusive")
+            for x in checker):
+        reasons.append("Integrated audio quality report contains uncertain/flagged tracks")
+    # A verified WEB barcode does not require a
+    # separate MusicBrainz catalog number.
+    return reasons
+
+
 class Organizer:
     """One action: input -> organized output. No manual release-review gate."""
     def __init__(self):
@@ -2059,26 +2084,8 @@ class Organizer:
                             manifest["created"].append(rec)
                             manifest["pending"] = None
                             write_json(UNDO, manifest)
-                            reasons = []
-                            if not info.get("metadata_verified"):
-                                reasons.append("Exact release edition metadata not verified")
-                            if any("unresolved" in n.lower() or "not auto-selected" in n.lower()
-                                   for n in info.get("notes", [])):
-                                reasons.append("Original metadata/media reference unresolved")
-                            if self._export_warnings:
-                                reasons.append("CUE or supporting-file fidelity not fully verified")
-                            if info["physical"] and info.get("country_provenance") != "verified-pressing":
-                                reasons.append("Physical pressing country not verified (release territory is not manufacture)")
-                            if not info["physical"] and not (info.get("barcode") or info.get("catalog")):
-                                reasons.append("Neither barcode nor catalog verified for WEB edition")
-                            if not info["physical"] and not result["checker"]:
-                                reasons.append("Integrated AudioChecker report missing")
-                            elif not info["physical"] and any(
-                                    x.get("possible_bandlimited") or x.get("inconclusive")
-                                    for x in result["checker"]):
-                                reasons.append("Integrated audio quality report contains uncertain/flagged tracks")
-                            # A verified WEB barcode does not require a
-                            # separate MusicBrainz catalog number.
+                            reasons = completion_reasons(
+                                info, self._export_warnings, result["checker"])
                             result["unmet_requirements"] = reasons
                             if reasons:
                                 result["status"] = "partial"
