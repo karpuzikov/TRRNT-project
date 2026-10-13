@@ -9,6 +9,7 @@ Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or o
 ## v0.3.6 - AudioChecker archive and copyable Results fixes
 
 - Correctly install and accept the supplied AudioChecker ZIP whether `Codecs/Analyzer/aucdtect.exe` is stored at archive root or beneath an enclosing directory. Reject traversal, absolute ZIP members and conflicting duplicate binary entries; no third-party executables are committed.
+- For tracks that explicitly contain a featured performer, remove the same redundant performer from exact two-artist ARTIST spellings (e.g. `INNA & Marian Hill` -> `INNA` while retaining `(ft. Marian Hill)` in TITLE). Avoid guessing for unrelated credits.
 - Prevent the 1.5-second Results status poll from destroying text selection before Ctrl+C. Keep explicit Copy results, and show an Open folder control before each reported output path.
 - Add Open file location icon directly before the remembered ZIP path. Preserve adjacent Open log / Open log folder actions.
 - **Only WebView2 JavaScript syntax was checked.** Full Python compile/tests, native checker binaries, Windows UI/clipboard and INNA 94-release acceptance **NOT RUN**. Status remains Under construction ⚠️. Branch `mlo-v0.3.6-checker-results-fixes` is a candidate, not a stable download.
