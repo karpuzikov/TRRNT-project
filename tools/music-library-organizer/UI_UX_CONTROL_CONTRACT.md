@@ -1,6 +1,12 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.1 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.2 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.2 Results panel correction
+
+- Remove extraneous explanatory subtitle `Automatic results. No approval step.` from Results header. Plain **Results** is sufficient.
+- For CDs with a stray `audiochecker.log`, the log is not present in output and its omission is explained in run Results. Never label the CD as a WEB/digital output due to that file; don't show an AudioChecker job for CDs.
+- Prior v0.3.1 controls (autodetected AudioChecker, worker sliders, default output and no redundant Open output button) otherwise remain active; Windows UI acceptance NOT RUN.
 
 ## Active v0.3.1 control changes (supersede v0.3.0 checker path)
 
