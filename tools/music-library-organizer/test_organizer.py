@@ -155,7 +155,9 @@ class CheckerArchiveRegression(unittest.TestCase):
             "Codecs/Analyzer/aucdtect.exe")
         for unsafe in ("../Codecs/Analyzer/aucdtect.exe",
                        "archive/../Codecs/FLAC/flac.exe",
-                       "Codecs//Analyzer/aucdtect.exe"):
+                       "Codecs//Analyzer/aucdtect.exe",
+                       "/Codecs/Analyzer/aucdtect.exe",
+                       "C:/Codecs/Analyzer/aucdtect.exe"):
             self.assertEqual(mlo._checker_member_key(unsafe), "")
 
     def test_result_selection_survives_status_poll_and_has_path_icon(self):
