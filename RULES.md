@@ -17,6 +17,20 @@ The canonical cross-tool recording/credit vocabulary is **[MUSIC_GLOSSARY.md](MU
 
 Example: `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is an **individual Remix with a featured-artist credit**, not merely an alternative spelling of a feature. MCC's added-feature exception requires actual comparison/explicit evidence; `[ft.]` markup alone does not prove that the feature was new. MCC's internal `canonical_featured_title()` normalizes credits for matching keys and is **not** an approved disk-filename rewrite rule. The approved on-disk ordering and first-three-component delimiter rules are specified in **Track filename and artist-credit formatting** below.
 
+## Primary audio file naming rule - track number, one space, complete title (2026-10-13)
+
+**Mandatory ALAC audio filename pattern:** `NN Track Title.m4a` (where `NN` means the track number left-padded with zeroes to **at least two digits**). This is the on-disk filename standard, separate from the artist/release directory naming grammar.
+
+**Exact user-provided example:** `01 Red Lips (ft. Sam Bruno) [Skrillex Remix]`.
+
+- `01` = track number with zero padding; write track 1 as `01`, track 9 as `09`, track 10 as `10`. Do not truncate legitimate higher track numbers; the minimum width is two digits.
+- Exactly one **ordinary space** (` `) = the **sole** separator between track number and title. No period, hyphen, underscore, closing parenthesis, or any other delimiter between the track number and the title; no extra spaces.
+- `Red Lips (ft. Sam Bruno) [Skrillex Remix]` = the full, standardized track title. Keep every approved featured artist, remix/version descriptor, original title parenthetical, and their positional `()`, `[]`, `{}` rules in the title. A period in `ft.` or other legitimate **title text** is not forbidden: the ban concerns the separator **after the track number**.
+- For an ALAC `.m4a` file, the complete filename is `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].m4a`. Do not add an `Artist -` prefix in filenames: the artist is represented by metadata and the artist ALAC folder, not the individual track filename. `Artist - Track` examples in the shared glossary are display examples for two fields, not physical filename templates.
+- **Incorrect separator examples:** `01. Red Lips.m4a`, `01 - Red Lips.m4a`, `01_Red Lips.m4a`, `01-Red Lips.m4a`, `01  Red Lips.m4a`, `1 Red Lips.m4a`.
+- The explicit numbering scope for multi-disc albums (e.g. whether numbering resets in each `CD N` folder) and the handling of unusual zero-number/three-digit cases should be specified separately rather than guessed. Keep structural disc folders, metadata, original files, and CUE `FILE` references intact until these edge cases are resolved and the changes have been previewed and approved.
+- Preserve the audio extension matching the actual encoded file; do not rename non-ALAC audio to `.m4a` without conversion. Normalization changes filenames and related CUE references, not audio content.
+
 ## Track filename and artist-credit formatting (2026-10-13)
 
 **Authoritative shared semantics and tests:** [MUSIC_GLOSSARY.md](MUSIC_GLOSSARY.md), using the existing MCC recording-root and featured-artist taxonomy. Track-file naming is distinct from the release-directory grammar below.
