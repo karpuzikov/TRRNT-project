@@ -12,7 +12,7 @@ import threading
 import unittest
 import wave
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.2.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.3.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -221,6 +221,87 @@ class AutomaticBatch(unittest.TestCase):
 
 
 
+class NativeEncoderCompliance(unittest.TestCase):
+    def test_qaac_and_xiph_provenance(self):
+        self.assertEqual(mlo._FLAC_VERSION, "1.5.0")
+        self.assertTrue(mlo._FLAC_ZIP_URL.startswith(
+            "https://ftp.osuosl.org/pub/xiph/releases/flac/"))
+        self.assertTrue(mlo._qaac_official_url().startswith(
+            "https://github.com/nu774/qaac/releases/download/"))
+
+    def test_native_encoder_only_no_ffmpeg_encode(self):
+        from unittest.mock import patch
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            wav = root / "original.wav"
+            wav.write_bytes(b"not a real decoder input: faked runner")
+            calls = []
+            def fake_cmd(argv, timeout=3600):
+                calls.append(list(map(str, argv)))
+                if argv[0] == "ffmpeg":
+                    Path(argv[-1]).write_bytes(b"temporary PCM WAV")
+                elif argv[0] in ("refalac64.exe", "flac.exe"):
+                    target = argv[argv.index("-o")+1]
+                    Path(target).write_bytes(b"native test bitstream")
+                return SimpleNamespace(returncode=0, stderr="", stdout="")
+            for fmt, ext, encoder in (("ALAC", ".m4a", "refalac64.exe"),
+                                      ("FLAC", ".flac", "flac.exe")):
+                calls.clear()
+                dst = root / ("generated" + ext)
+                with patch.object(mlo, "cmd", side_effect=fake_cmd), \
+                     patch.object(mlo, "ensure_encoder", return_value=encoder), \
+                     patch.object(mlo, "_lossless_pcm_format",
+                                  return_value=("pcm_s16le",16,44100)), \
+                     patch.object(mlo, "probe",
+                                  return_value={"codec_name":fmt.lower(),
+                                                "sample_rate":"44100"}), \
+                     patch.object(mlo, "pcm_hash", return_value="same"), \
+                     patch.object(mlo, "_copy_audio_metadata") as tags, \
+                     patch.object(mlo, "DATA", root):
+                    mlo.convert("ffmpeg", wav, dst, fmt, ffprobe="ffprobe",
+                                title="Test", number=1)
+                encodes = [x for x in calls if x[0] in ("flac.exe", "refalac64.exe")]
+                self.assertEqual(len(encodes), 1)
+                self.assertEqual(encodes[0][0], encoder)
+                self.assertTrue(all("-c:a" not in x for x in calls))
+                tags.assert_called_once()
+
+    def test_no_unsupported_codec_fallback(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "audio.wav"
+            src.write_bytes(b"test")
+            with patch.object(mlo, "_lossless_pcm_format",
+                              return_value=("pcm_s16le",16,44100)), \
+                 patch.object(mlo, "ensure_encoder", side_effect=RuntimeError("no refalac64")):
+                with self.assertRaisesRegex(RuntimeError, "refalac64"):
+                    mlo.convert("ffmpeg", src, Path(td)/"output.m4a", "ALAC",
+                                ffprobe="ffprobe")
+                self.assertFalse((Path(td)/"output.m4a").exists())
+
+    def test_floating_pcm_and_lossy_sources_refused(self):
+        from unittest.mock import patch
+        with patch.object(mlo, "probe", return_value={
+                "codec_name":"pcm_f32le", "sample_fmt":"flt", "sample_rate":"48000",
+                "bits_per_sample":32}):
+            with self.assertRaisesRegex(RuntimeError, "Floating-point"):
+                mlo._lossless_pcm_format("ffprobe", Path("test.wav"))
+        with patch.object(mlo, "probe", return_value={
+                "codec_name":"mp3", "sample_fmt":"fltp", "sample_rate":"44100"}):
+            with self.assertRaisesRegex(RuntimeError, "Lossy"):
+                mlo._lossless_pcm_format("ffprobe", Path("test.mp3"))
+
+    def test_zip_traversal_rejected(self):
+        import io, zipfile
+        with tempfile.TemporaryDirectory() as td:
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as z:
+                z.writestr("../unwanted.exe", b"unsafe")
+            with self.assertRaisesRegex(RuntimeError, "Unsafe"):
+                mlo._safe_zip_extract(buf.getvalue(), Path(td)/"target")
+
+
 class DiscIDAndWorkers(unittest.TestCase):
     def test_suggested_output_and_worker_defaults(self):
         self.assertEqual(mlo.suggested_output(r"C:\Music\INNA - UPDATED").replace("\\", "/"),
@@ -402,9 +483,21 @@ class CueAndDiscovery(unittest.TestCase):
                 w.setframerate(44100)
                 w.writeframes(b"\x00\x00\x00\x00" * 88200)
             f = shutil.which("ffmpeg")
-            for mode, ext in (("FLAC", ".flac"), ("ALAC", ".m4a")):
+            # On non-Windows, exercise official Xiph flac directly.
+            # refalac64.exe requires Windows and must not be substituted.
+            from unittest.mock import patch
+            encoders = [("FLAC", ".flac", shutil.which("flac"))]
+            if mlo.IS_WIN:
+                encoders.append(("ALAC", ".m4a", None))
+            for mode, ext, available in encoders:
+                if not mlo.IS_WIN and not available:
+                    self.skipTest("The official FLAC CLI is not installed.")
                 dst = Path(td) / ("01 Segment" + ext)
-                mlo.convert(f, source, dst, mode, 0, 44100, "Segment", 1)
+                with patch.object(mlo, "ensure_encoder",
+                                  return_value=available or mlo.ensure_encoder(mode)), \
+                     patch.object(mlo, "DATA", Path(td)):
+                    mlo.convert(f, source, dst, mode, 0, 44100, "Segment", 1,
+                                ffprobe=shutil.which("ffprobe"))
                 self.assertTrue(dst.is_file())
                 self.assertEqual(mlo.pcm_hash(f, source, 0, 44100), mlo.pcm_hash(f, dst))
 
