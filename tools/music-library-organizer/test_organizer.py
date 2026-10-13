@@ -78,6 +78,21 @@ class UserExamples20261014(unittest.TestCase):
         self.assertEqual(title2,
                          "Diggy Down (ft. Marian Hill) [Extended Version]")
 
+    def test_explicit_feature_removed_from_combined_artist_tag(self):
+        title, artist = mlo.normalize_artist_title(
+            "Diggy Down (Radio Edit) [ft. Marian Hill]",
+            "INNA & Marian Hill", "INNA")
+        self.assertEqual(title, "Diggy Down (ft. Marian Hill) [Radio Edit]")
+        self.assertEqual(artist, "INNA")
+        title2, artist2 = mlo.normalize_artist_title(
+            "Diggy Down (Extended Version) [ft. Marian Hill]",
+            "INNA, Marian Hill", "INNA")
+        self.assertEqual(title2, "Diggy Down (ft. Marian Hill) [Extended Version]")
+        self.assertEqual(artist2, "INNA")
+        title3, artist3 = mlo.normalize_artist_title(
+            "Song (ft. Artist B)", "Artist A & Artist B", "Unrelated")
+        self.assertEqual(artist3, "Artist A & Artist B")
+
     def test_bob_taylor_reverse_credit_requires_consensus(self):
         value = "Deja Vu (Wideboy Stadium Radio Edit) [Bob Taylor ft. INNA]"
         original, artist = mlo.normalize_artist_title(value, "Bob Taylor")
