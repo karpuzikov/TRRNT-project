@@ -1,4 +1,4 @@
-# Music Library Organizer v0.1.2 - source-level regression tests.
+# Music Library Organizer v0.3.1 - source-level regression tests.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -12,7 +12,7 @@ import threading
 import unittest
 import wave
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.0.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.1.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -121,7 +121,7 @@ class AutomaticBatch(unittest.TestCase):
                     inp / "01 Track.flac", out / "01 Track.flac")
                 with patch.object(mlo, "release_identity", side_effect=self.identity), \
                      patch.object(mlo, "ensure_ffmpeg", return_value=("ff", "ffprobe")), \
-                     patch.object(mlo, "locate_checker", return_value=None), \
+                     patch.object(mlo, "setup_checker", return_value=None), \
                      patch.object(mlo, "check_web_release", side_effect=RuntimeError("checker missing")):
                     app._organize(source, output, "FLAC")
                     self.assertEqual(app.counts["partial"], 1)
@@ -157,7 +157,7 @@ class AutomaticBatch(unittest.TestCase):
                 app._export_release = export
                 with patch.object(mlo, "release_identity", side_effect=self.identity), \
                      patch.object(mlo, "ensure_ffmpeg", return_value=("ff", "ffprobe")), \
-                     patch.object(mlo, "locate_checker", return_value=None), \
+                     patch.object(mlo, "setup_checker", return_value=None), \
                      patch.object(mlo, "check_web_release", side_effect=RuntimeError("checker missing")):
                     app._organize(source, dest, "FLAC")
                 self.assertEqual(app.counts["failed"], 1)
@@ -171,6 +171,129 @@ class AutomaticBatch(unittest.TestCase):
             number, title, _ = mlo.extract_number_title(Path("01 OK (Extended Version).flac"))
             self.assertEqual(number, 1)
             self.assertEqual(title, "OK (Extended Version)")
+
+
+
+class DiscIDAndWorkers(unittest.TestCase):
+    def test_suggested_output_and_worker_defaults(self):
+        self.assertEqual(mlo.suggested_output(r"C:\Music\INNA - UPDATED").replace("\\", "/"),
+                         "C:/Music/INNA - UPDATED - Sorted")
+        self.assertGreaterEqual(mlo.worker_limit(), 1)
+        enc, checking = mlo.worker_defaults()
+        self.assertTrue(1 <= enc <= mlo.worker_limit())
+        self.assertTrue(1 <= checking <= mlo.worker_limit())
+
+    def test_discid_uses_cue_corrector_sector_algorithm(self):
+        import base64, hashlib
+        start = [0, 150]
+        leadout = 330
+        result = mlo._disc_identity(start, leadout)
+        payload = "01" + "02" + f"{leadout+150:08X}"
+        payload += "".join(f"{n+150:08X}" for n in start) + ("0" * (97*8))
+        expected = base64.b64encode(hashlib.sha1(payload.encode("ascii")).digest()).decode("ascii")
+        expected = expected.replace("+", ".").replace("/", "_").replace("=", "-")
+        self.assertEqual(result["discid"], expected)
+        self.assertEqual(result["toc"], "1 2 480 150 300")
+
+    def test_barcode_and_discid_must_agree_on_concrete_edition(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            folder = Path(td) / "2007-01-01 - Example [US - 1234567890123]"
+            folder.mkdir()
+            cue = folder / "rip.cue"
+            cue.write_text('FILE "image.wav" WAVE\n  TRACK 01 AUDIO\n    TITLE "A"\n    INDEX 01 00:00:00\n  TRACK 02 AUDIO\n    TITLE "B"\n    INDEX 01 00:02:00\n', encoding="utf8")
+            log = folder / "rip.log"
+            log.write_text('1 | 0:00.00 | 0:02.00 | 0 | 149\n'
+                           '2 | 0:02.00 | 0:02.00 | 150 | 329\n')
+            (folder / "image.wav").write_bytes(b"dummy CD audio")
+            calls = []
+            def fake_mb(path, **kwargs):
+                calls.append(path)
+                if path.startswith("discid/"):
+                    return {"releases": [{"id": "disc-edition"}, {"id": "other-edition"}]}
+                if path.startswith("release/?"):
+                    return {"releases": [{"id": "disc-edition", "barcode": "1234567890123"}]}
+                if path.startswith("release/disc-edition"):
+                    return {"id": "disc-edition", "title": "Example",
+                            "barcode": "1234567890123", "country": "US",
+                            "media": [{"format": "CD"}],
+                            "label-info": [{"catalog-number": "CAT-12"}],
+                            "release-group": {"first-release-date": "2006-11-18", "primary-type": "Album"}}
+                raise RuntimeError("Unexpected MusicBrainz request " + path)
+            with patch.object(mlo, "mb_json", side_effect=fake_mb):
+                info = mlo.release_identity(folder, mlo.collect_files(folder), default_artist="Artist")
+            self.assertTrue(any(x.startswith("discid/") for x in calls))
+            self.assertTrue(any("barcode%3A1234567890123" in x for x in calls))
+            self.assertEqual(info["catalog"], "CAT-12")
+            self.assertEqual(info["date"], "2006-11-18")
+            self.assertEqual(info["selected_release"], "disc-edition")
+            self.assertEqual(mlo.release_folder_target(info),
+                             "2006-11-18 - Example [US - CAT-12]")
+
+    def test_ambiguous_discid_preserves_original_name(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            folder = Path(td) / "2001 - Ambiguous CD [US - none]"
+            folder.mkdir()
+            (folder / "A.cue").write_text('FILE "album.wav" WAVE\n'
+                             '  TRACK 01 AUDIO\n    TITLE "A"\n    INDEX 01 00:00:00\n'
+                             '  TRACK 02 AUDIO\n    TITLE "B"\n    INDEX 01 00:01:00\n')
+            (folder / "album.wav").write_bytes(b"test")
+            (folder / "A.log").write_text('1 | 0:00.00 | 0:01.00 | 0 | 74\n'
+                                          '2 | 0:01.00 | 0:01.00 | 75 | 149\n')
+            with patch.object(mlo, "mb_json", return_value={
+                    "releases": [{"id": "edition1"}, {"id": "edition2"}]}):
+                info = mlo.release_identity(folder, mlo.collect_files(folder), default_artist="Artist")
+            self.assertFalse(info["metadata_verified"])
+            self.assertEqual(mlo.release_folder_target(info), folder.name)
+
+    def test_user_supplied_checker_zip_is_located_and_isolated(self):
+        import zipfile
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            archive = base / "Audio_Checker_UTF8_Multicore.zip"
+            with zipfile.ZipFile(archive, "w") as z:
+                z.writestr("Audio_Checker_UTF8_Multicore/Codecs/FLAC/flac.exe", b"fake-decoder")
+                z.writestr("Audio_Checker_UTF8_Multicore/Codecs/Analyzer/aucdetect.exe", b"fake-analyzer")
+            root = base / "data"
+            with patch.object(mlo, "DEPS", root), \
+                 patch.object(mlo, "_checker_archive_candidates", return_value=[archive]):
+                tools = mlo.setup_checker()
+                self.assertTrue(tools["flac"].is_file())
+                self.assertTrue(tools["analyzer"].is_file())
+                self.assertEqual(tools["flac"].read_bytes(), b"fake-decoder")
+
+    def test_worker_count_in_parallel_checker_log(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            dest = Path(td)
+            items = [dest / "01 Track.flac", dest / "02 Song.flac"]
+            for path in items:
+                path.write_bytes(b"fake for mock")
+            def fake_job(path, tools, ff, event):
+                return path, "CDDA", 100, ""
+            with patch.object(mlo, "_checker_job", side_effect=fake_job):
+                reports = mlo.check_web_release(dest, "FLAC", "", {"analyzer": 1, "flac": 1},
+                                               threading.Event(), workers=2)
+            self.assertEqual(reports[0]["workers"], 2)
+            self.assertTrue((dest / "audiochecker.log").exists())
+            self.assertTrue(mlo.is_real_checker_log(dest / "audiochecker.log", items))
+
+    def test_encoding_worker_parallel_copy_and_title_fidelity(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            source = Path(td) / "Source"
+            dest = Path(td) / "Output"
+            source.mkdir()
+            for n in range(1, 4):
+                (source / f"{n:02d} Track {n}.flac").write_bytes(bytes([n]*20))
+            app = mlo.Organizer()
+            app.encoding_workers = 3
+            with patch.object(mlo, "probe", return_value={"codec_name": "flac"}):
+                app._export_release(source, dest, "FLAC", "unused", "unused")
+            for n in range(1, 4):
+                self.assertTrue((dest / f"{n:02d} Track {n}.flac").exists())
 
 
 class CueAndDiscovery(unittest.TestCase):
