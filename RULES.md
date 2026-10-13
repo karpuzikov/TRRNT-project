@@ -1,6 +1,6 @@
 # Discography Torrent Project - Rules
 
-Last updated: 2026-10-05
+Last updated: 2026-10-13
 
 This file is the project-specific rulebook for the Discography Builder and Duplicate / Edition Analyzer.
 The account-wide `SOFTWARE_RULES.md` baseline always applies. This file may add stricter project-specific requirements but must never weaken or override a newer global rule or a newer explicit user instruction. When project rules conflict with the global baseline, the stricter/newer requirement wins.
@@ -10,6 +10,16 @@ The account-wide `SOFTWARE_RULES.md` baseline always applies. This file may add 
 The independent canonical repository for all Discography Torrent Project-owned source code, utilities, workflow assets, and current project documentation is **`karpuzikov/TRRNT-project`**. The former `karpuzikov/userscripts/audio-tools/discography-torrent-project/` directory is historical only; do not write new project updates there. Maintain this repository's root `SOFTWARE_RULES.md`, `UI_UX_RULES.md`, and `UI_UX_ACCEPTANCE.md` as exact mirrors of the account-wide canonical files in `karpuzikov/userscripts`.
 
 Preserve reference DEA `tools/Duplicate Edition Analyzer v0.22.12.pyw` on `main`, historical versions, and their separate development branches (including `dea-lightweight-modern`). The former DEA Actions YAML files have been archived in `archived-workflows/` rather than enabled in `.github/workflows/`; **do not activate/modify them without an explicit user request**. See `MIGRATION.md` for the verified file-by-file SHA manifest and limitations. Original compiled EXE release assets and GitHub history remain linked from the old repo; migrating source does not imply those assets or histories were transferred.
+
+## CD folder naming - country means manufacturing/pressing country (2026-10-13)
+
+- In a physical CD release folder, the country code in a bracketed physical-edition identifier such as `[US - Catalog Number]` means **the country in which that particular CD was manufactured/pressed**.
+- **Never substitute** the MusicBrainz release country, release/marketing territory, distribution market, artist's nationality, record label's headquarters, or region of sale for the CD manufacturing/pressing country.
+- Use the country code only when the exact physical edition's manufacturing/pressing country is supported by reliable evidence (for example, verified disc/packaging text or reliable pressing/manufacturing details). A barcode or catalog number by itself does not establish the pressing country.
+- `EU` is a region, not a country; do not treat it as a known manufacturing country. Do not infer an individual country from `Made in EU`.
+- When the actual country is unknown, omit the country prefix rather than guessing. Do not add a CD pressing-country prefix to WEB/digital releases.
+- Examples from the supplied naming sample: `[US - none]` asserts US manufacture/pressing only if verified; `[JP - TOCP-66683]` asserts Japanese manufacture/pressing only if verified. Existing folder names are examples, not verification of their pressing locations.
+- This is a **filesystem naming rule**, independent of duplicate identity, country of release, and CD-rip provenance classification. Renaming must be previewed and must not silently alter or corrupt CUE references.
 
 ## 1. Core objective
 
