@@ -589,7 +589,11 @@ def release_identity(folder, files, default_artist="", allow_network=True):
                                           _key(found_title)).ratio()
             if sim < 0.78:
                 continue
-            medium = [str(m.get("format", "")).lower() for m in entry.get("media", [])]
+            media_rows = entry.get("media", [])
+            if not media_rows and entry.get("id"):
+                data = mb_json("release/" + str(entry["id"]) + "?inc=release-groups+labels&fmt=json")
+                media_rows = data.get("media", [])
+            medium = [str(m.get("format", "")).lower() for m in media_rows]
             is_cd = any("cd" in x for x in medium)
             digital = any("digital media" in x for x in medium)
             if has_cd and digital and not is_cd:
