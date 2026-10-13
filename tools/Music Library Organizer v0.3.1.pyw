@@ -915,6 +915,8 @@ _CHECKER_FILES = {
     "Codecs/FLAC/flac.exe": "Codecs/FLAC/flac.exe",
     "Codecs/Analyzer/aucdtect.exe": "Codecs/Analyzer/aucdetect.exe",
     "CDRip3.dll": "CDRip3.dll",
+    "Codecs/FLAC/flac.exe.manifest": "Codecs/FLAC/flac.exe.manifest",
+    "Codecs/Analyzer/aucdtect.exe.manifest": "Codecs/Analyzer/aucdtect.exe.manifest",
 }
 
 
@@ -1742,7 +1744,7 @@ table{border-collapse:collapse;table-layout:fixed;width:100%}th,td{padding:8px 1
 <div class="options"><label for="format">Output format</label><select id="format" aria-label="Output format"><option value="ALAC">ALAC (.m4a)</option><option value="FLAC">FLAC (.flac)</option></select>
 <label for="encodeWorkers">Encoding workers</label><select id="encodeWorkers" aria-label="Number of simultaneous encoding workers"></select>
 <label for="checkWorkers">AudioChecker workers</label><select id="checkWorkers" aria-label="Number of simultaneous AudioChecker workers"></select>
-<span class="muted">Supplied AudioChecker ZIP detected automatically; all settings saved.</span></div></div></section>
+<span class="muted">Looks for supplied AudioChecker ZIP automatically; worker choices are saved.</span></div></div></section>
 <section class="card" id="progress"><div class="progress-head"><span id="status" role="status" aria-live="polite">Ready</span><span id="percent">0%</span></div><div class="track" id="progressBar" role="progressbar" aria-label="Organization progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill"></div></div>
 <div class="counts"><span><b id="total">0</b> found</span><span><b id="done">0</b> compliant</span><span><b id="partial">0</b> partial</span><span><b id="skipped">0</b> already present</span><span><b id="failed">0</b> failed</span><span><b id="warnings">0</b> warnings</span></div>
 <div id="detail">Input files remain untouched. Any genuine errors will appear below.</div></section>
