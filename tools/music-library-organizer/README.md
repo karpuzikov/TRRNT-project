@@ -1,12 +1,20 @@
 # Music Library Organizer
 
-**Candidate: v0.3.6 - Under construction ⚠️** (feature branch, unmerged; v0.3.5 remains on main)
+**Candidate: v0.3.7 - Under construction ⚠️** (feature branch, unmerged; v0.3.5 remains on main)
 
-**[Music Library Organizer v0.3.6.pyw](../Music%20Library%20Organizer%20v0.3.6.pyw)**
+**[Music Library Organizer v0.3.7.pyw](../Music%20Library%20Organizer%20v0.3.7.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
 
-## v0.3.6 - AudioChecker archive and copyable Results fixes
+## v0.3.7 - integrated AudioChecker in the single-file app
+
+**No AudioChecker ZIP, path field, Browse ZIP button, auCDtect executable or separate checker download required.** The program automatically performs its own spectral audio analysis for WEB releases and produces `audiochecker.log` in the staged organized output, with bounded AudioChecker workers and a SHA-256 report-integrity footer. Physical CDs never receive such a report. The source is never modified.
+
+**Important provenance:** This new analyzer uses original pure-Python FFT frequency-band analysis of PCM decoded through the existing FFmpeg/FFprobe toolchain. It can flag strong bandlimiting, find no strong cutoff, or return inconclusive; these are *not* auCDtect's proprietary CDDA/MPEG probability scores. A cutoff may be production EQ rather than proof of lossy re-encoding, and no cutoff cannot prove original CDDA/lossless provenance. No invented percentages. Flagged or inconclusive outputs remain PARTIAL; processing errors are explicit.
+
+**Verification:** The independent kernel compiled with Python 3.13.5 and real FFmpeg synthetic fullband/lowpass signals produced expected distinct diagnostic classes and a valid two-track report. Full v0.3.7 application compilation/regressions and actual Windows GUI/AudioChecker INNA workflow **NOT RUN**, still Under construction ⚠️. The input/output hierarchy, exclusive refalac64/Xiph encoders, DiscID/CUE logic, result selection, Undo and isolated settings remain.
+
+## Historical v0.3.6 - superseded checker ZIP workflow and Results fixes
 
 - Correctly install and accept the supplied AudioChecker ZIP whether `Codecs/Analyzer/aucdtect.exe` is stored at archive root or beneath an enclosing directory. Reject traversal, absolute ZIP members and conflicting duplicate binary entries; no third-party executables are committed.
 - For tracks that explicitly contain a featured performer, remove the same redundant performer from exact two-artist ARTIST spellings (e.g. `INNA & Marian Hill` -> `INNA` while retaining `(ft. Marian Hill)` in TITLE). Avoid guessing for unrelated credits.
