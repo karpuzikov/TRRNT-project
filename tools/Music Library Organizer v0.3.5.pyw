@@ -2243,6 +2243,31 @@ class Organizer:
                     rewritten = new_cues[fp]
                 else:
                     cue = cue_read(fp)
+                    original_refs = [r["file"] for r in cue["records"] if r["file"]]
+                    # A shared old WAV image is not recoverable from several
+                    # already-split files without reliable pregap provenance.
+                    # This is not a reason to throw away valid audio tracks.
+                    is_shared = (len(original_refs) > 1 and
+                                 len({x.casefold() for x in original_refs}) < len(original_refs))
+                    is_absent = any(
+                        not (fp.parent / x.replace(chr(92), os.sep)).is_file()
+                        for x in original_refs)
+                    if is_shared and is_absent:
+                        if not any(path.parent == fp.parent for path in mapping):
+                            raise RuntimeError(
+                                "Original shared CUE WAV missing and no surviving split tracks.")
+                        unresolved_cues.add(fp)
+                        fallback = target.parent / ("Unresolved CUE - " + fp.stem + ".cue")
+                        if os.path.lexists(fallback):
+                            raise RuntimeError("Unresolved CUE filename collision.")
+                        shutil.copy2(fp, fallback)
+                        if sha(fp) != sha(fallback):
+                            raise RuntimeError("CUE evidence copy differs from original.")
+                        getattr(self, "_export_warnings", []).append(
+                            fp.name + ": shared source album image missing; "
+                            "original CUE preserved as unresolved because pregap "
+                            "alignment cannot be safely reconstructed.")
+                        continue
                     refs = {}
                     unresolved_reason = None
                     for rec in cue["records"]:
