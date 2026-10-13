@@ -1,10 +1,16 @@
 # Music Library Organizer
 
-**Candidate: v0.3.9 - Under construction ⚠️** (native classifier integration incomplete) (feature branch, unmerged; v0.3.5 remains on main)
+**Candidate: v0.3.10 - Under construction ⚠️** (native auCDtect provisioning and Windows tests incomplete) (feature branch, unmerged; v0.3.5 remains on main)
 
-**[Music Library Organizer v0.3.9.pyw](../Music%20Library%20Organizer%20v0.3.9.pyw)**
+**[Music Library Organizer v0.3.10.pyw](../Music%20Library%20Organizer%20v0.3.10.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.10 - optional processing checkboxes and precise digital dates
+
+The original compact WebView2 UI now has three **independent checkboxes** (default ON, persisted): **Encode audio**, **AudioChecker**, **Split album images (CUE)**. Disabling Encoding copies ordinary lossless audio in its original codec and extension and updates staged metadata where supported, without transcoding. Disabling Split keeps a CUE-referenced album image whole, with valid rewritten CUE paths. Enabling Split uses the selected native refalac64/Xiph encoder even if ordinary Encoding is unchecked, since a split must produce new audio tracks. Disabling AudioChecker skips analysis and its log requirement entirely. Enabling it still requires **authentic auCDtect**; the binary's fully legal self-contained provisioning remains unsolved (no fabricated verdicts).
+
+**New date rule:** For a DIGITAL/WEB release, January 1 (`YYYY-01-01`) is only a year placeholder. Output `YYYY - Album [identifier]`, never an invented month/day. Physical releases keep their actual supplied dates. New regression fixtures and isolated mock UI state checks added. Full application tests and real Windows acceptance **NOT RUN**. Existing folders are skipped, so choose an empty output destination for validation.
 
 ## v0.3.9 - original auCDtect engine and historic AudioChecker report
 
