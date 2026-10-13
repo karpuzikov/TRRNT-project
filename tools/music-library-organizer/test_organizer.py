@@ -296,7 +296,7 @@ class DesktopStartupRecovery(unittest.TestCase):
                 pass
         with tempfile.TemporaryDirectory() as td:
             backend = Backend()
-            instance = mlo.Organizer()
+            instance = type("FakeOrganizer", (), {})()
             root = Path(td)/"one-session"
             with patch.object(mlo, "ensure_data"), \
                  patch.object(mlo, "_startup_logger", return_value=Log()), \
