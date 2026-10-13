@@ -49,6 +49,10 @@ Canonical decision rules: [`RULES.md`](RULES.md). All duplicate/edition/source-s
 19. Post the torrent.
 20. Run `CUE LOG 4.1.pyw` to collect LOG/CUE data and post it as a comment.
 
+## Shared track classification vocabulary
+
+All filename/title/credit normalization in this project must reuse the [canonical shared MUSIC_GLOSSARY.md](MUSIC_GLOSSARY.md), grounded in [MCC's existing semantics](https://github.com/karpuzikov/MCC/blob/main/RULES.md). In particular, a title like `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is a **remix with a featured artist** (two independent attributes); do not treat it as merely alternate feature punctuation, collapse it to the base recording, or claim the feature was newly added without the MCC comparison criteria. Internal title-comparison key canonicalization does not dictate the final on-disk filename rendering. The complete file naming format still needs approval.
+
 ## File organization and naming stage (planned; not yet implemented)
 
 A dedicated folder and file organization stage runs **after ALAC conversion and metadata/tag normalization, before artwork processing**. Use the ALAC-only portions of the user-supplied `!torrent_Structure.txt` as sample data, not as proof that every existing folder name is correct.
