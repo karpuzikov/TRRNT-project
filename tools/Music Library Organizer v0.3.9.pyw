@@ -1715,6 +1715,16 @@ def _original_checker_job(track, ff, ffprobe, native, stop_event):
     details = probe(ffprobe, track)
     rate = int(details.get("sample_rate") or 0)
     channels = int(details.get("channels") or 0)
+    declared_depth = details.get("bits_per_raw_sample") or details.get("bits_per_sample")
+    try:
+        depth = int(declared_depth)
+    except (TypeError, ValueError):
+        depth = 0
+    if depth and depth != 16:
+        raise RuntimeError(
+            f"{track.name}: original audio is {depth}-bit, not CD 16-bit. "
+            "Converting to 16-bit could change the original auCDtect result; "
+            "no fabricated parity report is permitted.")
     if rate != 44100 or channels not in (1, 2):
         raise RuntimeError(
             f"Original auCDtect CD-audio mode needs 44100 Hz mono/stereo; "
