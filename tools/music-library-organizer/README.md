@@ -1,10 +1,24 @@
 # Music Library Organizer
 
-**Current: v0.3.3 - Under construction ⚠️**
+**Current: v0.3.4 - Under construction ⚠️**
 
-**[Download Music Library Organizer v0.3.3.pyw](../Music%20Library%20Organizer%20v0.3.3.pyw)**
+**[Download Music Library Organizer v0.3.4.pyw](../Music%20Library%20Organizer%20v0.3.4.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.4 WebView2 startup and connection recovery
+
+**Bug reported by actual Windows user in v0.3.3:** "Desktop connection failed" followed by an unresponsive window. After forced closure, some launches displayed a black WebView2 window; repeated restarts were required. Root-cause source audit found that startup JS would try to access `window.pywebview.api` every 50 ms for only 6 seconds, then permanently reject; every 900 ms the UI issued another such request, allowing overlapping operations. Also the *entire Organizer* object was passed as pywebview `js_api`, including references to its WebView2 window, locks and threading events; pywebview introspection could recursively traverse unnecessary nested objects.
+
+**Fixes made:**
+- Expose `DesktopBridge`, a minimal dedicated js_api facade with explicit state, browse, open-folder, open-log, organize, cancel, undo and diagnostics methods. It stores the main Organizer in the private `_organizer` attribute rather than exposing `window`, locks, background worker state or native objects to bridge reflection.
+- Subscribe to the official `pywebviewready` DOM event, retry if injection is delayed, and never irreversibly fail after the first 6 seconds. Change to **single-flight polling**, a per-request timeout, bounded reconnect backoff and a visible **Retry connection** action only when disconnected. Organize is initially disabled until the desktop state is available. Late readiness restores all controls.
+- Start Edge WebView2 with **a different writable profile on each process start**, under `Documents\Karpuzikov Tools\Music Library Organizer\webview2-sessions\`, to avoid reusing a locked/corrupt renderer profile after force-quit. Attempt cleanup of prior inactive session profiles without touching any other applications.
+- Add a Windows named mutex to prevent concurrent app instances using the same output/Undo state. Persist WebView2 startup events and exceptions in `Documents\Karpuzikov Tools\Music Library Organizer\webview-startup.log` and preserve existing `startup-error.log` and activity logs. JavaScript unhandled errors are forwarded to native activity log when connection exists.
+
+**Testing:** Source and HTML script syntax verified; simulated a late `pywebviewready` event and confirmed disabled-before-connection / enabled-after-connection controls with mock DOM in V8: **PASS**. Added source-level regression tests for the bridge facade, private WebView2 session path, and mocked main startup; these Python tests have **NOT** been run in the target Windows runtime. **Actual Windows forced-close/restart and black-screen verification is still pending.** Do not label stable.
+
+**Next Windows test:** Open v0.3.4 three times normally; force-close once during idle, reopen and verify it draws immediately and all buttons respond; then force-close during a disposable test job and verify staged files, Undo and no duplicate launch. If any launch fails, check `webview-startup.log`, `startup-error.log`, and `activity.log` in the isolated Documents app directory. A failed job is not grounds to delete original files.
 
 ## v0.3.3 strict native lossless encoders (current)
 
