@@ -3,6 +3,12 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Music Library Organizer v0.3.5 - INNA real-log audit and mandatory title/credit repairs - 2026-10-14
+
+- v0.3.4 user log `Pasted text(4).txt`: **94 releases, 0 DONE, 93 PARTIAL, 1 FAILED**. All WEB AudioChecker results missing because ZIP not found; bad release feature/title case, Diggy Down order/embedded title mismatch, Bob Taylor/INNA credit reversal, weak physical title parsing, Party Never Ends 16-track DiscID falsely ambiguous vs 2-disc release, CUE missing historical WAV abort, nonselectable Results and absent Open log folder.
+- New `tools/Music Library Organizer v0.3.5.pyw`: fixes release title feature exclusion and Extended Mix/Remix case, tag+filename Diggy Down alignment, majority-evidence same-song ARTIST credit normalization (do not hardcode remix titles), one-vs-two-CD DiscID media/track structure filter, original CUE preserved as `Unresolved CUE - ...` alongside all valid audio instead of bogus repair, explicit PARTIAL, checker ZIP path Browse + persistence + multi-volume downloads checks, selectable/copyable Results + log folder button. Source/rules/glossary/regression fixtures and `AUDIT_INNA_2026-10-14.md` committed. Independent Github paths isolated; no MCC or Actions edits.
+- JS syntax verification PASS. **Actual Python compilation/unit suite and Windows GUI/94 audio releases/real AudioChecker native testing NOT RUN**. Status remains 0.3.5 - Under construction ⚠️. User should test with source backup and blank output; no original file mutations.
+
 ## Music Library Organizer v0.3.4 - recover desktop bridge and black window - 2026-10-13
 
 - User reports v0.3.3 starts with "Desktop connection failed", hangs; force-close/reopen intermittently displays blank black WebView2 windows. Source audit: JS bridge probe gives up after only 6 sec, never subscribes to `pywebviewready`; periodic refresh overlaps while bridge is slow; exposing whole `Organizer` to js_api may trigger nested reflection into a WebView2 native window/locks.
