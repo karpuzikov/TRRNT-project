@@ -2155,20 +2155,65 @@ table{border-collapse:collapse;table-layout:fixed;width:100%}th,td{padding:8px 1
 <label for="encodeWorkers">Encoding workers</label><select id="encodeWorkers" aria-label="Number of simultaneous encoding workers"></select>
 <label for="checkWorkers">AudioChecker workers</label><select id="checkWorkers" aria-label="Number of simultaneous AudioChecker workers"></select>
 <span class="muted">Looks for supplied AudioChecker ZIP automatically; worker choices are saved.</span></div></div></section>
-<section class="card" id="progress"><div class="progress-head"><span id="status" role="status" aria-live="polite">Ready</span><span id="percent">0%</span></div><div class="track" id="progressBar" role="progressbar" aria-label="Organization progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill"></div></div>
+<section class="card" id="progress"><div class="progress-head"><span id="status" role="status" aria-live="polite">Connecting to desktop...</span><span id="percent">0%</span></div><div class="track" id="progressBar" role="progressbar" aria-label="Organization progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill"></div></div>
 <div class="counts"><span><b id="total">0</b> found</span><span><b id="done">0</b> compliant</span><span><b id="partial">0</b> partial</span><span><b id="skipped">0</b> already present</span><span><b id="failed">0</b> failed</span><span><b id="warnings">0</b> warnings</span></div>
 <div id="detail">Input files remain untouched. Any genuine errors will appear below.</div></section>
 <section class="card" id="results"><div class="head"><strong>Results</strong></div><div class="tools"><input type="text" id="query" placeholder="Filter results..." aria-label="Filter results"><button id="openLog">↗ Open log</button><span class="space"></span><span id="resultCount" class="muted">Not started</span></div>
 <div class="tablewrap"><table><thead><tr><th style="width:14%">Result</th><th style="width:31%">Release</th><th>Details</th></tr></thead><tbody id="rows"><tr><td colspan="3" class="empty">Press Organize to begin.</td></tr></tbody></table></div></section>
 </main>
-<footer id="foot"><button class="primary" id="organize">▶ Organize</button><button id="cancel" disabled>✕ Cancel</button><button id="undo" disabled>↶ Undo last run</button><span class="space"></span><span id="message" aria-live="polite" role="status"></span></footer>
+<footer id="foot"><button class="primary" id="organize" disabled>▶ Organize</button><button id="cancel" disabled>✕ Cancel</button><button id="undo" disabled>↶ Undo last run</button><button id="reconnect" style="display:none" title="Retry connecting to the local Python application">↻ Retry connection</button><span class="space"></span><span id="message" aria-live="polite" role="status"></span></footer>
 <script>
 let state=null,initialized=false,working=false,query="",suggestedDest="";
+let pollBusy=false,bridgeFailures=0,nextRetry=0,connected=false;
+const bootTime=Date.now();
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-async function api(method,...args){for(let j=0;j<120;j++){let a=window.pywebview&&window.pywebview.api;if(a&&typeof a[method]==="function")return a[method](...args);await new Promise(r=>setTimeout(r,50));}throw Error("Desktop connection failed.");}
+function bridgeMethod(method){
+ const api=window.pywebview&&window.pywebview.api;
+ return api&&typeof api[method]==="function"?api[method]:null;
+}
+async function api(method,...args){
+ const fn=bridgeMethod(method);
+ if(!fn)throw Error("Desktop connection is still initializing.");
+ return fn(...args);
+}
+async function deadline(promise,ms){
+ let timer;
+ try {
+  return await Promise.race([promise,new Promise((_,reject)=>{
+   timer=setTimeout(()=>reject(Error("Desktop request timed out.")),ms);
+  })]);
+ }finally{clearTimeout(timer);}
+}
+function setBridgeState(ready){
+ connected=ready;
+ if(!ready){
+  for(const id of ["organize","browseSource","browseDest","openLog","openSource","openDest","undo","cancel"])$(id).disabled=true;
+  if(!state)$('status').textContent="Connecting to desktop...";
+  if(Date.now()-bootTime>8000){
+   $('status').textContent="Desktop connection unavailable - retrying";
+   $('reconnect').style.display="";
+   $('detail').textContent="The WebView2/Python connection is delayed. The organizer keeps retrying without losing your input.";
+  }
+ }else{$('reconnect').style.display="none";}
+}
+
 function error(e){$('message').textContent=String(e&&e.message||e);}
-async function call(name,...args){try{const out=await api(name,...args);if(out&&out.error)throw Error(out.error);await refresh();return out;}catch(e){error(e);return null;}}
+async function call(name,...args){
+ if(!connected){error("The desktop connection is not ready yet.");return null;}
+ try{
+  const out=await deadline(api(name,...args),30000);
+  if(out&&out.error)throw Error(out.error);
+  await refresh(true);
+  return out;
+ }catch(e){
+  error(e);
+  if(e&&String(e.message).includes("timed out")){
+   $('message').textContent="Desktop did not answer. Operation might still be running; check Results before retrying.";
+  }
+  return null;
+ }
+}
 function render(){
  if(!state)return;
  if(!initialized){
@@ -2193,7 +2238,31 @@ function render(){
  $('resultCount').textContent=list.length+" shown / "+(state.results||[]).length+" processed";
  $('rows').innerHTML=list.slice(-500).map(x=>'<tr><td class="'+esc(x.status)+'"><b>'+esc(x.status.toUpperCase())+'</b></td><td><b>'+esc(x.name)+'</b><div class="small">'+esc(x.target)+'</div></td><td>'+esc(x.message)+(x.warnings&&x.warnings.length?'<div class="small warning">'+esc(x.warnings.join(" | "))+'</div>':"")+'</td></tr>').join("")||'<tr><td colspan="3" class="empty">'+(working?"Working...":"No releases processed yet.")+'</td></tr>';
 }
-async function refresh(){try{state=await api("state");render();}catch(e){error(e);}}
+async function refresh(force=false){
+ if(pollBusy||(!force&&Date.now()<nextRetry))return;
+ if(!bridgeMethod("state")){
+  bridgeFailures++;
+  nextRetry=Date.now()+1000;
+  setBridgeState(false);
+  return;
+ }
+ pollBusy=true;
+ try{
+  const response=await deadline(api("state"),8000);
+  if(!response||typeof response!=="object")throw Error("Desktop returned invalid state.");
+  state=response;bridgeFailures=0;nextRetry=0;
+  setBridgeState(true);
+  render();
+  if(!state.error)$('message').textContent="";
+ }catch(e){
+  bridgeFailures++;
+  nextRetry=Date.now()+Math.min(8000,1000*bridgeFailures);
+  setBridgeState(false);
+  if(Date.now()-bootTime>8000){
+   $('message').textContent="Connection interrupted. Retrying automatically.";
+  }
+ }finally{pollBusy=false;}
+}
 function suggestPath(input){
  let v=String(input||"").replace(/[\\/]+$/,"");
  if(!v)return "";
@@ -2236,7 +2305,19 @@ z.addEventListener("dragleave",()=>z.classList.remove("drag"));
 z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("drag");let f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];let path=f&&(f.pywebviewFullPath||f.path);if(path){$(input).value=path;if(input==='source')changedInput();}else error("Folder drop unsupported here; use Browse.");});
 }
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&state&&state.running)call("cancel");});
-setInterval(refresh,900);refresh();
+$('reconnect').onclick=()=>{nextRetry=0;bridgeFailures=0;refresh(true);};
+window.addEventListener("pywebviewready",()=>{nextRetry=0;bridgeFailures=0;refresh(true);});
+window.addEventListener("unhandledrejection",e=>{
+ const text=String(e.reason&&e.reason.message||e.reason||"unknown");
+ if(bridgeMethod("diagnostics"))api("diagnostics","Unhandled promise: "+text).catch(()=>{});
+});
+window.addEventListener("error",e=>{
+ const text=String(e.message||"unknown JS exception");
+ if(bridgeMethod("diagnostics"))api("diagnostics","JavaScript error: "+text).catch(()=>{});
+});
+setBridgeState(false);
+setInterval(()=>refresh(false),1500);
+refresh(true);
 </script></body></html>"""
 
 
