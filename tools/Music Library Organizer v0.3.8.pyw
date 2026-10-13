@@ -1136,6 +1136,7 @@ def clean_release_title(value, root_artist=""):
                 re.fullmatch(r"(?i)[A-Z]{0,8}\s*-?\s*[A-Z]*\d[\w .-]*", candidate_id)):
             original = original[:last_id.start()]
     original = _RELEASE_YEAR_NOTE.sub("", original).strip()
+    original = re.sub(r"(?i)\bDeluxe\s+Editon\b", "Deluxe Edition", original)
     original = _RELEASE_FORMAT_NOTE.sub("", original).strip()
     original = _RELEASE_MEDIA_NOTE.sub("", original).strip()
     original = _RELEASE_FORMAT_NOTE.sub("", original).strip()
