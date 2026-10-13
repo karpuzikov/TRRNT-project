@@ -3,6 +3,13 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Main ALAC audio file naming rule - 2026-10-13
+
+- User explicitly specified the main filename structure: `01 Red Lips (ft. Sam Bruno) [Skrillex Remix]` = `01` zero-padded track number, followed by **exactly one space**, followed by the complete standardized track title. Full ALAC filename: `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].m4a`.
+- Mandatory physical filename grammar `NN Track Title.m4a` (two digits minimum, zero-padded). Do **not** write `01. Title`, `01 - Title`, `01_Title`, double spaces, or include the `Artist -` prefix. A separator prohibition does not apply to legitimate punctuation inside the title, e.g. `ft.`.
+- The user has now resolved the artist-prefix/physical filename template question left open in the previous checkpoint. Keep earlier MCC semantic parsing, remixer vs original-feature ordering, `()` -> `[]` -> `{}` title components, and Picard artist-credit standardization. Disc reset policy and exceptional numbering cases remain undecided; do not invent rules.
+- Documentation only: updated `RULES.md`, `PROJECT.md`, `MUSIC_GLOSSARY.md`, and `CONTINUITY.md`. No organizer code, audio content, CUE references, or Windows tests were changed.
+
 ## Track title / feature provenance / positional delimiters - 2026-10-13
 
 - User specifies two distinguishable cases using MCC's glossary: `The Weeknd - Reminder (Remix) [ft. A$AP Rocky & Young Thug]` = feature added by remix, **remix before feature**; `GTA - Red Lips (ft. Sam Bruno) [Skrillex Remix]` = feature already on original, **feature before remix**. Verify original feature provenance using original recording credits; don't infer it from punctuation.
