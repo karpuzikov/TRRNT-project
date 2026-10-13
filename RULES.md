@@ -11,28 +11,59 @@ The independent canonical repository for all Discography Torrent Project-owned s
 
 Preserve reference DEA `tools/Duplicate Edition Analyzer v0.22.12.pyw` on `main`, historical versions, and their separate development branches (including `dea-lightweight-modern`). The former DEA Actions YAML files have been archived in `archived-workflows/` rather than enabled in `.github/workflows/`; **do not activate/modify them without an explicit user request**. See `MIGRATION.md` for the verified file-by-file SHA manifest and limitations. Original compiled EXE release assets and GitHub history remain linked from the old repo; migrating source does not imply those assets or histories were transferred.
 
-## CD folder naming - country means manufacturing/pressing country (2026-10-13)
+## ALAC collection folder organization and release naming (2026-10-13)
 
-- In a physical CD release folder, the country code in a bracketed physical-edition identifier such as `[US - Catalog Number]` means **the country in which that particular CD was manufactured/pressed**.
-- **Never substitute** the MusicBrainz release country, release/marketing territory, distribution market, artist's nationality, record label's headquarters, or region of sale for the CD manufacturing/pressing country.
-- Use the country code only when the exact physical edition's manufacturing/pressing country is supported by reliable evidence (for example, verified disc/packaging text or reliable pressing/manufacturing details). A barcode or catalog number by itself does not establish the pressing country.
-- `EU` is a region, not a country; do not treat it as a known manufacturing country. Do not infer an individual country from `Made in EU`.
-- A bracket containing **only an identifier**, e.g. `[OLE13186]`, identifies a WEB/digital release in the project's standardized ALAC naming convention. Physical manufacturing/pressing country is **not applicable (N/A)** to digital releases; do not assign a country prefix.
-- Do not confuse **N/A** (digital release, no physical disc) with **unknown** (physical CD exists but pressing country has not been verified). Do not guess a pressing country, and do not silently name a physical CD using the country-less digital convention; flag unresolved physical provenance for review before renaming.
-- Examples from the user's naming convention: `2018-02-16 - El Pintor Bonus Tracks [OLE13186]` is **digital (WEB)** with pressing country **N/A**; `[US - none]` asserts US manufacture/pressing only if verified; `[JP - TOCP-66683]` asserts Japanese manufacture/pressing only if verified. Existing physical-release folder names are examples, not verification of their pressing locations.
-- This is a **filesystem naming rule**, independent of duplicate identity, country of release, and CD-rip provenance classification. Renaming must be previewed and must not silently alter or corrupt CUE references.
+These rules apply to the dedicated **file-organization stage** of the discography workflow. This stage is planned, **not implemented** by the current tools. Inspect only ALAC collection folders for the standard below. All generated names require a preview and explicit Apply before moving/renaming files.
 
-### Physical CD release folder grammar - initial date and reissues
+### Hierarchy and root naming
 
-- Standard physical CD: `YYYY-MM-DD - Release Title [Pressing Country - Catalog Number]`.
-- Reissued physical CD: `YYYY-MM-DD - Release Title [Pressing Country - Catalog Number - Reissue Year]` **if and only if the reissue's release year differs from the initial release year**. If the years are the same, omit the extra year entirely.
-- The leading `YYYY-MM-DD` is the **initial release date**, not the manufacturing date, date of a particular pressing, or date of the later reissue. Keep it unchanged when describing a reissue. Existing cases with only a known initial year remain separate pending clarification; never invent a month/day.
-- The first exact ` - ` separates the initial release date from the release title. Preserve the release title, including meaningful edition wording such as `(The Tenth Anniversary Edition)`.
-- `[` and `]` delimit the release data. Within the brackets, ` - ` separates the **physical CD's manufacturing/pressing country** from the catalog number; when a different-year reissue is involved, a second ` - ` separates the catalog number from the **four-digit reissue year**. Preserve the actual catalog-number text, e.g. `TOCP-66683` or `OLE 993-2`.
-- The manufacturing/pressing country is included **only for physical CD releases**. It must not be confused with the MusicBrainz release country or distribution region. WEB/digital folder grammar remains `YYYY-MM-DD - Release Title [Identifier]` (for example `[OLE13186]`); manufacturing country is N/A.
-- Reference physical release: `2007-07-09 - Our Love to Admire [JP - TOCP-66683]`: initial date `2007-07-09`, title `Our Love to Admire`, pressing country `JP`, catalog `TOCP-66683`.
-- Reference physical reissue: `2002-08-19 - Turn on the Bright Lights (The Tenth Anniversary Edition) [US - OLE 993-2 - 2012]`: initial date `2002-08-19`, title `Turn on the Bright Lights (The Tenth Anniversary Edition)`, pressing country `US`, catalog `OLE 993-2`, reissue year `2012` (different from initial year `2002`).
-- These are **filesystem naming** requirements. A preexisting folder label is not independent proof of pressing location; keep the existing provenance checks and safe preview/Undo requirements.
+- Root folder is `Artist Name ALAC`. For themed collections use `Brand Name ALAC` (for example, `Assassin's Creed ALAC`).
+- **All releases go directly under the artist/brand ALAC root.** `Albums`, `Singles`, `EPs`, `EP's`, `Mixtapes`, and similar release-category *container* subfolders are deprecated and must be flattened during organization. Do **not** flatten structural per-disc folders belonging to a multi-disc release (e.g. `CD 1` / `CD 2`).
+- Maintain logical release boundaries, all audio and non-audio files, and relative multi-disc organization. Update CUE `FILE` references when filenames/paths change; retain CUE indexes, pregaps, HTOA, logs, and artwork.
+
+### Initial release date (leading filename field)
+
+- The leading date is **the earliest worldwide initial release date** of the release/title, regardless of country, format, or edition. The date of the specific physical pressing or reissue does **not** replace it.
+- Use **as much genuine date precision as is available**, preferring `YYYY-MM-DD`; when unknown use `YYYY-MM` or `YYYY`. Do **not** invent January 1, missing months/days, or other placeholder components. Derive the earliest worldwide date from reliable release history, not simply the release date of the chosen edition.
+- Use the exact literal separator ` - ` (space, hyphen-minus, space) between date and release title.
+
+### Physical CD format and country provenance
+
+- Standard CD format: `<Initial Date> - <Release Title> [<Country/Region> - <Catalog Number or Barcode>]`.
+- For CDs, the country/region slot **primarily means the physical disc's manufacturing/pressing location**, **not** its country of release/sales. Look up the **exact physical edition** on Discogs and inspect available physical evidence: disc/case text including `Made in`, `Manufactured in`, `Printed in`, and release descriptions such as `Pressed By`. Distinguish evidence for printed packaging from proof about the disc pressing when the distinction matters; prefer direct pressing/manufacturing evidence.
+- **Fallback exception (newest user instruction):** If physical CD manufacturing/pressing location cannot be determined, use the **country or region of release** from **MusicBrainz or Discogs** in that slot as the last resort. Do not claim the fallback is a verified pressing/manufacturing country. Record the source and whether the value is `verified-pressing` or `release-territory-fallback` in the organization preview/logs.
+- The previous absolute prohibition on using MusicBrainz/Discogs release territory as a fallback is **superseded by this explicit exception**. A region such as `EU` is not an individual country; it is permissible only when genuinely representing the documented region (e.g. a release-region fallback), not as a fictitious particular pressing country. Never infer artist nationality, label headquarters, or country from catalog-number/barcode patterns.
+- If neither physical manufacturing evidence nor any release country/region exists, flag the CD for review without inventing a prefix or misclassifying it as WEB/digital.
+
+### Identifiers and authoritative lookups
+
+- Prefer an authentic **catalog number** to a barcode. For physical CDs, attempt a **MusicBrainz DiscID/TOC lookup** to identify candidate concrete releases, then fetch the *selected* release's MusicBrainz catalog-number details. Reuse/extend the existing CUE Corrector / MusicBrainz DiscID lookup capability; request explicit selection if a DiscID matches multiple editions. **Discogs is the fallback** when the required MusicBrainz catalog information is absent or insufficient.
+- For **digital/WEB** releases, use a catalog number from **MusicBrainz**, **Beatport**, or **BPTopTracker** (not a store ID). If no authentic catalog number is available, use the **barcode**. Use `none` when a release truly lacks **both** a catalog number and a barcode; `none` does not mean that lookup has merely not been attempted.
+- For CDs, if catalog number is genuinely absent, prefer barcode as the bracket identifier. Use `none` only if both are missing after the metadata/DiscID/Discogs lookup.
+- **Never use store IDs** as folder identifiers.
+- Digital/WEB format: `<Initial Date> - <Release Title> [<Catalog Number or Barcode or none>]`. **No physical pressing-country prefix**: manufacture/pressing is N/A for digital releases.
+- A bracketed identifier alone such as `[OLE13186]` denotes a WEB/digital release *in the standard*, not an unverified physical CD. Do not silently reclassify ambiguous source material by parsing folder text alone.
+
+### Release type and remix naming
+
+- For regular **single** releases, append ` - Single` to the release title **always**. For regular **EP** releases, append ` - EP` **always**. Avoid adding the suffix a second time if it is already present.
+- **Remix-focused releases are the exception:** with **up to three tracks**, ` - Single` **may** be used; with **more than three tracks**, label the title ` (Remixes)` instead of a normal ` - EP` / ` - Single` suffix. Preserve meaningful version/edition words already belonging to the title; do not duplicate `(Remixes)`.
+- These suffix rules are for **release folder names**, not arbitrary rewriting of track titles or changes to the Duplicate Edition Analyzer's Save Remixes/Live coverage logic.
+
+### Exact separators, CD reissues and worked examples
+
+- Square brackets `[` / `]` delimit physical or digital release-identification data. For physical CDs, the literal ` - ` separates country/region and catalog number. Any ` - ` inside an actual catalog number is part of that catalog number and must be preserved.
+- For a **physical CD reissue**, use `<Initial Date> - <Release Title> [<Country/Region> - <Catalog Number or Barcode> - <Reissue Year>]` **only when the year of the reissue differs from the year of the earliest worldwide initial release**. Do not include the reissue year when both years match. Never substitute the reissue date for the initial date at the beginning.
+- `2007-07-09 - Our Love to Admire [JP - TOCP-66683]`: 2007-07-09 = initial worldwide date; Our Love to Admire = title; JP = physical CD pressing country; TOCP-66683 = catalog number.
+- `2002-08-19 - Turn on the Bright Lights (The Tenth Anniversary Edition) [US - OLE 993-2 - 2012]`: 2002-08-19 = initial worldwide date; title includes anniversary edition; US = physical CD pressing country; OLE 993-2 = catalog number; 2012 = different-year reissue.
+- `2018-02-16 - El Pintor Bonus Tracks [OLE13186]`: digital/WEB, no physical pressing country, identifier is catalog number in this example.
+- `2001 - Precipitate - EP [US - none]`: only initial year is known; ordinary EP suffix; US = physical CD country/region slot; `none` is only justified if catalog number **and barcode** are both truly absent.
+
+### Change safety
+
+- Build a detailed `old path -> proposed new path` preview with metadata/evidence sources and fallback provenance. Detect and block ambiguous/multiple-release matches, rename collisions, missing DiscIDs, incomplete lookup failures, and anything that could overwrite unrelated files.
+- Require explicit user Apply. Preserve source files and a durable Undo/recovery manifest; when editing CUE references, preserve all structural content and verify that referenced audio paths still exist.
+- File naming and external lookups must not silently delete recordings, discard release files, substitute a different MusicBrainz edition, or interfere with duplicate analysis rules.
 
 ## 1. Core objective
 
