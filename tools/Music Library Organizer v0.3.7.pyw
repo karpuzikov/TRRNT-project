@@ -1553,8 +1553,8 @@ def _spectral_summary(periodograms, sample_rate):
     ratios = []
     for spectrum in periodograms:
         def mean_band(low, high):
-            start = max(1, int(low * _FFT_N / sample_rate))
-            stop = min(len(spectrum), int(high * _FFT_N / sample_rate))
+            start = max(1, math.ceil(low * _FFT_N / sample_rate))
+            stop = min(len(spectrum), math.ceil(high * _FFT_N / sample_rate))
             return (sum(spectrum[start:stop]) / max(1, stop - start)) if stop > start else 0.0
         reference = mean_band(10000, 14000)
         high = mean_band(17500, min(sample_rate * 0.47, 20500))
