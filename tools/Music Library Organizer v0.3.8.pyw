@@ -1127,6 +1127,10 @@ def clean_release_title(value, root_artist=""):
         original = re.sub(
             r"(?i)^" + re.escape(str(root_artist).strip()) + r"\s+-\s+",
             "", original, count=1)
+        if str(root_artist).strip().casefold() == "inna":
+            # Verified against the user's existing correctly accented
+            # "Déjà Vu" title; do not change unrelated "Deja Vu" names.
+            original = re.sub(r"(?i)\bDéjá Vu\b", "Déjà Vu", original)
     # Old release source folders may include the barcode/catalog as a final
     # bracket but that is not part of the musical release TITLE.
     last_id = re.search(r"\s+\[([^\[\]]+)\]$", original)
