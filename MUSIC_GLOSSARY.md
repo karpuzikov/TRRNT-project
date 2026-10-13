@@ -48,6 +48,14 @@ The approved ALAC audio filename grammar is **`NN Track Title.m4a`**: minimum tw
 
 The file-name **stem** is codec-independent: zero-padded `NN`, exactly one space, then the full standardized track title (no artist prefix). With the newly requested image-splitter/output-format option, the real encoded output determines the extension: `NN Track Title.m4a` for ALAC or `NN Track Title.flac` for FLAC. Example: `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].m4a` versus `01 Red Lips (ft. Sam Bruno) [Skrillex Remix].flac`. This is a *filename* rule; see `RULES.md` for CUE-image splitting, PCM preservation, verification and source safety. Lossy outputs are a future possibility only.
 
+## 2026-10-14 credit/title precedence update
+
+**Newest user direction takes precedence.** Featured performers may appear in **individual track TITLE tags and audio filenames**, never in the **release/folder TITLE**. For a normal recording with a known base-feature credit, put `(ft. Artist)` directly after the song base title and the actual edit/version `[Radio Edit]`, `[Extended Version]`, etc. next. Example: `Diggy Down (Radio Edit) [ft. Marian Hill]` must normalize to `Diggy Down (ft. Marian Hill) [Radio Edit]` **in both tags and filenames**.
+
+If a remix edition reverses the printed leading artist and feature credit (e.g. `Bob Taylor ft. INNA`) but source-supported collection consensus establishes `INNA ft. Bob Taylor`, the primary artist becomes `INNA` and the TITLE `Deja Vu (ft. Bob Taylor) [actual original remix version]`. Preserve every distinct variant's real descriptor. Never append a leading artist string inside `[...]` as a fake feature credit; if evidence is inadequate to infer credit orientation, preserve the credited artist and log unresolved state rather than guessing.
+
+See `RULES.md` for folder-feature prohibition and DiscID/media-count validation.
+
 ## Track filename composition, feature provenance, and positional delimiters (user-approved)
 
 This is a **track-level filename/title** standard, separate from the **release-folder** grammar. First classify the real attributes, *then* render them. A featured performer is never interchangeable with a remixer, even when both occur in one title.
