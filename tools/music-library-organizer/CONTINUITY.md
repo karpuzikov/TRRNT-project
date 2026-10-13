@@ -1,9 +1,19 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.1 - Under construction ⚠️**
+Current version: **0.3.2 - Under construction ⚠️**
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Current source: [`tools/Music Library Organizer v0.3.1.pyw`](../Music%20Library%20Organizer%20v0.3.1.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Current source: [`tools/Music Library Organizer v0.3.2.pyw`](../Music%20Library%20Organizer%20v0.3.2.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Latest checkpoint - v0.3.2 physical-CD AudioChecker exclusion (2026-10-13)
+
+- User noticed **`audiochecker.log` inside `2005-07-01 - New HOT Edition [RU - CDLREC 5592010 CD]`**, which is a physical CD. Root cause found in `_export_release`: original branch skipped `audiochecker.log` only for WEB, but allowed it to be copied unchanged into CD output. The real checker was not executed on CD by `_organize`; this was a source-sidecar copying bug.
+- v0.3.2 now **always omits existing `audiochecker.log` when exporting support files**, while generating a newly validated one only for WEB. On a CD, omit it entirely even if source has it. Preserve source itself, authentic CUE and rip LOG. Warn in run results when source CD had the inappropriate report.
+- CD recognition changed from requiring both CUE and rip LOG to `bracket_cd or cue_files or rip_logs` (AudioChecker log excluded from rip-log set); a single surviving CD provenance file is enough to prevent WEB misclassification.
+- Removed unnecessary `Automatic results. No approval step.` caption in MCC-style UI. New explicit physical-reissue year in bracket from actual edition `details.date` if different from worldwide leading-date year. Kept original source directory untouched and Undo.
+- **Known unresolved serious upstream metadata issue:** MusicBrainz album release-group first dates incorrectly display INNA Hot=2005 / I Am the Club Rocker=2010 (independent documented album dates are 2009 / 2011). 0.3.2 **does not yet cross-validate release-group first dates with primary/Discogs histories**. This prevents calling the current release fully rules-compliant, even though the CD sidecar fix is in place.
+- Added source-level tests: CD source with incidental WEB checker log exports no `audiochecker.log`, preserves CUE/rip-log and source bytes; CUE-only source classifies as physical; reissue-year suffix. Test execution, Windows GUI acceptance and user's actual on-disk output **NOT RUN**. `tools/music-library-organizer/README.md` lists the details. Source v0.3.2; no MCC or GitHub Actions changes.
+- Output overwrite protection remains: old v0.3.1 Sorted output is **not retroactively cleaned**. Run disposable input into *new empty output* to validate, and do not delete original source.
 
 ## Latest checkpoint - v0.3.1 user-supplied checker, workers and CD lookup (2026-10-13)
 
