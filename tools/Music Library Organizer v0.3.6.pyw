@@ -1535,7 +1535,10 @@ def _checker_member_key(name):
     The supplied ZIP may have Codecs/ directly at its root OR inside a
     containing directory. Reject traversal components instead of guessing.
     """
-    path = str(name).replace(chr(92), "/").strip("/")
+    raw = str(name).replace(chr(92), "/")
+    if raw.startswith("/") or re.match(r"^[A-Za-z]:", raw):
+        return ""
+    path = raw.strip("/")
     parts = path.split("/")
     if not path or any(part in ("", ".", "..") for part in parts):
         return ""
