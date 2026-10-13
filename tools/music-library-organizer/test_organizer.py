@@ -25,6 +25,33 @@ class UserExamples20261014(unittest.TestCase):
         self.assertEqual(mlo.release_title_normalize(
             "Good Time (feat. Pitbull)", "Single"), "Good Time - Single")
 
+    def test_single_release_feature_transfers_to_track_not_folder(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source = root / "2014-07-15 - Good Time (feat. Pitbull) [075679936356]"
+            output = root / "Output"
+            source.mkdir()
+            (source / "01 Good Time.flac").write_bytes(b"test-copy")
+            app = mlo.Organizer()
+            app._current_identity = {
+                "title": "Good Time", "physical": False,
+                "feature_hint": "Pitbull", "metadata_verified": False}
+            app._current_release_feature = "Pitbull"
+            app._artist_root = "INNA"
+            app.encoding_workers = 1
+            observed = []
+            with patch.object(mlo, "metadata", return_value=("1","Good Time","INNA")), \
+                 patch.object(mlo, "probe", return_value={"codec_name":"flac"}), \
+                 patch.object(mlo, "_update_copied_track_tags",
+                              side_effect=lambda path,title,artist,num: observed.append(
+                                  (title,artist,num))):
+                app._export_release(source,output,"FLAC","ffmpeg","ffprobe")
+            self.assertTrue((output / "01 Good Time (ft. Pitbull).flac").is_file())
+            self.assertEqual(observed, [("Good Time (ft. Pitbull)","INNA",1)])
+            self.assertEqual(mlo.release_title_normalize(
+                "Good Time (feat. Pitbull)", "Single"), "Good Time - Single")
+
     def test_remix_and_extended_mix_release_case(self):
         self.assertEqual(mlo.release_title_normalize(
             "Déjà Vu (extended mix)", "Single"), "Déjà Vu (Extended Mix) - Single")
