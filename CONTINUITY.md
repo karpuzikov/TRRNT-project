@@ -1,8 +1,17 @@
 # Duplicate Edition Analyzer - Continuity Handoff
 
-Last updated: 2026-10-07
+Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Chat closeout checkpoint - 2026-10-13
+
+- **User's latest request:** move **all Discography Torrent Project-owned material** from `karpuzikov/userscripts` into independent `karpuzikov/TRRNT-project`; user then issued the project-wide handoff command **"this chat is done"**. Continue development in the new repository, not the former `userscripts/audio-tools/discography-torrent-project/` directory.
+- **Migration verification on GitHub:** target `main` contains 20 former project files rooted at `tools/`, `workflow/`, and four project docs; exactly **17 unchanged Git blob SHAs**, while `CONTINUITY.md`, `PROJECT.md`, and `README.md` were rewritten only for relocation and canonical-path updates. SHA manifest and preserved source commit: `MIGRATION.md`. All four migrated branches (`main`, `dea-lightweight-modern`, `dea-lightweight-ascii-ui-test`, `dea-native-light-test`) confirmed as GitHub refs. The original directory and original DEA-specific workflow YAMLs no longer appear in `userscripts/main`. Two workflow files exist byte-identically in new `archived-workflows/`, **not** `.github/workflows/` (no active Actions workflows).
+- **Rule sync:** `SOFTWARE_RULES.md` is byte-identical to the canonical `userscripts` copy; the new repository also contains full `UI_UX_RULES.md` and `UI_UX_ACCEPTANCE.md`. Always reverify global mirrors prior to editing.
+- **Status:** Latest reference DEA **0.22.12 - Under construction ⚠️**. Lightweight development on `dea-lightweight-modern` is also **Under construction ⚠️**, with versions 0.4.1-0.4.9 preserved as branch-specific sources. No Windows executable testing, app build, Copy/Move/Undo, or new GitHub Actions execution was performed as part of the migration. The move is a source/branch-snapshot migration, not a claim of software parity/stability.
+- **Intentional non-moves:** Independent `RuTracker Digital Release Linker`, Picard/MusicBrainz, qBittorrent backups, and MCC stay in their separate owning locations. Legacy DEA EXE release assets and issue/PR/commit history remain accessible in `userscripts`, but Git ancestry is **not** copied into `TRRNT-project`.
+- **Next steps:** Open new conversation, read root `SOFTWARE_RULES.md`, `UI_UX_RULES.md`, `UI_UX_ACCEPTANCE.md`, `RULES.md`, `PROJECT.md`, `CONTINUITY.md`, and `MIGRATION.md` from `karpuzikov/TRRNT-project`. Choose the appropriate development branch; before updating code, verify version/functional parity against `tools/Duplicate Edition Analyzer v0.22.12.pyw`. Inspect and repair outdated live references to old paths as needed without rewriting historical links. Do not revive the rejected native prototype, silently update Actions, or claim Windows acceptance without real tests.
+ 
 ## Repository migration checkpoint - 2026-10-13
 
 - **Canonical GitHub repository:** `karpuzikov/TRRNT-project`; regular production/reference source remains `tools/Duplicate Edition Analyzer v0.22.12.pyw` on `main`, at status `0.22.12 - Under construction ⚠️` (not Windows-verified in this migration).
@@ -23,13 +32,13 @@ This file is the authoritative handoff for DEA development. Read it before chang
 ## Canonical implementations and versions
 
 - Production/reference implementation:
-  - Source: `audio-tools/discography-torrent-project/tools/Duplicate Edition Analyzer v0.22.12.pyw`
+  - Source: `tools/Duplicate Edition Analyzer v0.22.12.pyw`
   - Version: `0.22.12 - Under construction ⚠️`
   - GitHub release asset: `Duplicate.Edition.Analyzer.0.22.12.exe`
   - This is the current functional specification for all replacement/rewrite work.
 - Failed native prototype:
   - Branch: `dea-native-light-test`
-  - Source root: `audio-tools/discography-torrent-project/native-light/`
+  - Source root: `native-light/` (on the `dea-native-light-test` branch)
   - Last prototype version: `0.1.2`
   - User tested it and rejected it because it did not preserve 100% of regular DEA functionality.
   - Do not use the native prototype as the functional specification.
@@ -313,6 +322,6 @@ A lightweight build is not parity-complete until all of these pass:
 ## Rule sources to read before work
 
 - Repository global rules: `/SOFTWARE_RULES.md`
-- This file: `audio-tools/discography-torrent-project/CONTINUITY.md`
-- DEA project history/specification: `audio-tools/discography-torrent-project/PROJECT.md`
-- Current functional source: `audio-tools/discography-torrent-project/tools/Duplicate Edition Analyzer v0.22.12.pyw`
+- This file: `CONTINUITY.md`
+- DEA project history/specification: `PROJECT.md`
+- Current functional source: `tools/Duplicate Edition Analyzer v0.22.12.pyw`
