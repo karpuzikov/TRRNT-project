@@ -1,0 +1,23 @@
+$filename(test.txt,utf-8)'[font="calibri"][size=12][align=center][size=22]' %albumartist%' | Дискография | Discography[/size]'
+'[/align][hr][align=center][img]ссылка[/img]'
+'[hr]'
+'[b]Год[/b]: 0000-0000||[b]Страна[/b]:'
+'[b]Жанр[/b]: '%genre%
+'[b]Тексты[/b]: Вшиты||[b]Сканы[/b]: нет||[b]Программа-конвертер[/b]: CueTools'
+'[b]Кодек[/b]: ALAC||[b]Битрейт[/b]: lossless||[b]Тип рипа[/b]: tracks+.cue'
+'[b]Общая продолжительность[/b]: '%_total_time2%
+'[hr]'
+$loop(%_folderpath%)
+'[spoiler="'%_directory%'"][font="calibri"][size=12]'
+'[img=right]ссылка[/img]'
+'[b]Носитель|Источник[/b]: CD/WEB|[url=ссылкаНаИсточник]Источник[/url][hr]'
+'[b]Продолжительность[/b]:' %_total_time%
+'[b]Треклист[/b]:'
+$loop(%_filename_ext%)'[b]'$num(%_counter%,2)'[/b]' %title% '('%_length%')'
+$loopend()'[/spoiler]'
+$loopend()
+'[hr]'
+'[spoiler="Скриншоты"]'
+'ссылка'
+'[/spoiler]'
+'[align=center][img]ссылка[/img][/align]'

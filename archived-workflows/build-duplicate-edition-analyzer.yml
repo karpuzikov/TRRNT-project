@@ -1,0 +1,154 @@
+name: Build Duplicate Edition Analyzer
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "audio-tools/discography-torrent-project/tools/Duplicate Edition Analyzer v*.pyw"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: duplicate-edition-analyzer-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Resolve latest DEA source
+        shell: pwsh
+        run: |
+          $toolDir = Join-Path $env:GITHUB_WORKSPACE "audio-tools/discography-torrent-project/tools"
+          $sources = Get-ChildItem -LiteralPath $toolDir -Filter "Duplicate Edition Analyzer v*.pyw"
+          if (-not $sources) { throw "No Duplicate Edition Analyzer source found." }
+
+          $latest = $sources |
+            ForEach-Object {
+              if ($_.Name -match 'v(\d+\.\d+\.\d+)\.pyw$') {
+                [pscustomobject]@{ File = $_; Version = [version]$Matches[1] }
+              }
+            } |
+            Sort-Object Version -Descending |
+            Select-Object -First 1
+
+          if (-not $latest) { throw "Could not determine DEA version." }
+          $version = $latest.Version.ToString()
+          "DEA_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "DEA_SOURCE=$($latest.File.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "DEA_EXE=Duplicate.Edition.Analyzer.$version.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install Python build dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade pyinstaller
+          python -m pip install "PySide6==6.11.2"
+          python -m pip install "https://github.com/ligh7s/hey-bro-check-log/archive/d3192ad2764f2682cffce4db2abc419f8ac68c69.zip"
+
+      - name: Download bundled native dependencies
+        shell: pwsh
+        run: |
+          $deps = Join-Path $env:RUNNER_TEMP "dea-bundle"
+          New-Item -ItemType Directory -Force -Path $deps | Out-Null
+
+          $ffZip = Join-Path $deps "ffmpeg.zip"
+          Invoke-WebRequest -UseBasicParsing "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile $ffZip
+          $ffDir = Join-Path $deps "ffmpeg"
+          Expand-Archive -LiteralPath $ffZip -DestinationPath $ffDir -Force
+          $ffmpeg = Get-ChildItem -LiteralPath $ffDir -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          $ffprobe = Get-ChildItem -LiteralPath $ffDir -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
+          if (-not $ffmpeg -or -not $ffprobe) { throw "FFmpeg bundle is incomplete." }
+          "DEA_FFMPEG=$($ffmpeg.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "DEA_FFPROBE=$($ffprobe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          $fpZip = Join-Path $deps "chromaprint.zip"
+          Invoke-WebRequest -UseBasicParsing "https://github.com/acoustid/chromaprint/releases/download/v1.6.1/chromaprint-fpcalc-1.6.1-windows-x86_64.zip" -OutFile $fpZip
+          $fpHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $fpZip).Hash.ToLowerInvariant()
+          if ($fpHash -ne "735d6182b38e9f364b84ce6f4ccd682c75e2851de89735711d6b762d12b92a4e") {
+            throw "Chromaprint checksum mismatch: $fpHash"
+          }
+          $fpDir = Join-Path $deps "chromaprint"
+          Expand-Archive -LiteralPath $fpZip -DestinationPath $fpDir -Force
+          $fpcalc = Get-ChildItem -LiteralPath $fpDir -Recurse -Filter "fpcalc.exe" | Select-Object -First 1
+          if (-not $fpcalc) { throw "fpcalc.exe not found." }
+          "DEA_FPCALC=$($fpcalc.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "DEA_CHROMAPRINT_DIR=$($fpcalc.Directory.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+
+      - name: Build single-file standalone EXE
+        shell: pwsh
+        run: |
+          $name = "Duplicate.Edition.Analyzer.$env:DEA_VERSION"
+          $args = @(
+            "-m", "PyInstaller",
+            "--noconfirm",
+            "--clean",
+            "--onefile",
+            "--windowed",
+            "--name", $name,
+            "--hidden-import", "PySide6.QtWebEngineWidgets",
+            "--hidden-import", "PySide6.QtWebChannel",
+            "--collect-all", "heybrochecklog",
+            "--add-binary", "$env:DEA_FFMPEG;bundled/ffmpeg",
+            "--add-binary", "$env:DEA_FFPROBE;bundled/ffmpeg",
+            "--add-data", "$env:DEA_CHROMAPRINT_DIR;bundled/chromaprint",
+            "$env:DEA_SOURCE"
+          )
+          & python @args
+          if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed with exit code $LASTEXITCODE." }
+
+          $exe = Join-Path $env:GITHUB_WORKSPACE "dist/$env:DEA_EXE"
+          if (-not (Test-Path -LiteralPath $exe)) { throw "Standalone EXE was not created." }
+          "DEA_BUILT_EXE=$exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Standalone dependency smoke test
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath "$env:DEA_BUILT_EXE" -ArgumentList "--self-test" -PassThru -Wait
+          if ($process.ExitCode -ne 0) {
+            throw "Standalone dependency self-test failed with exit code $($process.ExitCode)."
+          }
+
+      - name: Create SHA-256 file
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath "$env:DEA_BUILT_EXE").Hash.ToLowerInvariant()
+          $shaFile = "$env:DEA_BUILT_EXE.sha256"
+          "$hash  $env:DEA_EXE" | Set-Content -LiteralPath $shaFile -Encoding ascii
+          "DEA_SHA_FILE=$shaFile" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "duplicate-edition-analyzer-v$env:DEA_VERSION"
+          $title = "Duplicate Edition Analyzer $env:DEA_VERSION"
+          $notes = @"
+          Under construction ⚠️
+
+          Self-contained Windows build. Python, PySide6/Qt WebEngine, FFmpeg/FFprobe,
+          Chromaprint/fpcalc and hey-bro-check-log are bundled.
+          No dependency installation is required to start the application.
+          "@
+
+          gh release view $tag --repo "$env:GITHUB_REPOSITORY" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag "$env:DEA_BUILT_EXE" "$env:DEA_SHA_FILE" --clobber --repo "$env:GITHUB_REPOSITORY"
+          } else {
+            gh release create $tag "$env:DEA_BUILT_EXE" "$env:DEA_SHA_FILE" --repo "$env:GITHUB_REPOSITORY" --title "$title" --notes "$notes"
+          }

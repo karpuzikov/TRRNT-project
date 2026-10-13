@@ -1,0 +1,95 @@
+name: Duplicate Edition Analyzer check
+
+on:
+  push:
+    paths:
+      - "audio-tools/discography-torrent-project/tools/Duplicate Edition Analyzer v*.pyw"
+      - ".github/workflows/duplicate-edition-analyzer-check.yml"
+  pull_request:
+    paths:
+      - "audio-tools/discography-torrent-project/tools/Duplicate Edition Analyzer v*.pyw"
+      - ".github/workflows/duplicate-edition-analyzer-check.yml"
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile latest analyzer
+        shell: python
+        run: |
+          import re
+          import py_compile
+          from pathlib import Path
+
+          root = Path("audio-tools/discography-torrent-project/tools")
+          files = list(root.glob("Duplicate Edition Analyzer v*.pyw"))
+          if not files:
+              raise SystemExit("Duplicate Edition Analyzer file not found")
+
+          def version_key(path):
+              match = re.search(r"v(\d+)\.(\d+)\.(\d+)\.pyw$", path.name)
+              return tuple(map(int, match.groups())) if match else (-1, -1, -1)
+
+          latest = max(files, key=version_key)
+          print(f"Compiling {latest}")
+          py_compile.compile(str(latest), doraise=True)
+
+      - name: Install Ruff
+        run: python -m pip install --disable-pip-version-check --quiet ruff
+
+      - name: Check undefined names
+        shell: python
+        run: |
+          import re
+          import subprocess
+          from pathlib import Path
+
+          root = Path("audio-tools/discography-torrent-project/tools")
+          files = list(root.glob("Duplicate Edition Analyzer v*.pyw"))
+
+          def version_key(path):
+              match = re.search(r"v(\d+)\.(\d+)\.(\d+)\.pyw$", path.name)
+              return tuple(map(int, match.groups())) if match else (-1, -1, -1)
+
+          latest = max(files, key=version_key)
+          print(f"Checking undefined names in {latest}")
+          subprocess.run(
+              ["ruff", "check", "--select", "F821", str(latest)],
+              check=True,
+          )
+
+      - name: Validate embedded Release Map JavaScript
+        shell: python
+        run: |
+          import re
+          import subprocess
+          from pathlib import Path
+
+          root = Path("audio-tools/discography-torrent-project/tools")
+          files = list(root.glob("Duplicate Edition Analyzer v*.pyw"))
+
+          def version_key(path):
+              match = re.search(r"v(\d+)\.(\d+)\.(\d+)\.pyw$", path.name)
+              return tuple(map(int, match.groups())) if match else (-1, -1, -1)
+
+          latest = max(files, key=version_key)
+          source = latest.read_text(encoding="utf-8")
+          if "function renderBoard() {function renderBoard() {" in source:
+              raise SystemExit("Duplicated renderBoard function boundary found")
+
+          html_match = re.search(r'html = r"""(.*?)"""\n\s+return(?:\s+html|\s*\()', source, re.S)
+          if not html_match:
+              raise SystemExit("Release Map HTML block not found")
+          script_match = re.search(r'<script type="module">(.*?)</script>', html_match.group(1), re.S)
+          if not script_match:
+              raise SystemExit("Release Map module script not found")
+
+          js = script_match.group(1)
+          js = js.replace("__APP_VERSION__", "test")
+          check = Path("release-map-check.mjs")
+          check.write_text(js, encoding="utf-8")
+          subprocess.run(["node", "--check", str(check)], check=True)
