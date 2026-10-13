@@ -17,8 +17,9 @@ Preserve reference DEA `tools/Duplicate Edition Analyzer v0.22.12.pyw` on `main`
 - **Never substitute** the MusicBrainz release country, release/marketing territory, distribution market, artist's nationality, record label's headquarters, or region of sale for the CD manufacturing/pressing country.
 - Use the country code only when the exact physical edition's manufacturing/pressing country is supported by reliable evidence (for example, verified disc/packaging text or reliable pressing/manufacturing details). A barcode or catalog number by itself does not establish the pressing country.
 - `EU` is a region, not a country; do not treat it as a known manufacturing country. Do not infer an individual country from `Made in EU`.
-- When the actual country is unknown, omit the country prefix rather than guessing. Do not add a CD pressing-country prefix to WEB/digital releases.
-- Examples from the supplied naming sample: `[US - none]` asserts US manufacture/pressing only if verified; `[JP - TOCP-66683]` asserts Japanese manufacture/pressing only if verified. Existing folder names are examples, not verification of their pressing locations.
+- A bracket containing **only an identifier**, e.g. `[OLE13186]`, identifies a WEB/digital release in the project's standardized ALAC naming convention. Physical manufacturing/pressing country is **not applicable (N/A)** to digital releases; do not assign a country prefix.
+- Do not confuse **N/A** (digital release, no physical disc) with **unknown** (physical CD exists but pressing country has not been verified). Do not guess a pressing country, and do not silently name a physical CD using the country-less digital convention; flag unresolved physical provenance for review before renaming.
+- Examples from the user's naming convention: `2018-02-16 - El Pintor Bonus Tracks [OLE13186]` is **digital (WEB)** with pressing country **N/A**; `[US - none]` asserts US manufacture/pressing only if verified; `[JP - TOCP-66683]` asserts Japanese manufacture/pressing only if verified. Existing physical-release folder names are examples, not verification of their pressing locations.
 - This is a **filesystem naming rule**, independent of duplicate identity, country of release, and CD-rip provenance classification. Renaming must be previewed and must not silently alter or corrupt CUE references.
 
 ## 1. Core objective
