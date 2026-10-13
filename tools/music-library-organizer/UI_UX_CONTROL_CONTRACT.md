@@ -1,6 +1,18 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.5 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.6 candidate - Under construction ⚠️; no real Windows acceptance. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.6 candidate - added/changed controls and selection stability
+
+| Control/state | Purpose/side effects | Mouse/keyboard, visual state, geometry, acceptance |
+| --- | --- | --- |
+| Results text selection | Preserve a user highlight across 1.5-second WebView2 status polls; `Ctrl+C` copies selected text. No file side effects. | Standard pointer selection; Tab should not steal focus. Re-render only if results content actually changes and selection is absent. Test during a running 94-row job, with updates and filters. Current real Windows test NOT RUN. |
+| Results path folder icon | Opens displayed existing release output folder with host `open_folder`; a failed/nonexistent destination produces actionable error. No duplicate global Open output action. | Small 28px square icon inline before each path, native click/Tab/Enter/Space, normal/hover/focus/disabled/error. Test many long paths and narrow widths. NOT RUN. |
+| AudioChecker ZIP path folder icon | Open the location of the selected existing ZIP in Explorer with the file selected; no extraction on click. | 34px folder icon immediately before readonly path, disabled when no path / disconnected, Tab/Enter/Space, hover/focus states; real native selection NOT RUN. |
+| Browse ZIP | Open pywebview file picker, validate both auCDtect and FLAC entries whether archive members start with `Codecs/` or a wrapper directory, remember selection in isolated settings; cancellation leaves earlier selection unchanged. | 34px-height existing text button, keyboard focus and error message. Actual Windows picker and genuine ZIP extraction NOT RUN. |
+| Open log / Open log folder | Unchanged adjacent controls. Open report in associated application or isolated folder, no mutation. | Click/keyboard, existing standard icons/sizes, NOT RUN on Windows. |
+
+Use MCC v0.5.18 as the unchanged dark WebView2 visual baseline. Colors/fonts, source/destination, format, worker selectors, Organize/Cancel/Undo and recovery controls must retain prior semantics. No confirmation or REVIEW gate. Mandatory minimum/default/large screenshots, keyboard-only navigation, mouse selection while polling, explicit Copy results, dialogs, forced close/reopen, real AudioChecker ZIP and status transitions all **NOT RUN** and block stable acceptance.
 
 ## v0.3.5 selectable Results and log/ZIP controls
 
