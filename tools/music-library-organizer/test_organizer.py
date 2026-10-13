@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.1 - source-level regression tests.
+# Music Library Organizer v0.3.7 - integrated AudioChecker regression tests.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
