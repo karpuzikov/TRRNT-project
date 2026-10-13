@@ -361,6 +361,12 @@ Required behavior:
 9. If an existing `audiochecker.log` is stale/invalid, preserve it temporarily outside the release folder while regenerating it; restore it if generation fails.
 10. Normal UI is automatic: one folder, progress, final counts. No per-release review.
 
+## Organizer v0.3.0 compliance repair checkpoint
+
+The INNA test of 0.2.0 showed **80 files/release exports reported DONE** but no mandatory Single suffix, no researched barcode-to-catalog replacement, no real AudioChecker, unchanged `Inna - YO 2019` and its CUE/LOG, plus **14 failed releases**. An explicit audit is at [AUDIT_INNA_2026-10-13.md](tools/music-library-organizer/AUDIT_INNA_2026-10-13.md).
+
+New v0.3.0 source: [Music Library Organizer v0.3.0.pyw](tools/Music%20Library%20Organizer%20v0.3.0.pyw). Added MusicBrainz WS2 concrete release research and earliest release-group dates, catalog preferred to barcode, initial title normalization and Single/EP/Remixes folder suffixes, verified edition CUE/LOG naming, actual installed AudioChecker invocation, more CUE INDEX00/HTOA support, PCM-equivalence dedup for target collisions and **PARTIAL** statuses for unmet research or genuine report requirements. No fake provenance/logs. Still lacking full Discogs/Beatport/BPTopTracker/DiscID and complete metadata/artwork parity. Real Windows tests and Python compilation/unit tests **NOT RUN**; no stable designation. For next test use empty destination, not previous v0.2.0 sorted output.
+
 ## Automatic organizer v0.2.0 - no manual REVIEW gate
 
 Latest GUI source: [Music Library Organizer v0.2.0.pyw](tools/Music%20Library%20Organizer%20v0.2.0.pyw). The user explicitly rejected the earlier v0.1.2 workflow that labeled 94/94 WEB releases REVIEW because `audiochecker.log` was missing and disabled Apply. **One normal button now initiates all discovery, organization, copying and conversion.** The operator sets input folder, separate output folder and ALAC/FLAC, clicks **Organize**, then sees per-release Done/Already present/Failed/Warning counts. Missing AudioChecker logs are warnings only, never review blockers. There is no extra Scan, selection or Apply phase. Real failures are isolated per release, not the whole input batch; originals stay untouched, existing output is not overwritten, Undo hashes are stored.
