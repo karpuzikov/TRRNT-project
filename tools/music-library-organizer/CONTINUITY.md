@@ -1,9 +1,21 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.2 - Under construction ⚠️**
+Current version: **0.3.3 - Under construction ⚠️**
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Current source: [`tools/Music Library Organizer v0.3.2.pyw`](../Music%20Library%20Organizer%20v0.3.2.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Current source: [`tools/Music Library Organizer v0.3.3.pyw`](../Music%20Library%20Organizer%20v0.3.3.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Latest checkpoint - v0.3.3 exclusive refalac64 / Xiph flac encoders (2026-10-13)
+
+**User's explicit instruction:** ALAC must be encoded **only by `refalac64.exe` from `nu774/qaac`**; FLAC **only by official Xiph `flac.exe` from `ftp.osuosl.org/pub/xiph/releases/flac/`**. FFmpeg's ALAC/FLAC encoders were rejected. This is now the stricter canonical rule in root `RULES.md`; it supersedes earlier "refalac where supported"/"any suitable lossless encoder" language.
+
+**v0.3.3 source:** `tools/Music Library Organizer v0.3.3.pyw`, inherits dark MCC-style standalone GUI and previous behaviors without modifying other apps. Replaced `convert()` using FFmpeg encoding with **FFmpeg decode to temporary integer PCM WAV** followed by **only** `refalac64.exe -o` for ALAC or **Xiph `flac.exe --best --verify -o`** for FLAC. Enforces lossless source codec, valid original PCM depth/rate, checks encoded codec/rate/depth and decoded SHA-256 equivalence; unsupported float/unknown source bit depth fails release explicitly. Normal-track and CUE-image track conversion share same backend. Same-codec files may remain byte-copied without re-encoding.
+
+**Dependencies:** `ensure_encoder(fmt)` locates isolated exact executable or exact-name PATH binary; Windows auto-downloads official qaac latest release from `api.github.com/repos/nu774/qaac/releases/latest` (fallback v3.07) or official Xiph `flac-1.5.0-win.zip`. Xiph SHA-256 is pinned to official release checksum `53f1500f0d6e7c61379d7fee50d4a9f7f504c650009506d9ba015530d76c0dde`. Extract only to the program-specific `dependencies/encoders` path with explicit archive traversal/file-size/symlink safeguards. No binary license files distributed via GitHub and no shared tools touched.
+
+**Metadata:** Source metadata would be lost through WAV intermediate without migration. New `_copy_audio_metadata` copies supported EasyTag mappings plus additional MP4 freeform fields, transfers FLAC/MP4 cover art where representable, verifies title/track/cover; raises error and removes uncommitted output on conversion/meta mismatch. Complete niche tag parity across formats still needs a real-file regression audit; do not assert full preservation without tests.
+
+**Tests:** Added `NativeEncoderCompliance` test coverage (only native process invocation, no FFmpeg ALAC/FLAC encode, lossless/float rejects, ZIP safety, missing encoder fail) and adapted existing PCM roundtrip test for the official native backend. One independent **local native Xiph flac CLI** round-trip against a 16-bit stereo 44.1k WAV succeeded with equal decoded SHA-256; the full .pyw **was not run**. Embedded WebView2 HTML JavaScript parsed in isolated V8 in code review. Actual Windows refalac64 native CLI, dependency download/extraction, GUI, worker control, full metadata roundtrip, large-file/INDEX00 and source safety tests **NOT RUN**. No stable claim. Regression target: disposable WAV/FLAC/ALAC mixed set, fresh output, inspect exact backend process, PCM bit depth/sample rate, tags, art, CUE, Undo. No Actions workflows modified.
 
 ## Latest checkpoint - v0.3.2 physical-CD AudioChecker exclusion (2026-10-13)
 
