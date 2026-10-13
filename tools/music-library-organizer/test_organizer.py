@@ -255,7 +255,7 @@ class DiscIDAndWorkers(unittest.TestCase):
             archive = base / "Audio_Checker_UTF8_Multicore.zip"
             with zipfile.ZipFile(archive, "w") as z:
                 z.writestr("Audio_Checker_UTF8_Multicore/Codecs/FLAC/flac.exe", b"fake-decoder")
-                z.writestr("Audio_Checker_UTF8_Multicore/Codecs/Analyzer/aucdetect.exe", b"fake-analyzer")
+                z.writestr("Audio_Checker_UTF8_Multicore/Codecs/Analyzer/aucdtect.exe", b"fake-analyzer")
             root = base / "data"
             with patch.object(mlo, "DEPS", root), \
                  patch.object(mlo, "_checker_archive_candidates", return_value=[archive]):
