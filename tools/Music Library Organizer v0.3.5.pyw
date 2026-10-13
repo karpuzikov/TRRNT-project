@@ -979,6 +979,14 @@ _RELEASE_MEDIA_NOTE = re.compile(r"(?i)\s*\((?:Maxi\s+CD\s+Single|CD\s+Single)\)
 _RELEASE_YEAR_NOTE = re.compile(r"\s*\((?:19|20)\d{2}\)\s*$")
 
 
+def release_feature_credit(value):
+    """Return a real featured-credit token from a release heading if present."""
+    found = re.search(
+        r"(?i)[\(\[]\s*(?:ft\.?|feat\.?|featuring)\s+([^()\[\]]+)[\)\]]",
+        str(value or ""))
+    return found.group(1).strip() if found else ""
+
+
 def clean_release_title(value, root_artist=""):
     """Featured artists exist on TRACKS, not on release/folder TITLE."""
     original = " ".join(str(value or "").split())
@@ -1285,7 +1293,9 @@ def release_identity(folder, files, default_artist="", allow_network=True):
     barcode = ident if _BARCODE.fullmatch(ident or "") else ""
     barcode = barcode or (tagged_barcode if _BARCODE.fullmatch(tagged_barcode) else "")
     title = clean_release_title(title, default_artist)
+    feature_hint = release_feature_credit(current) or release_feature_credit(album)
     result = {"folder": current, "title": title, "date": date,
+              "feature_hint": feature_hint,
               "root_artist": default_artist,
               "catalog": ident if ident and not _BARCODE.fullmatch(ident) else "",
               "barcode": barcode, "physical": is_cd, "country": "",
@@ -1409,6 +1419,8 @@ def release_identity(folder, files, default_artist="", allow_network=True):
             result["date"] = first_date
         else:
             result["notes"].append("Earliest worldwide release date missing.")
+        result["feature_hint"] = (result["feature_hint"] or
+                                  release_feature_credit(details.get("title")))
         result["title"] = clean_release_title(details.get("title") or title, default_artist)
         result["catalog"] = catalog_number or result["catalog"]
         result["barcode"] = actual_barcode or barcode
@@ -1992,6 +2004,7 @@ class Organizer:
                         tmp = staging_root / (str(index) + "-" + uuid.uuid4().hex)
                         tmp.mkdir()
                         self._current_identity = info
+                        self._current_release_feature = info.get("feature_hint") or ""
                         self._export_warnings = []
                         try:
                             self.status = f"Organizing {index}/{len(releases)}: {out_name}"
@@ -2161,6 +2174,8 @@ class Organizer:
         # Prepare all ordinary tracks before encoding. Duplicate target names
         # are verified against decoded PCM; never drop different audio.
         audio_jobs = {}
+        ordinary_sources = [x for x in files if x.suffix.lower() in AUDIO
+                            and x.resolve() not in source_images]
         for fp in files:
             if self.stop.is_set():
                 raise InterruptedError("Encoding cancelled.")
@@ -2171,6 +2186,22 @@ class Organizer:
                 getattr(self, "_credit_consensus", None))
             if number <= 0 or not title:
                 raise RuntimeError("Track has no valid number/title: " + str(fp))
+            # A release-folder (ft. X) belongs on its single *song*, never on
+            # the folder. Propagate only if the same one-track recording lacks
+            # that explicitly supplied credit; never add it to all EP tracks.
+            released_feature = getattr(self, "_current_release_feature", "")
+            info = getattr(self, "_current_identity", {}) or {}
+            if (released_feature and len(ordinary_sources) == 1 and
+                    not _song_parts(title)[3] and
+                    _song_key(title) == _song_key(info.get("title", ""))):
+                title = normalized_title(title + " (ft. " + released_feature + ")")
+                root_artist = getattr(self, "_artist_root", "")
+                if root_artist and (
+                        artist.casefold() == (
+                            root_artist + " & " + released_feature).casefold() or
+                        artist.casefold() == (
+                            root_artist + " feat. " + released_feature).casefold()):
+                    artist = root_artist
             dst = dest / fp.parent.relative_to(source) / track_filename(number, title, extension)
             audio_jobs.setdefault(str(dst).casefold(), (dst, []) )[1].append(
                 (fp, number, title, artist))
