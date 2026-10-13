@@ -1,6 +1,15 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.0 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.1 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## Active v0.3.1 control changes (supersede v0.3.0 checker path)
+
+- There is **no AudioChecker executable path field**. Auto-find the user's own `Audio_Checker_UTF8_Multicore.zip` beside the `.pyw` or in Downloads; install known checker components into isolated program directory. Missing bundle is an explicit PARTIAL status, not a file-renaming failure or a fake log.
+- Input folder Browse/paste/drop automatically proposes **`<Input folder> - Sorted`** as output if output has not been manually customized. The proposed field stays editable and is validated non-nested at startup. Input changes must not silently overwrite custom output text.
+- Keep just the folder-open icon inside the **Organized output** path row. Remove the redundant **Open output** toolbar button completely. Keep **Open log** working.
+- Two independent labeled `select` inputs: **Encoding workers**, **AudioChecker workers**, range 1..min(64, detected CPU logical cores), initial min(4, cores), persisted in product-specific settings. Disable both during a run. The respective worker counts must actually limit parallel FFmpeg encode/split and auCDtect tasks, not merely be UI labels.
+- Same visual design family as MCC v0.5.18, no mandatory review gate, correct accessible labels/focus. UI JS syntax check PASS in isolated V8. Windows visual/keyboard/browser/download/bundle and application tests NOT RUN.
+- Earlier v0.3.0 "AudioChecker executable path + Browse" block below is **historical/superseded**, not an active requirement.
 
 ## v0.3.0 UI amendments
 
