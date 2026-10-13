@@ -1,6 +1,6 @@
 # Music Library Organizer - UI Control Contract
 
-Status: draft 0.1.0 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.1.2 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
 
 ## Shared visual system
 MCC source palette: `#0b0c0f` background, `#11141a` card, `#171b22` secondary, `#181c23` field, `#2a303a` divider, `#f3f6fb` text, `#9ca7b8` muted, `#66a9ff` accent, `#ef4444` error, `#f59e0b` review, `#22c55e` success. Segoe UI Variable/Segoe UI; 58px toolbar, 34px buttons/fields, 8px radii, 4px spacing scale, 12-14px text, responsive compact cards. Buttons have hover/focus/pressed/disabled; icon buttons minimum 34x34 and accessible labels.
@@ -20,12 +20,15 @@ MCC source palette: `#0b0c0f` background, `#11141a` card, `#171b22` secondary, `
 | Undo last run | Delete only outputs created by last Apply if unmodified; preserve originals; native confirmation. | Disabled if no manifest or while job; changed outputs block undo. |
 | Progress/status/activity | Visible status, percent, skipped/ready/review counts, explicit phase and last error. | Accessible role/live labels. No dead status buttons. |
 | Filter | Filter preview by source/title/state; does not change selection. | Empty result explains no matches. |
+| Per-release Details dialog | Open full source -> output mapping, all files, warning/review reasons. Modal Close button, Escape and keyboard focus. | Must be readable/scrollable; never silently omit changes beyond first 3 visible summaries. |
 
 ## Test register
 
 | Test | Status |
 | --- | --- |
-| Source/code inspection versus MCC 0.5.18 palette/component sizing | DONE (source inspection only) |
+| Source/code inspection versus MCC 0.5.18 palette/component sizing | DONE (source inspection only - not GUI acceptance) |
+| Inline JS syntax compilation (V8 Function on extracted <script>) | PASS (syntax only - not GUI acceptance) |
+| Python source AST/compile, unit regression suite | NOT RUN |
 | Windows real launch / default/minimum/large screenshots | NOT RUN |
 | Hover/click/keyboard/mouse/drop / native folder picker | NOT RUN |
 | Read-only Scan, empty/unknown metadata, collision and symlink fixtures | NOT RUN |
