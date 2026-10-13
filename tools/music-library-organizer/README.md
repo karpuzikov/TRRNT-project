@@ -1,10 +1,21 @@
 # Music Library Organizer
 
-**Current: v0.3.2 - Under construction ⚠️**
+**Current: v0.3.3 - Under construction ⚠️**
 
-**[Download Music Library Organizer v0.3.2.pyw](../Music%20Library%20Organizer%20v0.3.2.pyw)**
+**[Download Music Library Organizer v0.3.3.pyw](../Music%20Library%20Organizer%20v0.3.3.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.3 strict native lossless encoders (current)
+
+**MANDATORY: FFmpeg is no longer an ALAC or FLAC encoder.**
+
+- **ALAC output: only `refalac64.exe` from [nu774/qaac](https://github.com/nu774/qaac)**. Downloaded automatically from the official latest Windows GitHub release (current API fallback `v3.07`); `refalac64.exe -o output.m4a input.wav`.
+- **FLAC output: only Xiph's official `flac.exe` from [ftp.osuosl.org](https://ftp.osuosl.org/pub/xiph/releases/flac/)**. The automatic bootstrap is pinned to the official `flac-1.5.0-win.zip`, checks its published SHA-256 `53f1500f0d6e7c61379d7fee50d4a9f7f504c650009506d9ba015530d76c0dde`, and encodes `flac.exe --best --verify -o output.flac input.wav`.
+- Dependencies auto-bootstrap only in `Documents/Karpuzikov Tools/Music Library Organizer/dependencies/encoders/`. If the exact native encoder cannot run, **the release fails without a silent encoder fallback**. ZIP extraction rejects path traversal, oversized archives and symlinks. Explicit direct byte-for-byte copies for already-correct codec tracks do not invoke any encoder.
+- Where decoding is necessary, FFmpeg creates an ephemeral **integer PCM WAV** with original sample rate and supported 16/24/32-bit depth. No FFmpeg `-c:a alac` or `-c:a flac` command remains. Source float PCM or lossy codecs never get coerced to purported bit-perfect ALAC/FLAC. CUE splitting uses the exact same pipeline and current encoding worker limit.
+- The output is verified using FFprobe (true codec / sample rate / declared bit depth) and equality of decoded 32-bit PCM hashes against the original source. After a successful encode the organizer tries to transfer common/custom tags and cover artwork with Mutagen, and checks basic title, track number and artwork fidelity. If it cannot preserve metadata it raises an error and deletes the uncommitted output rather than silently losing tags. Temporary PCM WAVs are automatically cleaned.
+- **Testing status:** Verified native Xiph `flac --best --verify` on an independent local 16-bit/44.1 kHz WAV round-trip; decoded PCM SHA-256 matched. Main Windows pywebview app / native Windows `refalac64.exe` and all real collection and metadata round-trips are **NOT RUN**. Existing `v0.3.2` is historical; the new version must remain **Under construction ⚠️** until actual Windows testing. GitHub Actions workflows unchanged.
 
 ## v0.3.2 CD sidecar and result UI corrections
 
