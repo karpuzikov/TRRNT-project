@@ -485,30 +485,44 @@ def _key(s):
 
 
 def release_title_normalize(title, release_type=None, inferred_single=False):
-    """Release titles, not track filenames. Obey singular/plural Remix exception."""
-    text = " ".join(str(title or "").split())
-    if not text:
-        return text
-    # Existing "The Remixes EP" and other plural remix collection descriptors
+    """Single/EP designation always lives at the end, except plural Remixes."""
+    value = " ".join(str(title or "").strip().split())
+    if not value:
+        return value
+    # A plural Remixes release never gets an EP/Single suffix, even if
+    # the source says "The Remixes EP" or "Remixes (Single)".
     plural = re.search(
-        r"(?i)^(.*?)\s*(?:-|\s)\s*((?:(?:The|Club)\s+)?Remixes)"
-        r"(?:\s+(?:-\s*|\()?\b(?:EP|Single)\)?)?$", text)
+        r"(?i)^(.*?)\s*(?:-|\s)\s*((?:The\s+|Club\s+)?Remixes)"
+        r"(?:\s+(?:-|\()?\s*(?:EP|Single)\)?)?$", value)
     if plural:
-        stem, descriptor = plural.group(1).strip(" -()"), plural.group(2)
-        return (stem + " " if stem else "") + "(" + descriptor + ")"
-    # Descriptors already correctly enclosed should not get a type suffix.
-    if re.search(r"(?i)\((?:The |Club )?Remixes\)(?:\s*(?:-|\()\s*(?:EP|Single)\)?)?$", text):
-        return re.sub(r"(?i)\s*(?:-|\()\s*(?:EP|Single)\)?$", "", text).strip()
-    text = re.sub(r"(?i)\s+(?:(?:-\s*)|\()?\b(?:Single|EP)\)?$", "", text).strip()
-    if re.search(r"(?i)\s+Remix$", text) and not re.search(r"(?i)\(Remix\)$", text):
-        text = re.sub(r"(?i)\s+Remix$", " (Remix)", text)
-    text = re.sub(r"(?i)\b(?:feat|featuring)\.\s+", "ft. ", text)
+        prefix, label = plural.group(1).strip(" -()"), plural.group(2)
+        return ((prefix + " ") if prefix else "") + "(" + label + ")"
+    enclosed_plural = re.search(r"(?i)\((?:The\s+|Club\s+)?Remixes\)", value)
+    if enclosed_plural:
+        return re.sub(r"(?i)\s*(?:-|\()\s*(?:EP|Single)\)?\s*$", "", value).strip()
+
     kind = str(release_type or "").lower()
+    designated = re.findall(r"(?i)\((Single|EP)\)|\s+-\s+(Single|EP)(?=\s|$)", value)
+    explicit = next((x or y for x, y in designated if x or y), "")
+    if not kind and explicit:
+        kind = explicit.lower()
+
+    value = re.sub(r"(?i)\s*\(\s*(?:Single|EP)\s*\)", "", value)
+    value = re.sub(r"(?i)\s+-\s+(?:Single|EP)(?=\s|$)", "", value)
+    value = re.sub(r"(?i)\s+(?:Single|EP)\s*$", "", value)
+    # "Maxi CD Single" is an edition descriptor plus a release-type
+    # designation; retain "Maxi CD" and put only "Single" in the suffix.
+    value = re.sub(r"(?i)\((Maxi\s+CD)\s+Single\)", r"(\1)", value)
+    value = " ".join(value.split())
+    if re.search(r"(?i)\s+Remix$", value):
+        value = re.sub(r"(?i)\s+Remix$", " (Remix)", value)
+    value = re.sub(r"(?i)\b(?:feat|featuring)\.\s+", "ft. ", value)
     if kind == "single" or (not kind and inferred_single):
-        return text + " - Single"
+        return value + " - Single"
     if kind == "ep":
-        return text + " - EP"
-    return text
+        return value + " - EP"
+    return value
+
 
 
 def release_identity(folder, files, default_artist="", allow_network=True):
