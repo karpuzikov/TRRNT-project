@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.9 - original auCDtect integration regressions.
+# Music Library Organizer v0.3.10 - processing options and digital date regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.9.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.10.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -983,6 +983,145 @@ class CueAndDiscovery(unittest.TestCase):
                                 ffprobe=shutil.which("ffprobe"))
                 self.assertTrue(dst.is_file())
                 self.assertEqual(mlo.pcm_hash(f, source, 0, 44100), mlo.pcm_hash(f, dst))
+
+
+
+class OptionalProcessingAndDigitalDates(unittest.TestCase):
+    def test_january_first_placeholder_only_for_digital(self):
+        self.assertEqual(mlo.digital_date_precision("2020-01-01"), "2020")
+        self.assertEqual(mlo.digital_date_precision("2020-01-01", True), "2020-01-01")
+        self.assertEqual(mlo.digital_date_precision("2020-01-02"), "2020-01-02")
+        self.assertEqual(mlo.digital_date_precision("2020-02-01"), "2020-02-01")
+        self.assertEqual(mlo.digital_date_precision("2020"), "2020")
+        base = {"title": "Example", "date": "2020-01-01",
+                "catalog": "", "barcode": "0123456789012",
+                "root_artist": "Example", "notes": [],
+                "release_type": "Album", "track_count": 11}
+        digital = dict(base, physical=False)
+        self.assertEqual(mlo.release_folder_target(digital),
+                         "2020 - Example [0123456789012]")
+        physical = dict(base, physical=True, country="JP",
+                        edition_date="", country_provenance="verified-pressing")
+        self.assertEqual(mlo.release_folder_target(physical),
+                         "2020-01-01 - Example [JP - 0123456789012]")
+
+    def test_audiochecker_optional_no_fabricated_log_requirement(self):
+        info = {"metadata_verified": True, "physical": False, "notes": [],
+                "barcode": "1234567890123", "catalog": ""}
+        self.assertEqual(mlo.completion_reasons(info, [], [],
+                                                checker_enabled=False), [])
+        self.assertIn("Original auCDtect report missing",
+                      mlo.completion_reasons(info, [], [],
+                                             checker_enabled=True))
+        self.assertNotIn("Original auCDtect report missing",
+                         mlo.completion_reasons(
+                             dict(info, physical=True, country_provenance="verified-pressing"),
+                             [], [], checker_enabled=True))
+
+    def test_three_native_webview_checkboxes_and_saved_state(self):
+        for name in ("doEncode", "doChecker", "doSplit"):
+            self.assertIn('id="' + name + '"', mlo.HTML)
+        self.assertIn("updateTaskControls()", mlo.HTML)
+        self.assertIn("'doEncode').checked", mlo.HTML)
+        self.assertIn("'doChecker').checked", mlo.HTML)
+        self.assertIn("'doSplit').checked", mlo.HTML)
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "Input"
+            dest = root / "Output"
+            source.mkdir()
+            with patch.object(mlo, "SETTINGS", root / "settings.json"), \
+                 patch.object(mlo, "UNDO", root / "undo.json"), \
+                 patch.object(mlo, "LOG", root / "activities.log"), \
+                 patch.object(mlo, "ensure_data"), \
+                 patch.object(mlo.threading, "Thread") as thread:
+                app = mlo.Organizer()
+                state = app.organize(str(source), str(dest), "FLAC", 1, 1,
+                                     False, False, False)
+                self.assertEqual(state, {"ok": True})
+                self.assertFalse(app.state()["enable_encoding"])
+                self.assertFalse(app.state()["enable_checker"])
+                self.assertFalse(app.state()["enable_splitting"])
+                saved = mlo.read_json(mlo.SETTINGS, {})
+                self.assertEqual(saved["enable_encoding"], False)
+                self.assertEqual(saved["enable_checker"], False)
+                self.assertEqual(saved["enable_splitting"], False)
+                thread.return_value.start.assert_called_once()
+
+    def test_whole_cue_image_preserved_when_split_and_encoding_disabled(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "Album"
+            dest = root / "Dest"
+            source.mkdir()
+            original = source / "album.flac"
+            original.write_bytes(b"faked lossless album image data")
+            (source / "album.cue").write_text(
+                'FILE "album.flac" WAVE\n'
+                '  TRACK 01 AUDIO\n'
+                '    TITLE "A"\n'
+                '    INDEX 01 00:00:00\n'
+                '  TRACK 02 AUDIO\n'
+                '    TITLE "B"\n'
+                '    INDEX 01 00:02:00\n', encoding="utf-8")
+            app = mlo.Organizer()
+            app.enable_encoding = False
+            app.enable_splitting = False
+            app._artist_root = "TEST"
+            app._credit_consensus = {}
+            app._export_warnings = []
+            app._export_notices = []
+            app.encoding_workers = 1
+            with patch.object(mlo, "probe", return_value={
+                    "codec_name": "flac", "sample_rate": 44100}), \
+                 patch.object(mlo, "convert") as encode:
+                app._export_release(source, dest, "ALAC", "ffmpeg", "ffprobe")
+                encode.assert_not_called()
+            self.assertEqual((dest / "album.flac").read_bytes(), original.read_bytes())
+            self.assertTrue((dest / "album.cue").is_file())
+            self.assertFalse((dest / "01 A.m4a").exists())
+            self.assertIn('FILE "album.flac" WAVE',
+                          (dest / "album.cue").read_text(encoding="utf-8"))
+
+    def test_image_splitting_uses_native_encoder_even_if_ordinary_encoding_off(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "Album"
+            dest = root / "Dest"
+            source.mkdir()
+            (source / "album.flac").write_bytes(b"fake audio")
+            (source / "album.cue").write_text(
+                'FILE "album.flac" WAVE\n'
+                '  TRACK 01 AUDIO\n'
+                '    TITLE "A"\n'
+                '    INDEX 01 00:00:00\n'
+                '  TRACK 02 AUDIO\n'
+                '    TITLE "B"\n'
+                '    INDEX 01 00:02:00\n', encoding="utf-8")
+            app = mlo.Organizer()
+            app.enable_encoding = False
+            app.enable_splitting = True
+            app._artist_root = "TEST"
+            app._credit_consensus = {}
+            app._export_warnings = []
+            app._export_notices = []
+            app.encoding_workers = 1
+            calls = []
+            def fake_convert(ff, src, dst, fmt, *args, **kwargs):
+                calls.append((dst.name, fmt))
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_bytes(b"encoded-test-file")
+            with patch.object(mlo, "probe", return_value={
+                    "codec_name": "flac", "sample_rate": 44100}), \
+                 patch.object(mlo, "convert", side_effect=fake_convert):
+                app._export_release(source, dest, "ALAC", "ffmpeg", "ffprobe")
+            self.assertEqual(calls, [("01 A.m4a", "ALAC"), ("02 B.m4a", "ALAC")])
+            self.assertFalse((dest / "album.flac").exists())
+            self.assertIn('FILE "02 B.m4a" WAVE',
+                          (dest / "album.cue").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
