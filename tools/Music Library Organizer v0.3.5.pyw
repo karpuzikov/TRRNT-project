@@ -2133,18 +2133,23 @@ class Organizer:
             for k, rec in enumerate(records):
                 start_sample = ticks[k] * (rate // 75)
                 end_sample = ticks[k + 1] * (rate // 75) if k + 1 < len(records) else None
-                name = track_filename(rec["number"], rec["title"], extension)
+                new_title, new_artist = normalize_artist_title(
+                    rec["title"], getattr(self, "_artist_root", ""),
+                    getattr(self, "_artist_root", ""),
+                    getattr(self, "_credit_consensus", None))
+                name = track_filename(rec["number"], new_title, extension)
                 output = dest / sub / name
                 if str(output).casefold() in seen_image_names or os.path.lexists(output):
                     raise RuntimeError("Image tracks map to the same output path: " + str(output))
                 seen_image_names.add(str(output).casefold())
-                image_jobs.append((rec, name, output, start_sample, end_sample, k))
+                image_jobs.append((rec, name, output, start_sample, end_sample, k,
+                                   new_title, new_artist))
             def encode_image(job):
-                rec, name, output, start_sample, end_sample, k = job
+                rec, name, output, start_sample, end_sample, k, new_title, new_artist = job
                 if self.stop.is_set():
                     raise InterruptedError("Cancelled.")
                 convert(ff, src_img, output, fmt, start_sample, end_sample,
-                        rec["title"], rec["number"], ffprobe=ffprobe)
+                        new_title, rec["number"], artist=new_artist, ffprobe=ffprobe)
                 return rec["number"], name, k
             with concurrent.futures.ThreadPoolExecutor(
                     max_workers=max(1, int(self.encoding_workers))) as pool:
