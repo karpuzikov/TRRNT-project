@@ -817,6 +817,7 @@ class Organizer:
         self.source = str(settings.get("source", ""))
         self.dest = str(settings.get("dest", ""))
         self.fmt = str(settings.get("format", "ALAC"))
+        self.checker_path = str(settings.get("checker_path", ""))
         self.running = False
         self.stop = threading.Event()
         self.status = "Choose input and output folders, then Organize."
@@ -843,7 +844,7 @@ class Organizer:
         with self.lock:
             return {"source": self.source, "dest": self.dest, "format": self.fmt,
                     "running": self.running, "status": self.status,
-                    "progress": self.progress, "counts": dict(self.counts),
+                    "progress": self.progress, "checker_path": self.checker_path, "counts": dict(self.counts),
                     "results": list(self.results), "error": self.error,
                     "activity": list(self.activity), "undo": UNDO.is_file()}
 
@@ -856,6 +857,16 @@ class Organizer:
         except Exception as exc:
             self.info("Folder picker failed: " + str(exc))
         return ""
+
+    def browse_checker(self):
+        try:
+            import webview
+            value = self.window.create_file_dialog(
+                webview.OPEN_DIALOG, file_types=("Executables (*.exe)",))
+            return str(value[0]) if value else ""
+        except Exception as exc:
+            self.info("AudioChecker picker failed: " + str(exc))
+            return ""
 
     def open_folder(self, path):
         target = Path(str(path)).expanduser()
@@ -886,7 +897,7 @@ class Organizer:
         self.stop.set()
         return {"ok": True}
 
-    def organize(self, source, dest, fmt):
+    def organize(self, source, dest, fmt, checker_path=""):
         with self.lock:
             if self.running:
                 return {"error": "Another operation is running."}
@@ -896,14 +907,18 @@ class Organizer:
                 return {"error": str(exc)}
             existing = read_json(UNDO, {})
             if existing.get("pending"):
-                return {"error": "The previous run has an interrupted output checkpoint. "
-                        "Resolve the pending Undo record before another write."}
+                return {"error": "Previous run has an interrupted output checkpoint. Resolve before continuing."}
             self.source, self.dest, self.fmt = str(src), str(dst), str(fmt)
-            write_json(SETTINGS, {"source": self.source, "dest": self.dest, "format": self.fmt})
+            self.checker_path = str(checker_path or "").strip()
+            if self.checker_path and not Path(self.checker_path).is_file():
+                return {"error": "AudioChecker executable path does not exist."}
+            write_json(SETTINGS, {"source": self.source, "dest": self.dest,
+                                  "format": self.fmt, "checker_path": self.checker_path})
             self.running = True
             self.stop.clear()
             self.status, self.progress, self.error = "Discovering releases...", 0, ""
-            self.counts = {"total": 0, "done": 0, "skipped": 0, "failed": 0, "warnings": 0}
+            self.counts = {"total": 0, "done": 0, "partial": 0,
+                           "skipped": 0, "failed": 0, "warnings": 0}
             self.results, self.activity = [], []
         threading.Thread(target=self._organize, args=(src, dst, fmt), daemon=True).start()
         return {"ok": True}
@@ -925,59 +940,75 @@ class Organizer:
             staging_root.mkdir()
             ff = ffprobe = None
             seen = set()
+            checker = locate_checker(self.checker_path)
+            if not checker:
+                self.info("AudioChecker executable not found: digital output will be PARTIAL, not DONE.")
             for index, folder in enumerate(releases, 1):
                 if self.stop.is_set():
                     self.status = "Cancelled. Completed output can be undone."
                     break
                 folder = folder.resolve(strict=True)
-                target = dest / folder.name
-                result = {"name": folder.name, "source": str(folder),
-                          "target": str(target), "status": "", "message": "",
-                          "warnings": []}
+                result = {"name": folder.name, "source": str(folder), "target": "",
+                          "status": "", "message": "", "warnings": [],
+                          "metadata": {}, "checker": []}
                 try:
                     if source != folder and source not in folder.parents:
-                        raise RuntimeError("Input release escaped the selected source root.")
-                    if folder.name.casefold() in seen:
-                        raise RuntimeError("Output name collision between multiple source releases.")
-                    seen.add(folder.name.casefold())
+                        raise RuntimeError("Input release escaped the source root.")
+                    files = collect_files(folder)
+                    if not files:
+                        raise RuntimeError("Release is empty.")
+                    if any(fp.suffix.lower() in LOSSY for fp in files):
+                        raise RuntimeError("Lossy input present; conversion to purported lossless is prohibited.")
+                    self.status = f"Looking up release {index}/{len(releases)}: {folder.name}"
+                    info = release_identity(folder, files)
+                    result["metadata"] = {k: v for k, v in info.items() if k != "folder"}
+                    result["warnings"].extend(info["notes"])
+                    out_name = release_folder_target(info)
+                    result["warnings"].extend(x for x in info["notes"] if x not in result["warnings"])
+                    target = dest / out_name
+                    result["target"] = str(target)
+                    if out_name.casefold() in seen:
+                        raise RuntimeError("Two input editions map to identical output folder: " + out_name)
+                    seen.add(out_name.casefold())
                     if os.path.lexists(target):
-                        result["status"], result["message"] = (
-                            "skipped", "Output release already exists and was not overwritten.")
+                        result["status"] = "skipped"
+                        result["message"] = "Output already exists - not overwritten."
                         self.counts["skipped"] += 1
                     else:
-                        files = collect_files(folder)
-                        if not files:
-                            raise RuntimeError("Release contains no supported files.")
-                        if any(fp.suffix.lower() in LOSSY for fp in files):
-                            raise RuntimeError("Lossy source detected; cannot label it ALAC or FLAC.")
-                        cat, physical = catalog(folder.name)
-                        if physical:
-                            if not cat or cat.lower() == "none":
-                                result["warnings"].append("Unverified catalog: existing CUE/LOG names retained.")
+                        if info["physical"]:
                             if not any(fp.suffix.lower() == ".cue" for fp in files):
-                                result["warnings"].append("CD CUE missing (no file invented).")
-                            if not any(fp.suffix.lower() == ".log" and fp.name.casefold() != "audiochecker.log" for fp in files):
-                                result["warnings"].append("CD rip log missing (no file invented).")
-                        elif not any(fp.name.casefold() == "audiochecker.log" for fp in files):
-                            result["warnings"].append("Missing audiochecker.log; organization continues.")
-                        if not RELEASE.fullmatch(folder.name):
-                            result["warnings"].append("Release folder title unverified; preserved unchanged.")
+                                result["warnings"].append("CD CUE absent; genuine source not fabricated.")
+                            if not any(fp.suffix.lower() == ".log" and
+                                       fp.name.casefold() != "audiochecker.log" for fp in files):
+                                result["warnings"].append("CD ripping log absent; not fabricated.")
+                            if not info["catalog"]:
+                                result["warnings"].append("Specific physical edition catalog not verified.")
                         if ff is None:
                             ff, ffprobe = ensure_ffmpeg()
                         tmp = staging_root / (str(index) + "-" + uuid.uuid4().hex)
                         tmp.mkdir()
+                        self._current_identity = info
                         try:
-                            self.status = f"Organizing {index}/{len(releases)}: {folder.name}"
+                            self.status = f"Organizing {index}/{len(releases)}: {out_name}"
                             self._export_release(folder, tmp, fmt, ff, ffprobe)
-                            created_files = collect_files(tmp)
-                            if not created_files:
-                                raise RuntimeError("No output was generated.")
+                            # Actual AudioChecker is performed before finalizing the release.
+                            if not info["physical"]:
+                                try:
+                                    self.status = f"AudioChecker {index}/{len(releases)}: {out_name}"
+                                    result["checker"] = check_web_release(tmp, fmt, ff, checker, self.stop)
+                                except InterruptedError:
+                                    raise
+                                except Exception as exc:
+                                    result["warnings"].append("REQUIRED AudioChecker not completed: " + str(exc))
+                            output_files = collect_files(tmp)
+                            if not output_files:
+                                raise RuntimeError("No output generated.")
                             hashes = {str(fp.relative_to(tmp)).replace("\\", "/"): sha(fp)
-                                      for fp in created_files}
+                                      for fp in output_files}
                             if self.stop.is_set():
-                                raise InterruptedError("Cancelled before release commit.")
+                                raise InterruptedError("Cancelled before committing release.")
                             if os.path.lexists(target):
-                                raise RuntimeError("Destination appeared during export; overwrite blocked.")
+                                raise RuntimeError("Target appeared during export; no overwrite.")
                             if manifest is None:
                                 previous = read_json(UNDO, None)
                                 if previous and previous.get("created"):
@@ -988,21 +1019,29 @@ class Organizer:
                                 manifest = {"version": VERSION, "source": str(source),
                                             "dest": str(dest), "format": fmt,
                                             "created": [], "pending": None}
-                            record = {"path": str(target), "files": hashes}
-                            manifest["pending"] = record
+                            rec = {"path": str(target), "files": hashes}
+                            manifest["pending"] = rec
                             write_json(UNDO, manifest)
                             os.rename(tmp, target)
-                            manifest["created"].append(record)
+                            manifest["created"].append(rec)
                             manifest["pending"] = None
                             write_json(UNDO, manifest)
-                            result["status"], result["message"] = (
-                                "done", str(len(created_files)) + " files organized.")
-                            self.counts["done"] += 1
+                            incomplete = bool(not info["metadata_verified"] or
+                                (not info["physical"] and not result["checker"]))
+                            if incomplete:
+                                result["status"] = "partial"
+                                self.counts["partial"] += 1
+                                result["message"] = str(len(output_files)) + " output files, requirements unfinished."
+                            else:
+                                result["status"] = "done"
+                                self.counts["done"] += 1
+                                result["message"] = str(len(output_files)) + " verified output files."
                         finally:
+                            self._current_identity = None
                             if tmp.exists():
                                 shutil.rmtree(tmp)
                 except InterruptedError:
-                    self.status = "Cancelled. Completed output can be undone."
+                    self.status = "Cancelled. Committed output remains Undo-able."
                     self.info(self.status)
                     break
                 except Exception as exc:
@@ -1014,28 +1053,28 @@ class Organizer:
                         with self.lock:
                             self.results.append(result)
                             self.progress = round(index * 100 / len(releases))
-                        self.info(result["status"].upper() + ": " + folder.name + ": " +
-                                  result["message"] + (" | " + "; ".join(result["warnings"])
-                                                       if result["warnings"] else ""))
+                        self.info(result["status"].upper() + ": " + folder.name +
+                                  " -> " + result["target"] + " - " + result["message"] +
+                                  ((" | " + "; ".join(result["warnings"])) if result["warnings"] else ""))
                     write_json(REPORT, {"version": VERSION, "source": str(source),
                                         "output": str(dest), "format": fmt,
-                                        "counts": dict(self.counts),
-                                        "releases": list(self.results)})
+                                        "counts": dict(self.counts), "releases": list(self.results)})
             if not self.stop.is_set():
-                self.status = ("Finished: " + str(self.counts["done"]) + " organized; " +
-                               str(self.counts["skipped"]) + " already present; " +
+                self.status = ("Finished: " + str(self.counts["done"]) + " compliant, " +
+                               str(self.counts["partial"]) + " partially organized, " +
+                               str(self.counts["skipped"]) + " existing, " +
                                str(self.counts["failed"]) + " failed.")
                 self.info(self.status)
         except Exception as exc:
             self.error = str(exc)
             self.status = "Batch failed: " + str(exc)
-            self.info("BATCH FAILED: " + traceback.format_exc()[-3500:])
+            self.info("BATCH ERROR: " + traceback.format_exc()[-3500:])
         finally:
             if staging_root is not None and staging_root.exists():
                 try:
                     shutil.rmtree(staging_root)
                 except Exception as exc:
-                    self.info("Temporary cleanup error: " + str(exc))
+                    self.info("Staging cleanup error: " + str(exc))
             with self.lock:
                 self.running = False
 
