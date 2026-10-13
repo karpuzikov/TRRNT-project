@@ -226,8 +226,11 @@ class NativeEncoderCompliance(unittest.TestCase):
         self.assertEqual(mlo._FLAC_VERSION, "1.5.0")
         self.assertTrue(mlo._FLAC_ZIP_URL.startswith(
             "https://ftp.osuosl.org/pub/xiph/releases/flac/"))
-        self.assertTrue(mlo._qaac_official_url().startswith(
-            "https://github.com/nu774/qaac/releases/download/"))
+        from unittest.mock import patch
+        from urllib.error import URLError
+        with patch.object(mlo.urllib.request, "urlopen", side_effect=URLError("offline")):
+            self.assertTrue(mlo._qaac_official_url().startswith(
+                "https://github.com/nu774/qaac/releases/download/"))
 
     def test_native_encoder_only_no_ffmpeg_encode(self):
         from unittest.mock import patch
