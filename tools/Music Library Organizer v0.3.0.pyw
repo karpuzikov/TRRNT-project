@@ -1081,10 +1081,14 @@ class Organizer:
     def _export_release(self, source, dest, fmt, ff, ffprobe):
         files = collect_files(source)
         cues = [p for p in files if p.suffix.lower() == ".cue"]
-        cat, physical = catalog(source.name)
-        # Keep the original rip-document filename if its edition identifier
-        # cannot be verified; this must not block unrelated audio conversions.
-        valid_cat = bool(cat and cat.lower() != "none")
+        ident = getattr(self, "_current_identity", None)
+        if ident:
+            cat = ident.get("catalog") or ident.get("barcode") or ""
+            physical = bool(ident.get("physical"))
+            valid_cat = bool(ident.get("metadata_verified") and cat)
+        else:
+            cat, physical = catalog(source.name)
+            valid_cat = bool(cat and cat.lower() != "none")
         extension = ".m4a" if fmt == "ALAC" else ".flac"
         # A single CUE image must be handled as indivisible input.
         images, by_cue, source_images = [], {}, set()
