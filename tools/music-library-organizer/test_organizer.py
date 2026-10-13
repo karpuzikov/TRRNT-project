@@ -5,13 +5,14 @@ import importlib.machinery
 import importlib.util
 from pathlib import Path
 import shutil
+import re
 import sys
 import tempfile
 import threading
 import unittest
 import wave
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.2.0.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.0.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -19,6 +20,13 @@ loader.exec_module(mlo)
 
 
 class NamingRules(unittest.TestCase):
+    def test_release_types_and_remix_exception(self):
+        self.assertEqual(mlo.release_title_normalize("Good Time", "Single"), "Good Time - Single")
+        self.assertEqual(mlo.release_title_normalize("Title - The Remixes EP", "EP"), "Title (The Remixes)")
+        self.assertEqual(mlo.release_title_normalize("Plain Jane Remix", "Single"), "Plain Jane (Remix) - Single")
+        x = {"folder":"Inna - YO 2019", "title":"YO", "date":"2019-05-01", "catalog":"CAT123", "barcode":"1234", "physical":False, "country":"", "release_type":"Album", "track_count":13, "notes":[]}
+        self.assertEqual(mlo.release_folder_target(x), "2019-05-01 - YO [CAT123]")
+
     def test_zero_padding_exact_one_space(self):
         self.assertEqual(mlo.track_filename(1, "Red Lips (ft. Sam Bruno) [Skrillex Remix]", ".m4a"),
                          "01 Red Lips (ft. Sam Bruno) [Skrillex Remix].m4a")
@@ -58,45 +66,54 @@ class NamingRules(unittest.TestCase):
 
 
 class AutomaticBatch(unittest.TestCase):
+    @staticmethod
+    def identity(folder, files, default_artist=""):
+        name = folder.name
+        catalog = mlo.catalog(name)[0]
+        title = re.sub(r"^\d{4}-\d\d-\d\d - ", "", name).split(" [")[0]
+        return {"folder": name, "title": title, "date": "2020-01-01",
+                "catalog": catalog, "barcode": "", "physical": False,
+                "country": "", "country_provenance": "", "release_type": "Single",
+                "selected_release": "test-only-id", "metadata_verified": True,
+                "notes": [], "track_count": 1}
+
     def test_missing_audiochecker_does_not_block_and_second_run_skips(self):
         from unittest.mock import patch
-        import json
-        import shutil
         with tempfile.TemporaryDirectory() as td:
             base = Path(td)
-            input_root = base / "Input"
-            output_root = base / "Output"
-            first = input_root / "2020-01-01 - Single [ABC123]"
-            first.mkdir(parents=True)
-            (first / "01 Track.flac").write_bytes(b"test source")
-            paths = {
-                "DATA": base / "Settings",
-                "SETTINGS": base / "Settings" / "settings.json",
-                "LOG": base / "Settings" / "activity.log",
-                "REPORT": base / "Settings" / "last-run.json",
-                "UNDO": base / "Settings" / "undo.json",
-                "HISTORY": base / "Settings" / "undo-history",
-            }
-            with patch.multiple(mlo, **paths):
+            source = base / "Input"
+            output = base / "Output"
+            folder = source / "2020-01-01 - Track [ABC123]"
+            folder.mkdir(parents=True)
+            (folder / "01 Track.flac").write_bytes(b"fixture")
+            places = {"DATA": base / "Settings",
+                      "SETTINGS": base / "Settings" / "settings.json",
+                      "LOG": base / "Settings" / "activity.log",
+                      "REPORT": base / "Settings" / "last-run.json",
+                      "UNDO": base / "Settings" / "undo.json",
+                      "HISTORY": base / "Settings" / "undo-history"}
+            with patch.multiple(mlo, **places):
                 app = mlo.Organizer()
-                app.source, app.dest, app.fmt = str(input_root), str(output_root), "FLAC"
-                def export(release, staging, fmt, ff, ffprobe):
-                    shutil.copy2(release / "01 Track.flac", staging / "01 Track.flac")
-                app._export_release = export
-                with patch.object(mlo, "ensure_ffmpeg", return_value=("ff", "ffprobe")):
-                    app._organize(input_root, output_root, "FLAC")
-                    self.assertEqual(app.counts["done"], 1)
+                app.source, app.dest, app.fmt = str(source), str(output), "FLAC"
+                app._export_release = lambda inp, out, fmt, ff, fp: shutil.copy2(
+                    inp / "01 Track.flac", out / "01 Track.flac")
+                with patch.object(mlo, "release_identity", side_effect=self.identity), \
+                     patch.object(mlo, "ensure_ffmpeg", return_value=("ff", "ffprobe")), \
+                     patch.object(mlo, "locate_checker", return_value=None), \
+                     patch.object(mlo, "check_web_release", side_effect=RuntimeError("checker missing")):
+                    app._organize(source, output, "FLAC")
+                    self.assertEqual(app.counts["partial"], 1)
+                    self.assertEqual(app.counts["done"], 0)
                     self.assertEqual(app.counts["failed"], 0)
-                    self.assertGreaterEqual(app.counts["warnings"], 1)
-                    self.assertTrue((output_root / first.name / "01 Track.flac").exists())
-                    self.assertEqual(app.results[0]["status"], "done")
-                    app._organize(input_root, output_root, "FLAC")
+                    self.assertIn("REQUIRED AudioChecker not completed", " | ".join(app.results[0]["warnings"]))
+                    out_name = mlo.release_folder_target(self.identity(folder, []))
+                    self.assertTrue((output / out_name / "01 Track.flac").is_file())
+                    app._organize(source, output, "FLAC")
                     self.assertEqual(app.counts["skipped"], 1)
                     self.assertEqual(app.results[-1]["status"], "skipped")
 
     def test_bad_release_does_not_stop_good_release(self):
         from unittest.mock import patch
-        import shutil
         with tempfile.TemporaryDirectory() as td:
             base = Path(td)
             source = base / "Input"
@@ -104,11 +121,11 @@ class AutomaticBatch(unittest.TestCase):
             folders = [source / "2020-01-01 - A [AAA]", source / "2020-01-01 - B [BBB]"]
             for folder in folders:
                 folder.mkdir(parents=True)
-                (folder / "01 Audio.flac").write_bytes(b"temporary")
-            paths = {key: base / "Data" / name for key, name in {
+                (folder / "01 Audio.flac").write_bytes(b"fixture")
+            places = {key: base / "Data" / name for key, name in {
                 "DATA":"", "SETTINGS":"settings.json","UNDO":"undo.json",
                 "LOG":"activity.log","REPORT":"last-run.json","HISTORY":"undo-history"}.items()}
-            with patch.multiple(mlo, **paths):
+            with patch.multiple(mlo, **places):
                 app = mlo.Organizer()
                 app.source, app.dest, app.fmt = str(source), str(dest), "FLAC"
                 def export(folder, output, fmt, ff, ffprobe):
@@ -116,11 +133,15 @@ class AutomaticBatch(unittest.TestCase):
                         raise ValueError("synthetic unsupported source")
                     shutil.copy2(folder / "01 Audio.flac", output / "01 Audio.flac")
                 app._export_release = export
-                with patch.object(mlo, "ensure_ffmpeg", return_value=("ff", "ffprobe")):
+                with patch.object(mlo, "release_identity", side_effect=self.identity), \
+                     patch.object(mlo, "ensure_ffmpeg", return_value=("ff", "ffprobe")), \
+                     patch.object(mlo, "locate_checker", return_value=None), \
+                     patch.object(mlo, "check_web_release", side_effect=RuntimeError("checker missing")):
                     app._organize(source, dest, "FLAC")
                 self.assertEqual(app.counts["failed"], 1)
-                self.assertEqual(app.counts["done"], 1)
-                self.assertTrue((dest / folders[1].name / "01 Audio.flac").is_file())
+                self.assertEqual(app.counts["partial"], 1)
+                out_name = mlo.release_folder_target(self.identity(folders[1], []))
+                self.assertTrue((dest / out_name / "01 Audio.flac").is_file())
 
     def test_original_filename_version_survives_shorter_title_tag(self):
         from unittest.mock import patch
@@ -159,20 +180,25 @@ class CueAndDiscovery(unittest.TestCase):
             images = mlo.cue_image_plan(cue_path, cue)
             self.assertEqual(len(images), 1)
             self.assertEqual(images[0][2], [0, 75])
-            names = {1: "01 First.flac", 2: "02 Second.flac"}
+            names = {1: ("01 First.flac", 0, 75), 2: ("02 Second.flac", 75, None)}
             rewritten = mlo.image_cue_text(cue, names)
             self.assertIn('FILE "01 First.flac" WAVE', rewritten)
             self.assertIn('FILE "02 Second.flac" WAVE', rewritten)
             self.assertEqual(rewritten.count("INDEX 01 00:00:00"), 2)
 
-    def test_index_00_requires_review(self):
+    def test_index_00_preserved_during_split(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td)
             (path / "album.wav").write_bytes(b"placeholder")
             cue_path = path / "CAT001.cue"
             self._cue(cue_path, index0=True)
-            with self.assertRaises(ValueError):
-                mlo.cue_image_plan(cue_path, mlo.cue_read(cue_path))
+            cue = mlo.cue_read(cue_path)
+            plan = mlo.cue_image_plan(cue_path, cue)
+            self.assertEqual(plan[0][2], [0, 70])
+            names = {1: ("01 First.flac", 0, 70), 2: ("02 Second.flac", 70, None)}
+            rewritten = mlo.image_cue_text(cue, names)
+            self.assertIn("INDEX 00 00:00:00", rewritten)
+            self.assertIn("INDEX 01 00:00:05", rewritten)
 
     @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg not installed")
     def test_real_pcm_roundtrip_for_both_output_formats(self):
