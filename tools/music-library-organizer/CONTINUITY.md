@@ -1,9 +1,19 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.1.2 - Under construction ⚠️**
+Current version: **0.2.0 - Under construction ⚠️**
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Current source: [`tools/Music Library Organizer v0.1.2.pyw`](../Music%20Library%20Organizer%20v0.1.2.pyw). Earlier v0.1.0 and v0.1.1 sources are preserved only as prior development snapshots.
+Current source: [`tools/Music Library Organizer v0.2.0.pyw`](../Music%20Library%20Organizer%20v0.2.0.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Active product contract - v0.2.0 automatic mode
+
+- **User instruction:** The program should take the input folder and produce organized files in the output folder. **Do NOT require manual per-release REVIEW / Select Ready / Apply** to process an ordinary collection. Earlier v0.1.2 with 94 releases, 0 ready and 94 review due solely to missing `audiochecker.log` was explicitly rejected.
+- **UI:** MCC-style WebView2. Only select Input, Output, ALAC/FLAC, **Organize**. After click, auto-discover all releases, recursively flatten intermediate collection folders under chosen output, convert/rename in a safe staging folder, commit per-release, continue despite independently failed releases. Show Done/Already present/Failed/Warnings as read-only *results*, plus progress and detailed log. Cancel and Undo are directly available and functional.
+- **Metadata/AudioChecker:** Missing `audiochecker.log` should only produce a warning; do not fabricate a log or stop the organizer. Missing CD CUE/LOG also warnings where not essential. Unknown catalog/pressing provenance must NOT be invented; retain the original sidecar/release name when reliable lookup unavailable. Source tracks must not silently lose parenthetical descriptors absent from shorter tag title (e.g., `01 OK (Extended Version)` must not turn into `01 OK`).
+- **Error isolation and safety:** Unsafe CUE/codec, unsupported lossy input, invalid track number/title or actual destination collisions fail or skip only their own release and leave later releases running. Do not overwrite existing output or alter sources. Each new output release uses a staging directory, decoded PCM or byte-for-byte verification, atomic directory finalize, per-release Undo manifest, last-run JSON report, and archived previous manifests. An interrupted pending checkpoint blocks unsafe further writes until reconciled.
+- Source version path: `tools/Music Library Organizer v0.2.0.pyw`; regression tests: `tools/music-library-organizer/test_organizer.py`; UI contract document revised; no changes to MCC repository, GitHub Actions, or other apps' data.
+- **Runtime test status:** JavaScript inline block parsed through V8 `Function(...)`: PASS syntax-only. Actual Python AST compilation/unittest run, FFmpeg PCM parity, Windows GUI launch/screenshots/hovers/drag-drop, real directory output and Undo: **NOT RUN**. Do not label stable. Sample recommended for next test: disposable 94-release INNA backup or a 2-release disposable subset reproducing the previous missing-AudioChecker failure. Report per-release failed counts and logs.
+- **Limitations:** Automatic MusicBrainz/Discogs/Beatport ID/date/country resolution, refalac integration, full embedded metadata-art parity, HTOA/INDEX00, report repair, stronger automatic duplicate collision handling are still to implement. Current output folder names are preserved when identity cannot be verified, rather than pretending full naming compliance.
 
 ## Purpose / scope
 
