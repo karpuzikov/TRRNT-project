@@ -75,6 +75,14 @@ Example: `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is an **individual Remix 
 
 **File operation safety:** Show proposed renames before Apply; preserve real source files, timestamps where feasible, log text, disc data and Undo records. Do not overwrite files, invalidate CUE references, or modify the audio data. These supporting-file rules supplement the `NN Track Title.m4a` audio filename standard.
 
+## 2026-10-14 integrated AudioChecker - strict user directive (supersedes all ZIP/binary chooser rules)
+
+**AudioChecker must be built into Music Library Organizer's own versioned single-file program.** Do not request a separate AudioChecker ZIP, preinstalled `aucdtect.exe`, `achkgui.exe`, user-supplied checker executable, location picker, binary extraction, another program window, or manual download. Remove checker ZIP/file path fields and Browse buttons from current UI. Keep the **AudioChecker workers** choice and automatic per-WEB-release checking, with report written in the output WEB release as `audiochecker.log`. Never invoke WEB AudioChecker on physical CD releases and never touch original source audio/sidecars.
+
+The in-app analyzer must perform genuine audio-signal processing using application-owned Python code and the existing FFmpeg/FFprobe *decoding* tools. Report full track coverage, actual measurable spectral evidence, method/version and uncertainty; verify report integrity before committing. The v0.3.7 implementation uses original pure-Python FFT with deterministic sample windows, frequency-band cutoff evidence, and descriptive `BANDLIMIT_SIGNATURE`/`NO_STRONG_CUTOFF`/`INCONCLUSIVE` findings. It **is not auCDtect** and cannot faithfully replicate the proprietary `CDDA/MPEG (%)` algorithm. **Never forge, label, infer, or substitute unverified auCDtect CDDA/MPEG probabilities; never claim a spectral check proves CDDA origin or absence of prior lossy encoding.** An uncertain track is explicitly inconclusive. Genuine decoding failures block report completion and yield PARTIAL, never success. Flag possible bandlimiting/inconclusive results for review, never silently drop them.
+
+The program must produce reports automatically from fresh WEB output without a user-provided checker archive. Encoder exclusivity (nu774 refalac64 ALAC; official Xiph flac FLAC) is unaffected. Windows GUI, report audit and real-world algorithm false-positive/false-negative validation are mandatory before stable status. This section supersedes historical v0.3.1-v0.3.6 ZIP discovery/checker dependencies, including any older language requiring auCDtect-specific report provenance.
+
 ## 2026-10-14 corrections - release-title and track-credit normalization (latest user instructions)
 
 These rules supersede any earlier examples or parser behavior that contradict them:
