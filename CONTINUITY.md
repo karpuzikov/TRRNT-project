@@ -3,6 +3,12 @@
 Last updated: 2026-10-13
 Status: Under construction ⚠️
 
+## Shared MCC/TRRNT semantic glossary checkpoint - 2026-10-13
+
+- User corrected track-file terminology: `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is **a Remix with featured artist Nicki Minaj**, not simply an alternative featured-artist spelling. The track carries independent recording category/featured-credit attributes.
+- Read current MCC `RULES.md` and v0.5.18 source: MCC expressly uses `Girlfriend (Dr. Luke Remix) [ft. Lil Mama]` as a separate Remix recording root and distinguishes remixer credits from featured artists. A feature genuinely **added by the remix** is an extra criterion not established by `[ft.]` alone; MCC's `canonical_featured_title()` canonicalizes internal comparison keys, not a file-renaming standard.
+- Created central `MUSIC_GLOSSARY.md` in `TRRNT-project` as a single cross-tool semantic reference; linked from both TRRNT documentation and MCC's `RULES.md`. No app logic, audio files, filename normalizer, or Windows tests were changed. This glossary does not finalize on-disk feature punctuation.
+
 ## Latest remix title correction - 2026-10-13
 
 - User rejected any plural remix-collection folder name combining `(Remixes)` or `(The Remixes)` with an EP or Single suffix. The plural collection exception **supersedes** the previous broad requirement to retain ` - EP` / ` - Single` on every title where that release type is mentioned.
