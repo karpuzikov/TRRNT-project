@@ -498,7 +498,11 @@ def _lossless_pcm_format(ffprobe, input_path):
         raise RuntimeError("Lossy source cannot be relabeled as lossless: " + codec)
     if str(details.get("sample_fmt", "")).startswith(("flt", "dbl")) or codec.startswith("pcm_f"):
         raise RuntimeError("Floating-point PCM cannot be converted bit-perfectly to integer ALAC/FLAC.")
-    bits = int(details.get("bits_per_raw_sample") or details.get("bits_per_sample") or 0)
+    raw_bits = details.get("bits_per_raw_sample") or details.get("bits_per_sample") or 0
+    try:
+        bits = int(raw_bits)
+    except (ValueError, TypeError):
+        bits = 0
     if not bits and codec == "flac":
         try:
             from mutagen.flac import FLAC
@@ -654,6 +658,13 @@ def convert(ff, input_path, output_path, fmt, start=None, end=None,
                 raise RuntimeError("Native encoder produced incorrect audio codec.")
             if int(output_info.get("sample_rate") or 0) != sample_rate:
                 raise RuntimeError("Native encoder changed sample rate.")
+            actual_bits = output_info.get("bits_per_raw_sample") or output_info.get("bits_per_sample")
+            try:
+                actual_bits = int(actual_bits)
+            except (ValueError, TypeError):
+                actual_bits = 0
+            if actual_bits and actual_bits != bits:
+                raise RuntimeError(f"Native encoder changed bit depth: {bits} -> {actual_bits}.")
             if pcm_hash(ff, input_path, start, end) != pcm_hash(ff, output_path):
                 raise RuntimeError("Source and encoded decoded-PCM SHA-256 differ.")
             _copy_audio_metadata(input_path, output_path, fmt, title, number)
