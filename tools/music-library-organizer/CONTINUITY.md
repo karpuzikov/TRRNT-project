@@ -1,9 +1,20 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.0 - Under construction ⚠️**
+Current version: **0.3.1 - Under construction ⚠️**
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Current source: [`tools/Music Library Organizer v0.3.0.pyw`](../Music%20Library%20Organizer%20v0.3.0.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Current source: [`tools/Music Library Organizer v0.3.1.pyw`](../Music%20Library%20Organizer%20v0.3.1.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Latest checkpoint - v0.3.1 user-supplied checker, workers and CD lookup (2026-10-13)
+
+- User posted v0.3.0 GUI and rejects manual `achkgui.exe` input because user already attached **Audio_Checker_UTF8_Multicore.zip**. Inspected ZIP on sandbox: contains `AudioChecker_Multicore.pyw` (~21 KB), `Codecs/Analyzer/aucdtect.exe`, `Codecs/FLAC/flac.exe`, manifest sidecars, `CDRip3.dll`; read original log-generation/checksum implementation. The file is **aucdtect.exe**, NOT aucdetect.exe.
+- New single-file GUI version `tools/Music Library Organizer v0.3.1.pyw` removes checker executable path UI. On Windows it scans beside itself, Downloads and isolated product data for a provided ZIP/pre-extracted bundle, extracts only known binaries/manifests into its own `Documents/Karpuzikov Tools/Music Library Organizer/dependencies/AudioChecker/` and performs genuine parallel auCDtect analyses of decoded per-track audio; produces validated `audiochecker.log` using source-aligned checksum. If bundle not found or analysis fails, WEB release is PARTIAL, not falsely DONE. **Bundled proprietary executables are not republished to GitHub.**
+- Removed duplicate `Open output` button but retained clickable folder icon in output path row. Default destination is **`<Input folder> - Sorted`**, updated when source changes unless user customized output; input/output remain non-nested. New **Encoding workers** and **AudioChecker workers** selectors (1..detected logical CPU cores, capped 64, default min(4,cores)), persist in isolated settings.
+- Encoding worker count now actually controls a bounded `ThreadPoolExecutor` for normal track conversions *and* CUE image track splits. AudioChecker count controls its own bounded `ThreadPoolExecutor` for source-check decoding/analyzer jobs. Previous GUI code for `browse_checker` and `openOutput` removed.
+- Adapted MusicBrainz DiscID/TOC formula from canonical `tools/CUE Corrector - MusicBrainz DiscID 1.3.1.pyw`. DiscID from EAC rip-log TOC first, else valid CUE with sample-exact lossless CD audio durations; submits `/ws/2/discid/<id>?toc=...`; barcode search uses `barcode:<code>`; intersects when both present. Multiple remaining CD editions are **NOT silently selected**. Concrete edition's media, catalog, barcode, release-group date/title are fetched only for trustworthy candidates. Incomplete source proofs still PARTIAL rather than ungrounded claims.
+- Added extended test source in `tools/music-library-organizer/test_organizer.py` covering ZIP discovery/extraction, separate workers, output folder default, DiscID calculation, barcode-and-DiscID cross-check, ambiguous DiscID, checker report and concurrent encoding.
+- Validation: ZIP contents/readme and independent uploaded AudioChecker `format_folder_log()` were inspected and a sample report generated in Linux; new inlined HTML script was syntax-parsed with V8 (PASS). **Actual v0.3.1 Windows GUI, Python source compile/regression suite, auCDtect executable, full 94-INNA workflow, online MusicBrainz HTTP and output-file operations remain NOT RUN**. Do not promote status to stable. Regress on a small disposable collection with new empty output.
+- Future issues: auto-Discogs manufacturing evidence, Beatport/BPTopTracker digital catalog fallback, ambiguous edition UI, complex CUE/HTOA, complete tag/artwork parity and performance on HDD/SSD mixed collection. No GitHub Actions edits.
 
 ## Latest checkpoint - v0.3.0 rule compliance repairs (2026-10-13)
 
