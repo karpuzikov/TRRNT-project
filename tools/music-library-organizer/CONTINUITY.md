@@ -1,9 +1,19 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.3 - Under construction ⚠️**
+Current version: **0.3.4 - Under construction ⚠️**
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Current source: [`tools/Music Library Organizer v0.3.3.pyw`](../Music%20Library%20Organizer%20v0.3.3.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Current source: [`tools/Music Library Organizer v0.3.4.pyw`](../Music%20Library%20Organizer%20v0.3.4.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Latest checkpoint - v0.3.4 WebView2 race/hang/black-screen fix (2026-10-13)
+
+**User-reported Windows regression in v0.3.3:** "Desktop connection failed", permanent UI hang, after force-close sometimes entirely black WebView2 windows requiring repeated restarts. Not a codec problem. Existing JS waited at most 6 seconds for `window.pywebview.api`, then gave up; scheduled polling overlapped pending requests. More deeply, passing `js_api=Organizer` exposed an object with public `window` and `stop` refs and potentially expensive reflection through locks/window/native subobjects. No proper `pywebviewready` event handling, telemetry or dedicated WebView2 profile recovery.
+
+**New v0.3.4 source:** `tools/Music Library Organizer v0.3.4.pyw`. Introduced `DesktopBridge` facade exposing only whitelisted API methods and storing the complex engine in a **private attribute**. Created per-launch isolated WebView2 profile under this app's `Documents/Karpuzikov Tools/Music Library Organizer/webview2-sessions`; cleans stale profiles on later boots and after normal exit, avoiding profile reuse after forced quits. Windows single-instance mutex, log to `webview-startup.log` (WebView2 loaded/shown/closed, exceptions), user-visible `startup-error.log` existing behavior preserved. UI waits for `window.pywebviewready`, retries indefinitely with bounded backoff, one status request in flight with 8-sec timeout, and has a visible Retry connection action only when disconnected. Controls are disabled until the bridge is operational; after reconnect, browse, path-icons, open-log, format, workers, Organize, Cancel and Undo are restored according to state.
+
+**Verification:** Source inspection and full HTML JavaScript syntax parse: PASS. Isolated V8 mocked DOM/pywebview test: before connection Organize disabled and label Connecting; simulated delayed `pywebviewready` with responsive backend -> Organize/Open-log buttons become enabled and poll single-flight timer present: PASS. New `DesktopStartupRecovery` Python regression tests added to `tools/music-library-organizer/test_organizer.py`, **NOT RUN** in real Windows environment. Actual Win11 pywebview/native renderer, black-screen recovery, forced-close restart and source/output smoke test: **NOT RUN**. Remains **0.3.4 - Under construction ⚠️**. No MCC repository/GitHub Actions modification.
+
+**Next steps:** Test on actual Windows; if still broken obtain `Documents\Karpuzikov Tools\Music Library Organizer\webview-startup.log` plus `startup-error.log` and `activity.log`, compare timestamp of 'WebView2 window shown' vs 'WebView2 DOM loaded' and JS diagnostics. Do not downgrade WebView2 to Tkinter or reuse old v0.1.x UI. Inspect Windows WebView2 Runtime/Event Viewer if DOM never loads. Keep hard encoder rule refalac64-only ALAC, official Xiph-flac-only FLAC unchanged.
 
 ## Latest checkpoint - v0.3.3 exclusive refalac64 / Xiph flac encoders (2026-10-13)
 
