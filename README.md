@@ -45,6 +45,14 @@ During a live analysis, click a track and use **Skip track** to remove that reco
 
 The Release Map is a normal resizable/maximizable Windows top-level window (no modal/transient grab), so it can be positioned with FancyZones. **Apply plan**, **Analyze again**, and **Close** are always explicit live-analysis actions. The last map snapshot remains available read-only from the main window after the in-memory analysis context is gone.
 
+## Preserved development branches
+
+- [`dea-lightweight-modern`](https://github.com/karpuzikov/TRRNT-project/tree/dea-lightweight-modern): lightweight WebView2 analyzer v0.4.1-v0.4.9, branch README, development rules and continuity.
+- [`dea-lightweight-ascii-ui-test`](https://github.com/karpuzikov/TRRNT-project/tree/dea-lightweight-ascii-ui-test): rejected ASCII prototype v0.4.0, launcher and historical notes.
+- [`dea-native-light-test`](https://github.com/karpuzikov/TRRNT-project/tree/dea-native-light-test): rejected Win32/C++ prototype and its own documentation.
+
+These development branches preserve the original files **byte-for-byte**, but their new commits are reconstructed snapshots, not the original Git ancestry. Original historical branch commits remain accessible in `karpuzikov/userscripts`. None of these branches is the production replacement for regular DEA until separately tested and approved.
+
 ## GitHub Actions migration
 
 The two previous Duplicate Edition Analyzer CI workflow definitions are preserved under `archived-workflows/` as **inactive references**, not enabled in `.github/workflows/`. This avoids unexpected builds/notification emails. Re-enable only by explicit request and first update their source paths to the new repository layout.
