@@ -1084,6 +1084,7 @@ class Organizer:
                             incomplete = bool(not info["metadata_verified"] or
                                 any("unresolved" in n.lower() or "not auto-selected" in n.lower() for n in info["notes"]) or
                                 (info["physical"] and info["country_provenance"] != "verified-pressing") or
+                                (not info["physical"] and not info.get("catalog")) or
                                 (not info["physical"] and not result["checker"]))
                             if incomplete:
                                 result["status"] = "partial"
