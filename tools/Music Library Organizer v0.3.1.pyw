@@ -693,129 +693,166 @@ def discid_release_candidates(folder, files, barcode=""):
 
 
 def release_identity(folder, files, default_artist="", allow_network=True):
-    """Resolve only unambiguous real MusicBrainz releases; otherwise keep source."""
+    """Physical DiscID + barcode corroboration, then actual edition metadata."""
     current = folder.name
-    match = _RELEASE_PARTS.fullmatch(current)
-    existing_date = match.group("date") if match else ""
-    original_title = match.group("title") if match else ""
-    idtext, physical_bracket = catalog(current)
-    audio = [p for p in files if p.suffix.lower() in AUDIO]
-    has_cd = physical_bracket or (
-        any(p.suffix.lower() == ".cue" for p in files) and
-        any(p.suffix.lower() == ".log" and p.name.casefold() != "audiochecker.log"
-            for p in files))
-    first = audio[0] if audio else None
-    album, artist, tag_barcode = "", default_artist, ""
-    if first:
+    source = _RELEASE_PARTS.fullmatch(current)
+    date = source.group("date") if source else ""
+    title = source.group("title") if source else ""
+    ident, bracket_cd = catalog(current)
+    audios = [p for p in files if p.suffix.lower() in AUDIO]
+    cue_files = [p for p in files if p.suffix.lower() == ".cue"]
+    rip_logs = [p for p in files if p.suffix.lower() == ".log" and
+                p.name.casefold() != "audiochecker.log"]
+    is_cd = bool(bracket_cd or (cue_files and rip_logs))
+    album, artist, tagged_barcode = "", default_artist, ""
+    if audios:
         try:
             from mutagen import File as MutagenFile
-            meta = MutagenFile(str(first), easy=True)
+            meta = MutagenFile(str(audios[0]), easy=True)
             if meta:
-                album = (meta.get("album") or [""])[0]
-                artist = ((meta.get("albumartist") or meta.get("artist")) or [artist])[0]
-                tag_barcode = ((meta.get("barcode") or meta.get("upc")) or [""])[0]
+                album = str((meta.get("album") or [""])[0])
+                artist = str((meta.get("albumartist") or meta.get("artist") or [artist])[0])
+                tagged_barcode = str((meta.get("barcode") or meta.get("upc") or [""])[0])
         except Exception:
             pass
-    if not original_title:
+    if not title:
         alt = _ALT_RELEASE.fullmatch(current)
-        original_title = str(album or (alt.group("title") if alt else current)).strip()
-        original_title = re.sub(r"\s+\(?\d{4}\)?$", "", original_title).strip()
-        existing_date = alt.group("year") if alt else ""
-    original_title = original_title or album or current
-    barcode = idtext if not physical_bracket and _BARCODE.fullmatch(idtext) else ""
-    barcode = barcode or (tag_barcode if _BARCODE.fullmatch(str(tag_barcode)) else "")
-    result = {"folder": current, "title": original_title, "date": existing_date,
-              "catalog": idtext if idtext and not _BARCODE.fullmatch(idtext) else "",
-              "barcode": barcode, "physical": bool(has_cd), "country": "",
+        title = str(album or (alt.group("title") if alt else current)).strip()
+        title = re.sub(r"\s+\(?\d{4}\)?$", "", title).strip()
+        if alt:
+            date = alt.group("year")
+    title = title or album or current
+    barcode = ident if _BARCODE.fullmatch(ident or "") else ""
+    barcode = barcode or (tagged_barcode if _BARCODE.fullmatch(tagged_barcode) else "")
+    result = {"folder": current, "title": title, "date": date,
+              "catalog": ident if ident and not _BARCODE.fullmatch(ident) else "",
+              "barcode": barcode, "physical": is_cd, "country": "",
               "country_provenance": "", "release_type": "",
-              "selected_release": "", "metadata_verified": False, "notes": [],
-              "track_count": len(audio)}
+              "selected_release": "", "metadata_verified": False,
+              "notes": [], "track_count": len(audios),
+              "discids": [], "lookup_sources": []}
     if not allow_network:
-        result["notes"].append("Online source-of-truth lookup not attempted.")
+        result["notes"].append("Metadata lookup not attempted.")
         return result
-    candidates = []
     try:
+        disc_candidates = []
+        if is_cd and cue_files:
+            try:
+                disc_candidates, disc_data = discid_release_candidates(folder, files, barcode)
+                result["discids"] = [x["discid"] for x in disc_data]
+                if disc_data:
+                    result["lookup_sources"].append("MusicBrainz DiscID/TOC")
+            except Exception as exc:
+                result["notes"].append("MusicBrainz DiscID could not resolve: " + str(exc))
+        # Barcode lookup is always attempted where known, independently
+        # of DiscID. Leading zeroes are tolerated only in identity checks.
+        barcode_entries = []
         if barcode:
-            query = "barcode:" + barcode
-        else:
-            # Album tags are preferable for legacy names such as "Inna - YO 2019".
-            q_title = re.sub(r"\s+-\s+(?:Single|EP)$", "", str(album or original_title), flags=re.I)
-            q_artist = str(artist or "").strip()
-            if not q_artist:
-                result["notes"].append("Artist credit not known; cannot safely search by title.")
+            url = "release/?" + urllib.parse.urlencode(
+                {"query": "barcode:" + barcode, "fmt": "json", "limit": "100"})
+            barcode_entries = [x for x in mb_json(url).get("releases", [])
+                               if str(x.get("barcode") or "").lstrip("0") == barcode.lstrip("0")]
+            result["lookup_sources"].append("MusicBrainz barcode")
+        chosen = None
+        if disc_candidates:
+            possible = disc_candidates
+            if barcode:
+                confirmed = {str(x.get("id")) for x in barcode_entries}
+                possible = [rid for rid in possible if rid in confirmed]
+                if not possible:
+                    result["notes"].append("DiscID candidates conflict with the barcode - no edition selected.")
+                    return result
+            if len(possible) != 1:
+                result["notes"].append(str(len(possible)) +
+                                       " DiscID-matching physical editions; selection is ambiguous.")
                 return result
-            query = 'release:"' + q_title.replace('"', "") + '" AND artist:"' + q_artist.replace('"', "") + '"'
-        params = urllib.parse.urlencode({"query": query, "fmt": "json", "limit": 100})
-        page = mb_json("release/?" + params)
-        for entry in page.get("releases", []):
-            value = entry.get("barcode") or ""
-            if barcode and str(value).lstrip("0") != barcode.lstrip("0"):
-                continue
-            found_title = entry.get("title") or ""
-            sim = difflib.SequenceMatcher(None, _key(original_title),
-                                          _key(found_title)).ratio()
-            if sim < 0.78:
-                continue
-            media_rows = entry.get("media", [])
-            if not media_rows and entry.get("id"):
-                data = mb_json("release/" + str(entry["id"]) + "?inc=release-groups+labels&fmt=json")
-                media_rows = data.get("media", [])
-            medium = [str(m.get("format", "")).lower() for m in media_rows]
-            is_cd = any("cd" in x for x in medium)
-            digital = any("digital media" in x for x in medium)
-            if has_cd and digital and not is_cd:
-                continue
-            if not has_cd and is_cd and not digital:
-                continue
-            guessed_year = existing_date[:4]
-            actual_year = str(entry.get("date") or "")[:4]
-            score = 70 * sim + 20 * bool(barcode) + 12 * (is_cd if has_cd else digital)
-            score += 4 * bool(guessed_year and actual_year == guessed_year)
-            candidates.append((score, entry))
-        if not candidates:
-            result["notes"].append("No matching MusicBrainz edition; existing identity retained.")
-            return result
-        candidates.sort(key=lambda x: (-x[0], str(x[1].get("id"))))
-        top_score, chosen = candidates[0]
-        if len(candidates) > 1 and abs(candidates[1][0] - top_score) < 2:
-            # Do not silently choose between different possible physical editions.
-            result["notes"].append("Multiple comparable MusicBrainz editions; catalog/date not auto-selected.")
-            return result
-        rid = chosen.get("id")
+            chosen = {"id": possible[0]}
+        else:
+            # No exact DiscID: use exact-barcode candidates when available,
+            # otherwise search by album+artist and require unique strong match.
+            entries = barcode_entries
+            if not barcode:
+                if not (title and artist):
+                    result["notes"].append("Neither DiscID, barcode nor complete artist/title lookup available.")
+                    return result
+                query = 'release:"' + str(album or title).replace('"', "") + \
+                        '" AND artist:"' + str(artist).replace('"', "") + '"'
+                url = "release/?" + urllib.parse.urlencode(
+                    {"query": query, "fmt": "json", "limit": "100"})
+                entries = mb_json(url).get("releases", [])
+                result["lookup_sources"].append("MusicBrainz artist/title")
+            compatible = []
+            for entry in entries:
+                similarity = difflib.SequenceMatcher(
+                    None, _key(title), _key(entry.get("title") or "")).ratio()
+                if similarity < 0.82:
+                    continue
+                rid = str(entry.get("id") or "")
+                if not rid:
+                    continue
+                # Require the concrete medium (search results may omit it).
+                detail = mb_json("release/" + rid +
+                                 "?inc=release-groups+labels+media+artists&fmt=json")
+                formats = [str(m.get("format") or "").casefold()
+                           for m in detail.get("media", [])]
+                if is_cd and not any("cd" in x for x in formats):
+                    continue
+                if not is_cd and not any("digital media" in x for x in formats):
+                    continue
+                compatible.append((similarity, detail))
+            compatible.sort(key=lambda row: (-row[0], str(row[1].get("id"))))
+            if not compatible:
+                result["notes"].append("No matching concrete MusicBrainz edition.")
+                return result
+            if len(compatible) > 1 and abs(compatible[0][0] - compatible[1][0]) < .015:
+                result["notes"].append("Multiple indistinguishable release candidates; no guess.")
+                return result
+            chosen = compatible[0][1]
+        rid = str(chosen.get("id") or "")
         if not rid:
             return result
-        details = mb_json("release/" + str(rid) +
-                          "?inc=release-groups+labels+media+artists&fmt=json")
+        details = chosen if "label-info" in chosen else mb_json(
+            "release/" + rid + "?inc=release-groups+labels+media+artists&fmt=json")
+        physical_media = [str(x.get("format") or "").casefold() for x in details.get("media", [])]
+        if is_cd and not any("cd" in x for x in physical_media):
+            result["notes"].append("DiscID candidate is not a CD concrete edition.")
+            return result
+        if not is_cd and not any("digital media" in x for x in physical_media):
+            result["notes"].append("Barcode/title candidate is not a WEB concrete edition.")
+            return result
+        actual_barcode = str(details.get("barcode") or "")
+        if barcode and actual_barcode and actual_barcode.lstrip("0") != barcode.lstrip("0"):
+            result["notes"].append("MusicBrainz barcode conflicts with source barcode.")
+            return result
+        labels = [str(row.get("catalog-number") or "").strip()
+                  for row in details.get("label-info", [])]
+        cats = [x for x in labels if x.casefold() not in ("", "none", "n/a", "[none]")]
+        if len(set(cats)) > 1:
+            result["notes"].append("Multiple catalog numbers attached to exact edition.")
+        catalog_number = cats[0] if len(set(cats)) == 1 else ""
         release_group = details.get("release-group") or {}
-        labels = details.get("label-info") or []
-        catalogs = [str(x.get("catalog-number", "")).strip() for x in labels]
-        catalogs = [x for x in catalogs if x and x.casefold() not in ("none", "n/a", "[none]")]
-        release_catalog = catalogs[0] if len(set(catalogs)) == 1 else ""
-        if len(set(catalogs)) > 1:
-            result["notes"].append("Multiple catalog numbers for release - left unresolved.")
-        first_date = release_group.get("first-release-date") or ""
-        if first_date and _DATE.fullmatch(first_date):
+        first_date = str(release_group.get("first-release-date") or "")
+        if _DATE.fullmatch(first_date):
             result["date"] = first_date
-        result["title"] = details.get("title") or chosen.get("title") or original_title
-        result["catalog"] = release_catalog or result["catalog"]
-        result["barcode"] = details.get("barcode") or barcode
-        result["release_type"] = release_group.get("primary-type") or ""
-        if has_cd:
-            # MusicBrainz release COUNTRY is not evidence of actual disc pressing.
-            territory = details.get("country") or ""
-            if territory and re.fullmatch(r"[A-Z]{2}|EU|XW|XE", territory):
-                result["country"] = territory
+        else:
+            result["notes"].append("Earliest worldwide release date missing.")
+        result["title"] = str(details.get("title") or title)
+        result["catalog"] = catalog_number or result["catalog"]
+        result["barcode"] = actual_barcode or barcode
+        result["release_type"] = str(release_group.get("primary-type") or "")
+        if is_cd:
+            country = str(details.get("country") or "")
+            if re.fullmatch(r"[A-Z]{2}|EU|XW|XE", country):
+                result["country"] = country
                 result["country_provenance"] = "MusicBrainz release-territory-fallback (not verified pressing)"
-            elif physical_bracket:
-                country_match = re.search(r"\[([A-Z]{2}|EU|XW|XE)\s+-", current)
-                if country_match:
-                    result["country"] = country_match.group(1)
-                    result["country_provenance"] = "original folder (unverified physical provenance)"
-        result["selected_release"] = str(rid)
+            else:
+                result["notes"].append("No verified physical pressing country or release region.")
+        result["selected_release"] = rid
         result["metadata_verified"] = True
     except Exception as exc:
-        result["notes"].append(str(exc))
+        result["notes"].append("MusicBrainz metadata lookup failed: " + str(exc))
     return result
+
 
 
 def release_folder_target(info):
