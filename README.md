@@ -59,3 +59,15 @@ These development branches preserve the original files **byte-for-byte**, but th
 The two previous Duplicate Edition Analyzer CI workflow definitions are preserved under `archived-workflows/` as **inactive references**, not enabled in `.github/workflows/`. This avoids unexpected builds/notification emails. Re-enable only by explicit request and first update their source paths to the new repository layout.
 
 Independent tools such as the RuTracker Digital Release Linker, qBittorrent backup utility, Picard scripts, and MCC remain in their respective repositories. They are not part of the dedicated project's source tree.
+
+## Running the tests
+
+The unit tests need no extra packages and no display (the analyzer tests use a stand-in `tkinter`). Run them from the repository root:
+
+```
+python tools/music-library-organizer/test_organizer.py
+python tools/music-library-organizer/test_naming_table.py
+python tools/duplicate-edition-analyzer/test_dea_core.py
+```
+
+They do not replace Windows GUI, real-audio or AudioChecker/`refalac64` acceptance runs. See [`AUDIT_2026-10-14.md`](AUDIT_2026-10-14.md) for the latest review and open findings.
