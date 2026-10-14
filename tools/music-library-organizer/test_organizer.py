@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.12 - catalog matching and processing-speed regression tests.
+# Music Library Organizer v0.3.13 - compact low-click UI and original catalog/audio regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.03.12.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.13.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -1334,6 +1334,54 @@ class CatalogIdentityAndPerformance20261014(unittest.TestCase):
             self.assertEqual(app.counts["failed"], 0)
             self.assertEqual(app.results[0]["status"], "skipped")
             self.assertIn("total_release", app.results[0]["timings_seconds"])
+
+class MinimalWebViewUX20261014(unittest.TestCase):
+    def test_compact_ui_without_redundant_explanations(self):
+        html = mlo.HTML
+        self.assertIn('class="form inputs-form"', html)
+        self.assertIn('class="label">Source</label>', html)
+        self.assertIn('class="label">Destination</label>', html)
+        self.assertIn('for="format">Format</label>', html)
+        self.assertNotIn("No review or second confirmation.", html)
+        self.assertNotIn("Worker choices and checkboxes saved.", html)
+        self.assertNotIn("Encoding off preserves each track", html)
+        self.assertNotIn("Automatic · MCC-style · originals untouched", html)
+        self.assertNotIn("Press Organize to begin.", html)
+
+    def test_direct_one_action_organize_and_auto_destination(self):
+        html = mlo.HTML
+        self.assertIn("function changedInput()", html)
+        self.assertIn("function suggestPath(input)", html)
+        self.assertIn("updateOrganizeAvailability()", html)
+        self.assertIn("'dest').addEventListener('input',updateOrganizeAvailability)", html)
+        self.assertIn("'organize').disabled=!connected||working||!src||!dst", html)
+        self.assertIn('id="organize"', html)
+        self.assertIn('id="browseSource"', html)
+        self.assertIn('id="browseDest"', html)
+
+    def test_required_features_and_keyboard_accessibility_preserved(self):
+        html = mlo.HTML
+        for required in ("doEncode", "doChecker", "doSplit", "format",
+                         "encodeWorkers", "checkWorkers", "cancel", "undo",
+                         "openLog", "openLogFolder", "copyResults",
+                         "sourceDrop", "destDrop", "progressBar", "rows"):
+            with self.subTest(control=required):
+                self.assertIn('id="' + required + '"', html)
+        self.assertIn(":focus-visible", html)
+        self.assertIn("aria-live", html)
+        self.assertIn("-webkit-user-select:text!important", html)
+        self.assertIn("dragover", html)
+        self.assertIn("drop", html)
+        self.assertIn("Copy visible results to clipboard", html)
+
+    def test_diagnostic_help_is_conditional_not_constant_tutorial(self):
+        html = mlo.HTML
+        self.assertIn("Retry the desktop connection if it remains unavailable.", html)
+        self.assertIn("$('detail').textContent=state.error||\"\\";", html)
+        self.assertIn("#detail:empty{display:none}", html)
+        self.assertNotIn("Genuine errors do not block later releases.", html)
+        self.assertIn("state.error", html)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
