@@ -1,6 +1,8 @@
-# Music Library Organizer v0.3.1 - source-level regression tests.
+# Music Library Organizer v0.3.5 - source-level regression tests.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
+import sys
+sys.dont_write_bytecode = True  # loading the .pyw must not leave __pycache__ in tools/
 import importlib.machinery
 import importlib.util
 from pathlib import Path
@@ -149,8 +151,10 @@ class NamingRules(unittest.TestCase):
                          "Song (Extended Mix) - EP")
         self.assertEqual(mlo.release_title_normalize("Song (Remixes) (Single)", "Single"),
                          "Song (Remixes)")
+        # Owner decision 2026-10-14: "(Maxi CD)" and "(Promo)" edition notes are
+        # NOT kept in release folder names; only the release-type suffix remains.
         self.assertEqual(mlo.release_title_normalize("Song (Maxi CD Single) (Promo)", "Single"),
-                         "Song (Maxi CD) (Promo) - Single")
+                         "Song - Single")
 
     def test_checker_rejects_fake_report(self):
         with tempfile.TemporaryDirectory() as td:
@@ -241,7 +245,10 @@ class NamingRules(unittest.TestCase):
                 mlo.check_paths(str(src), str(src / "child"), "FLAC")
             with self.assertRaises(ValueError):
                 mlo.check_paths(str(src), str(Path(td) / "Other ALAC"), "FLAC")
-            self.assertEqual(mlo.check_paths(str(src), str(Path(td) / "Artist FLAC"), "FLAC")[2], "FLAC")
+            # check_paths returns (source, destination).
+            source, dest = mlo.check_paths(str(src), str(Path(td) / "Artist FLAC"), "FLAC")
+            self.assertEqual(source, src.resolve())
+            self.assertEqual(dest.name, "Artist FLAC")
 
 
 class AutomaticBatch(unittest.TestCase):
@@ -476,7 +483,11 @@ class NativeEncoderCompliance(unittest.TestCase):
                 encodes = [x for x in calls if x[0] in ("flac.exe", "refalac64.exe")]
                 self.assertEqual(len(encodes), 1)
                 self.assertEqual(encodes[0][0], encoder)
-                self.assertTrue(all("-c:a" not in x for x in calls))
+                # ffmpeg may decode to temporary PCM (-c:a pcm_*) but must never
+                # encode the final ALAC/FLAC output.
+                for argv in calls:
+                    if "-c:a" in argv:
+                        self.assertTrue(argv[argv.index("-c:a") + 1].startswith("pcm_"), argv)
                 tags.assert_called_once()
 
     def test_no_unsupported_codec_fallback(self):
