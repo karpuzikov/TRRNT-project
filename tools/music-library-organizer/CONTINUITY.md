@@ -1,9 +1,34 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.13 - Under construction ⚠️** (minimal-click WebView2 update; native Windows UI acceptance NOT RUN; PR draft/unmerged)
+Current version: **0.3.14 - Under construction ⚠️** (minimal-click WebView2 update; native Windows UI acceptance NOT RUN; PR draft/unmerged)
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Candidate source: [`tools/Music Library Organizer v0.3.13.pyw`](../Music%20Library%20Organizer%20v0.3.13.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Candidate source: [`tools/Music Library Organizer v0.3.14.pyw`](../Music%20Library%20Organizer%20v0.3.13.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Current candidate - v0.3.14 numerical Sony catalog and multi-disc CUE correctness (2026-10-15)
+
+**User supplied live GIMS failure:** `2013-05-13 - Subliminal (La face cachée) [EU - 88883792232]` showed `No compatible concrete MusicBrainz edition: no candidates passed the identity checks | Specific physical edition catalog not verified` and log actually recorded a separate fatal `INDEX00 occurs after INDEX01.` User linked exact MusicBrainz release [ffa45ff6-45a8-4e3b-bc89-a46e8ff0652c](https://musicbrainz.org/release/ffa45ff6-45a8-4e3b-bc89-a46e8ff0652c). Public MusicBrainz page **verified**: Maître Gims - `Subliminal : La Face cachée`, 2×CD (track counts **18 + 6** = 24), source-facing **catalog `88883792232`**, distinct **barcode `888837922326`**, release event France `2013-12-02`. Actual source CUE/PCM not available; cannot claim byte-level match with user's rip.
+
+**Source root causes (v0.3.13):**
+1. `_BARCODE = ^\\d{8,14}# Music Library Organizer - Continuity
+
+Current version: **0.3.14 - Under construction ⚠️** (minimal-click WebView2 update; native Windows UI acceptance NOT RUN; PR draft/unmerged)
+Repository: `karpuzikov/TRRNT-project`, default branch `main`.
+Candidate source: [`tools/Music Library Organizer v0.3.14.pyw`](../Music%20Library%20Organizer%20v0.3.13.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+ classified 11-digit folder catalog `88883792232` as barcode, leaving `result.catalog=""`. Barcode search for 88883792232 could never equal MB actual barcode 888837922326; catalog match was not attempted, hence false `No compatible edition` and `Specific physical edition catalog not verified`.
+2. Even if catalog were searched, `release_identity()` used `len(audios)` as CD track count. For a 2-disc album stored as one image per CD, this would be only **2 audio files**, not 24 tracks. It rejected the actual two-CD concrete edition due to mismatched counts.
+3. `cue_image_plan()` raises `INDEX00 occurs after INDEX01` on an impossible source cue track and older `_export_release` treats that as FAILED, rather than preserving valid original audio with explicit PARTIAL evidence.
+
+**v0.3.14 committed on existing feature branch (single .pyw, original embedded auCDtect/three options/dark WebView2 retained):**
+- `_valid_gtin` accepts only check-digit-valid GS1 8/12/13/14-digit identifiers; numeric 11-digit `88883792232` is used as **catalog**. Keep separate valid actual `888837922326` barcode when selected. No invented digits. Digital catalog behavior unchanged.
+- `_source_medium_track_counts` extracts ordered track counts from each complete valid CUE (18,6) instead of number of audio image files. `_mb_catalog_search`, preliminary known search conflict check, and full `_release_medium_matches` use total tracks plus CD per-medium counts, not just file count. Unknown/malformed CUE count falls back to audio count and stays uncertain.
+- Invalid `INDEX00 > INDEX01` on an **existing unique shared album image**: do NOT split or transcode; hash-verify bitwise image copy, stage unchanged CUE index data with correct FILE mapping, record explicit warning and PARTIAL via `_export_warnings`. If not safe to identify unique image, fail closed. Originals untouched and Undo supported.
+- **Four regression methods** added (82 total method definitions): GTIN/catalog distinction, two-file 24-track CUE counts, mocked exact linked MusicBrainz release and correct result selection, invalid-index original-image copy + CUE/partial warning. Tests are fixtures and do not claim native Windows acceptance.
+- **Verification pending:** Actual full Python compile/unit suite, source GIMS audio/CUE files, Windows end-to-end, actual MusicBrainz API query response and UI are **NOT RUN**. Original AudioChecker remains genuine. Keep PR #1 DRAFT/Under construction.
+
+**Next:** Checkout feature branch on Windows; `py -3 -m py_compile "tools/Music Library Organizer v0.3.14.pyw"`; `py -3 "tools/music-library-organizer/test_organizer.py"`; test a fresh disposable two-CD GIMS folder, inspect resulting catalog + CD track counts and explicit unsafe-CUE warning, never modify original. No pressing-country or barcode fabrication.
 
 ## Current candidate - v0.3.13 latest GitHub-wide UI simplicity/Personalization check (2026-10-14)
 
