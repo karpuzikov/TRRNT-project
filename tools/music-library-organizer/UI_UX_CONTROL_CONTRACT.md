@@ -1,6 +1,10 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.14 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.15 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.15 - duplicate-launch focus and clean shutdown
+
+No new UI control or confirmation. If the user opens the `.pyw` while a previous MLO version is active, restore the first versioned window (including minimized) using Win32 APIs and exit the second process **before creating a browser profile or modifying shared data**. Do not show a traceback or terminate the original application/job. If no matching MLO window appears after brief startup retries despite an existing mutex, show a single short informational message about inspecting the existing process. Native Windows keyboard/focus/dialog tests remain **NOT RUN**; deterministic Win32 mocks and Python regressions are committed for execution.
 
 ## v0.3.14 - precise edition lookup and impossible-CUE status (no new controls)
 
