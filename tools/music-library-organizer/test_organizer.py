@@ -1239,6 +1239,25 @@ class CatalogIdentityAndPerformance20261014(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertIn('"BETA 021"', calls[1])
 
+    def test_catalog_spaced_search_when_initial_results_are_vinyl_only(self):
+        from unittest.mock import patch
+        searches = []
+        def fake_mb(path, **kwargs):
+            query = mlo.urllib.parse.parse_qs(
+                mlo.urllib.parse.urlparse(path).query)["query"][0]
+            searches.append(query)
+            if '"BETA021"' in query:
+                return {"releases": [
+                    {"id": "vinyl", "title": "Edge of Mind EP",
+                     "media": [{"format": "12\" Vinyl", "track-count": 4}]}]}
+            return {"releases": [
+                {"id": "digital", "title": "Edge of Mind EP",
+                 "media": [{"format": "Digital Media", "track-count": 4}]}]}
+        with patch.object(mlo, "mb_json", side_effect=fake_mb):
+            found = mlo._mb_catalog_search("BETA021", False, 4)
+        self.assertEqual({x["id"] for x in found}, {"vinyl", "digital"})
+        self.assertEqual(len(searches), 2)
+
     def test_count_or_medium_conflict_rejected(self):
         item = {"media": [{"format": "Digital Media", "track-count": 2}]}
         self.assertTrue(mlo._release_medium_matches(item, False, 2))
