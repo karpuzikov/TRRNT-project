@@ -12,7 +12,7 @@ Fixed the catalog search omission for digital editions: `HAB017`, `VPRVIP006`, `
 
 CD source country/region `[EU - ...]`, `[AT - ...]` is retained when present; MusicBrainz country (often GB) is stored separately and never mislabeled as actual pressing manufacture. No blanket pressing-country PARTIAL when the source gives a region or MusicBrainz supplies documented release territory. Genuine uncertainty about edition identity continues to produce explicit PARTIAL.
 
-**Performance:** media/track screening precedes expensive MusicBrainz full-detail calls; same-name existing destination skips remote metadata lookup; the original inaccurate FFT logs remain flagged. Activity logs show `PERFORMANCE:` lines for initial all-track credit scan and individual metadata, encoding/copy, auCDtect and total elapsed times. Audio verification/PCM equality are unchanged. 73 regression methods currently committed, full Windows tests and real-user benchmark **NOT RUN**.
+**Performance:** media/track screening precedes expensive MusicBrainz full-detail calls; same-name existing destination skips remote metadata lookup; the original inaccurate FFT logs remain flagged. Activity logs show `PERFORMANCE:` lines for initial all-track credit scan and individual metadata, encoding/copy, auCDtect and total elapsed times. Audio verification/PCM equality are unchanged. 74 regression methods currently committed, full Windows tests and real-user benchmark **NOT RUN**.
 
 ## v0.3.11 - genuine AudioChecker included, no external setup
 
