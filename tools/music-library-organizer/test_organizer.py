@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.14 - verified Sony 11-digit catalog, 2xCD CUE and INDEX safety regressions.
+# Music Library Organizer v0.3.15 - duplicate-launch window activation regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.14.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.15.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -1522,6 +1522,96 @@ class NumericCatalogMultidiscAndInvalidCue20261015(unittest.TestCase):
                     "notes": []}
             self.assertIn("CUE or supporting-file fidelity not fully verified",
                           mlo.completion_reasons(info, app._export_warnings, []))
+
+
+class DuplicateLaunch20261015(unittest.TestCase):
+    def test_actual_mlo_versioned_window_match_only(self):
+        self.assertTrue(mlo._is_mlo_window_title(
+            "Music Library Organizer v0.3.14 - Under construction ⚠️"))
+        self.assertTrue(mlo._is_mlo_window_title(
+            "Music Library Organizer v0.3.15 - Under construction ⚠️"))
+        self.assertFalse(mlo._is_mlo_window_title("Music Library Organizer"))
+        self.assertFalse(mlo._is_mlo_window_title("Music Library Organizer - Error"))
+        self.assertFalse(mlo._is_mlo_window_title("Music Collection Cleaner v0.5.32"))
+        self.assertFalse(mlo._is_mlo_window_title("Music Library Organizer v0.3.14 - Other"))
+
+    def test_second_launch_frees_only_its_handle_without_throwing(self):
+        import ctypes
+        from types import SimpleNamespace
+        from unittest.mock import Mock, patch
+        kernel = SimpleNamespace(
+            CreateMutexW=Mock(return_value=12345),
+            GetLastError=Mock(return_value=183),
+            CloseHandle=Mock())
+        user32 = SimpleNamespace(MessageBoxW=Mock())
+        fake_windll = SimpleNamespace(kernel32=kernel, user32=user32)
+        with patch.object(mlo, "IS_WIN", True), \
+             patch.object(ctypes, "windll", fake_windll, create=True), \
+             patch.object(mlo, "_activate_existing_mlo_window", return_value=True) as focus:
+            self.assertIs(mlo._single_instance(), False)
+        focus.assert_called_once_with()
+        kernel.CloseHandle.assert_called_once_with(12345)
+        user32.MessageBoxW.assert_not_called()
+
+    def test_invisible_existing_instance_gets_actionable_notice(self):
+        import ctypes
+        from types import SimpleNamespace
+        from unittest.mock import Mock, patch
+        kernel = SimpleNamespace(CreateMutexW=Mock(return_value=48),
+                                 GetLastError=Mock(return_value=183),
+                                 CloseHandle=Mock())
+        user32 = SimpleNamespace(MessageBoxW=Mock())
+        with patch.object(mlo, "IS_WIN", True), \
+             patch.object(ctypes, "windll",
+                          SimpleNamespace(kernel32=kernel, user32=user32), create=True), \
+             patch.object(mlo, "_activate_existing_mlo_window", return_value=False), \
+             patch.object(mlo.time, "sleep"):
+            self.assertIs(mlo._single_instance(), False)
+        kernel.CloseHandle.assert_called_once_with(48)
+        self.assertEqual(user32.MessageBoxW.call_count, 1)
+        self.assertIn("Task Manager", user32.MessageBoxW.call_args.args[1])
+
+    def test_activates_existing_window_without_creating_another_one(self):
+        import ctypes
+        from types import SimpleNamespace
+        from unittest.mock import Mock, patch
+        user32 = SimpleNamespace(
+            EnumWindows=Mock(),
+            IsWindowVisible=Mock(return_value=True),
+            GetWindowTextLengthW=Mock(return_value=63),
+            GetWindowTextW=Mock(),
+            ShowWindow=Mock(),
+            SetForegroundWindow=Mock(return_value=True),
+            FlashWindow=Mock())
+        def fill_window_text(hwnd, output, size):
+            output.value = (
+                "Music Collection Cleaner v0.5.32"
+                if hwnd == 111 else
+                "Music Library Organizer v0.3.14 - Under construction ⚠️")
+            return len(output.value)
+        def enumerate_windows(cb, unused):
+            if cb(111, None):
+                cb(222, None)
+            return True
+        user32.GetWindowTextW.side_effect = fill_window_text
+        user32.EnumWindows.side_effect = enumerate_windows
+        with patch.object(mlo, "IS_WIN", True), \
+             patch.object(ctypes, "windll",
+                          SimpleNamespace(user32=user32), create=True), \
+             patch.object(ctypes, "WINFUNCTYPE", ctypes.CFUNCTYPE, create=True):
+            self.assertTrue(mlo._activate_existing_mlo_window())
+        user32.ShowWindow.assert_called_once_with(222, 9)
+        user32.SetForegroundWindow.assert_called_once_with(222)
+        user32.FlashWindow.assert_not_called()
+
+    def test_duplicate_does_not_allocate_new_browser_profile(self):
+        from unittest.mock import Mock, patch
+        with patch.object(mlo, "ensure_data"), \
+             patch.object(mlo, "_startup_logger", return_value=Mock()), \
+             patch.object(mlo, "_single_instance", return_value=False), \
+             patch.object(mlo, "_session_profile",
+                          side_effect=AssertionError("Must not create another profile")):
+            self.assertIsNone(mlo.main())
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
