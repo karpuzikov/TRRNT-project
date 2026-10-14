@@ -3946,7 +3946,7 @@ button.folder{width:34px;padding:0}.options{display:flex;align-items:center;gap:
 <div class="counts"><span><b id="total">0</b> found</span><span><b id="done">0</b> compliant</span><span><b id="partial">0</b> partial</span><span><b id="skipped">0</b> existing</span><span><b id="failed">0</b> failed</span><span><b id="warnings">0</b> warnings</span></div>
 <div id="detail" role="status" aria-live="polite"></div></section>
 <section class="card" id="results"><div class="head"><strong>Results</strong></div><div class="tools"><input type="text" id="query" placeholder="Filter results..." aria-label="Filter results"><button id="openLog">↗ Open log</button><button id="openLogFolder" title="Open folder containing organizer logs" aria-label="Open log folder">📁</button><button id="copyResults" title="Copy visible results to clipboard">Copy</button><span class="space"></span><span id="resultCount" class="muted">Not started</span></div>
-<div class="tablewrap"><table><thead><tr><th style="width:14%">Result</th><th style="width:31%">Release</th><th>Details</th></tr></thead><tbody id="rows"><tr><td colspan="3" class="empty">Press Organize to begin.</td></tr></tbody></table></div></section>
+<div class="tablewrap"><table><thead><tr><th style="width:14%">Result</th><th style="width:31%">Release</th><th>Details</th></tr></thead><tbody id="rows"><tr><td colspan="3" class="empty">No results</td></tr></tbody></table></div></section>
 </main>
 <footer id="foot"><button class="primary" id="organize" disabled>▶ Organize</button><button id="cancel" disabled>✕ Cancel</button><button id="undo" disabled title="Undo the most recent completed run">↶ Undo</button><button id="reconnect" style="display:none" title="Retry connecting to the local Python application">↻ Retry connection</button><span class="space"></span><span id="message" aria-live="polite" role="status"></span></footer>
 <script>
@@ -4001,6 +4001,11 @@ async function call(name,...args){
   return null;
  }
 }
+function updateOrganizeAvailability(){
+ const src=$('source').value.trim(),dst=$('dest').value.trim();
+ $('organize').disabled=!connected||working||!src||!dst;
+ $('organize').title=!src?"Choose a source folder":!dst?"Choose a destination folder":"Organize collection";
+}
 function updateTaskControls(){
  const locked=!connected||working;
  for(const id of ['doEncode','doChecker','doSplit'])$(id).disabled=locked;
@@ -4029,7 +4034,8 @@ function render(){
  $('detail').textContent=state.error||"";
  for(let id of ["source","dest","browseSource","browseDest"])$(id).disabled=working;
  updateTaskControls();
- $('organize').disabled=working;$('cancel').disabled=!working;$('undo').disabled=working||!state.undo;
+ updateOrganizeAvailability();
+ $('cancel').disabled=!working;$('undo').disabled=working||!state.undo;
  $('openSource').disabled=!String($('source').value||"").trim();
  $('openDest').disabled=!String($('dest').value||"").trim();
  $('openLog').disabled=false;$('openLogFolder').disabled=false;$('copyResults').disabled=false;
@@ -4083,6 +4089,7 @@ function changedInput(){
   $('dest').value=proposed;
  }
  suggestedDest=proposed;
+ updateOrganizeAvailability();
 }
 function setupWorkers(id,limit,selected){
  let max=Math.max(1,Math.min(64,Number(limit)||1));
@@ -4097,9 +4104,11 @@ function setupWorkers(id,limit,selected){
 }
 async function browse(which){
  const chosen=await call("browse",which);
- if(chosen){$(which).value=chosen;if(which==="source")changedInput();}
+ if(chosen){$(which).value=chosen;if(which==="source")changedInput();else updateOrganizeAvailability();}
 }
-$('browseSource').onclick=()=>browse("source");$('browseDest').onclick=()=>browse("dest");$('source').addEventListener('input',changedInput);
+$('browseSource').onclick=()=>browse("source");$('browseDest').onclick=()=>browse("dest");
+$('source').addEventListener('input',changedInput);
+$('dest').addEventListener('input',updateOrganizeAvailability);
 $('openSource').onclick=()=>call("open_folder",$('source').value);
 $('openDest').onclick=()=>call("open_folder",$('dest').value);
 $('rows').addEventListener('click',e=>{
@@ -4137,7 +4146,7 @@ $('query').oninput=()=>{query=$('query').value.trim().toLowerCase();render();};
 for(let [zone,input] of [["sourceDrop","source"],["destDrop","dest"]]){
 let z=$(zone);z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("drag");});
 z.addEventListener("dragleave",()=>z.classList.remove("drag"));
-z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("drag");let f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];let path=f&&(f.pywebviewFullPath||f.path);if(path){$(input).value=path;if(input==='source')changedInput();}else error("Folder drop unsupported here; use Browse.");});
+z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("drag");let f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];let path=f&&(f.pywebviewFullPath||f.path);if(path){$(input).value=path;if(input==='source')changedInput();else updateOrganizeAvailability();}else error("Folder drop unsupported here; use Browse.");});
 }
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&state&&state.running)call("cancel");});
 $('reconnect').onclick=()=>{nextRetry=0;bridgeFailures=0;refresh(true);};
