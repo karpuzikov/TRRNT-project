@@ -1443,6 +1443,36 @@ def _release_medium_matches(detail, physical, expected_audio_count):
     return sum(observed) == int(expected_audio_count) and all(n > 0 for n in observed)
 
 
+
+def _known_search_medium_conflict(entry, physical, expected_audio_count):
+    """Fast negative filter ONLY when search response has complete evidence.
+
+    Search entries sometimes omit media track counts and label details;
+    those unknowns require a full release lookup, not early rejection.
+    """
+    media = entry.get("media") or []
+    if not media:
+        return False
+    formats = [str(m.get("format") or "").casefold() for m in media]
+    if all(formats):
+        valid = all(("cd" in f if physical else "digital media" in f)
+                    for f in formats)
+        if not valid:
+            return True
+    counts = []
+    for medium in media:
+        count = medium.get("track-count")
+        if count is None and medium.get("tracks"):
+            count = len(medium["tracks"])
+        if count is None:
+            return False
+        try:
+            counts.append(int(count))
+        except (ValueError, TypeError):
+            return False
+    return sum(counts) != int(expected_audio_count)
+
+
 def _mb_catalog_search(catalog_number, physical=None, audio_count=None):
     """Try indexed exact catalog, then spaced prefix-number equivalent.
 
@@ -1467,8 +1497,8 @@ def _mb_catalog_search(catalog_number, physical=None, audio_count=None):
         # the spaced form (e.g. BETA 021) is searched. Continue only when
         # available search metadata disproves every existing candidate.
         if unique and (physical is None or audio_count is None or
-                       any(not row.get("media") or
-                           _release_medium_matches(row, physical, audio_count)
+                       any(not _known_search_medium_conflict(
+                           row, physical, audio_count)
                            for row in unique.values())):
             break
     return list(unique.values())
@@ -1624,10 +1654,13 @@ def release_identity(folder, files, default_artist="", allow_network=True):
                 # vinyl/CD candidates here to avoid unnecessary full
                 # release lookups; verify again after retrieving the chosen
                 # concrete edition.
-                if entry.get("media") and not _release_medium_matches(
-                        entry, is_cd, len(audios)):
+                if _known_search_medium_conflict(entry, is_cd, len(audios)):
                     continue
-                if using_catalog and entry.get("label-info") and not _matches_catalog(
+                # An incomplete search label is UNKNOWN, not a mismatch;
+                # the full concrete edition will supply authoritative labels.
+                indexed_catalogs = [x for x in _release_catalog(entry)
+                                    if _catalog_key(x)]
+                if using_catalog and indexed_catalogs and not _matches_catalog(
                         entry, result["catalog"]):
                     continue
                 preliminary.append((similarity, rid))
