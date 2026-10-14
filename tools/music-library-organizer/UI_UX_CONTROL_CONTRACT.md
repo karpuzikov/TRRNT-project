@@ -1,6 +1,10 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.13 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.14 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.14 - precise edition lookup and impossible-CUE status (no new controls)
+
+No new menus or options; existing minimal-click dark WebView2 unchanged. For a physical CD, use a **numeric catalog number** as MusicBrainz catno unless it is a check-digit-valid GTIN; never silently turn an 11-digit identifier into a presumed UPC. For 2-CD image rips, verify complete per-medium CUE track counts (e.g. 18+6) against the concrete MusicBrainz edition before marking metadata verified. An impossible `INDEX 00 > INDEX 01` is an actionable **PARTIAL** warning when a single original audio image and CUE can be preserved bitwise, not a falsely corrected/split disc; other unsafe mappings fail closed. Results display the existing warning without another dialog. **Real Windows end-to-end UI/error-state test NOT RUN.**
 
 ## v0.3.13 - radical UI simplicity and minimum clicks
 
