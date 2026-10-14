@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.13 - compact low-click UI and original catalog/audio regressions.
+# Music Library Organizer v0.3.14 - verified Sony 11-digit catalog, 2xCD CUE and INDEX safety regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.13.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.14.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -1382,6 +1382,146 @@ class MinimalWebViewUX20261014(unittest.TestCase):
         self.assertNotIn("Genuine errors do not block later releases.", html)
         self.assertIn("state.error", html)
 
+
+
+class NumericCatalogMultidiscAndInvalidCue20261015(unittest.TestCase):
+    def test_numeric_catalog_is_not_a_barcode(self):
+        self.assertFalse(mlo._valid_gtin("88883792232"))
+        self.assertTrue(mlo._valid_gtin("888837922326"))
+        self.assertFalse(mlo._valid_gtin("888837922327"))
+        self.assertTrue(mlo._valid_gtin("0602478746901"))
+        self.assertFalse(mlo._valid_gtin("MFR001CD"))
+
+    def test_cue_count_for_two_images_is_total_track_count(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp)
+            cues, images = [], []
+            for disc, count in ((1, 18), (2, 6)):
+                folder = source / ("CD " + str(disc))
+                folder.mkdir()
+                audio = folder / "disc.flac"
+                audio.write_bytes(b"placeholder")
+                images.append(audio)
+                cue = folder / "disc.cue"
+                cue.write_text('FILE "disc.flac" WAVE\n' + "".join(
+                    f'  TRACK {i:02d} AUDIO\n'
+                    f'    TITLE "Track {i}"\n'
+                    f'    INDEX 01 {i - 1:02d}:00:00\n'
+                    for i in range(1, count + 1)), encoding="utf-8")
+                cues.append(cue)
+            counts, total = mlo._source_medium_track_counts(cues, images)
+            self.assertEqual(counts, (18, 6))
+            self.assertEqual(total, 24)
+            correct = {"media": [{"format": "CD", "track-count": 18},
+                                 {"format": "CD", "track-count": 6}]}
+            wrong = {"media": [{"format": "CD", "track-count": 12},
+                               {"format": "CD", "track-count": 12}]}
+            self.assertTrue(mlo._release_medium_matches(correct, True, total, counts))
+            self.assertFalse(mlo._release_medium_matches(wrong, True, total, counts))
+            self.assertFalse(mlo._known_search_medium_conflict(correct, True, total, counts))
+            self.assertTrue(mlo._known_search_medium_conflict(wrong, True, total, counts))
+
+    def test_linked_subliminal_edition_selected_by_catalog_and_cue_count(self):
+        from unittest.mock import patch
+        release_id = "ffa45ff6-45a8-4e3b-bc89-a46e8ff0652c"
+        with tempfile.TemporaryDirectory() as temp:
+            folder = Path(temp) / (
+                "2013-05-13 - Subliminal (La face cachée) [EU - 88883792232]")
+            folder.mkdir()
+            files = []
+            for disc, count in ((1, 18), (2, 6)):
+                root = folder / f"CD {disc}"
+                root.mkdir()
+                audio = root / "album.flac"
+                audio.write_bytes(b"fake fixture - nonaudio")
+                cue = root / "album.cue"
+                cue.write_text('FILE "album.flac" WAVE\n' + "".join(
+                    f'  TRACK {i:02d} AUDIO\n'
+                    f'    TITLE "Track {i}"\n'
+                    f'    INDEX 01 {i - 1:02d}:00:00\n'
+                    for i in range(1, count + 1)), encoding="utf-8")
+                files.extend([audio, cue])
+            calls = []
+            def fake_mb(path, **kwargs):
+                calls.append(path)
+                if path.startswith("release/?"):
+                    query = mlo.urllib.parse.parse_qs(
+                        mlo.urllib.parse.urlparse(path).query)["query"][0]
+                    self.assertEqual(query, 'catno:"88883792232"')
+                    return {"releases": [{
+                        "id": release_id, "title": "Subliminal : La Face cachée",
+                        "media": [{"format": "CD", "track-count": 18},
+                                  {"format": "CD", "track-count": 6}]}]}
+                if path.startswith("release/" + release_id + "?"):
+                    return {"id": release_id,
+                            "title": "Subliminal : La Face cachée",
+                            "barcode": "888837922326",
+                            "country": "FR",
+                            "media": [{"format": "CD", "track-count": 18},
+                                      {"format": "CD", "track-count": 6}],
+                            "label-info": [{"catalog-number": "88883792232"}],
+                            "date": "2013-12-02",
+                            "release-group": {
+                                "primary-type": "Album",
+                                "first-release-date": "2013-05-13"}}
+                raise AssertionError(path)
+            with patch.object(mlo, "discid_release_candidates", return_value=([], [])), \
+                 patch.object(mlo, "mb_json", side_effect=fake_mb):
+                result = mlo.release_identity(folder, files, "GIMS")
+            self.assertEqual(result["selected_release"], release_id)
+            self.assertTrue(result["metadata_verified"], result)
+            self.assertEqual(result["catalog"], "88883792232")
+            self.assertEqual(result["barcode"], "888837922326")
+            self.assertEqual(result["country"], "EU")
+            self.assertEqual(result["source_medium_counts"], [18, 6])
+            self.assertEqual(result["track_count"], 24)
+            self.assertIn("MusicBrainz exact catalog", result["lookup_sources"])
+            self.assertEqual(len(calls), 2)
+
+    def test_invalid_index00_after_01_keeps_whole_image_and_marks_partial(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "2013-05-13 - Subliminal [EU - 88883792232]"
+            dest = root / "Destination"
+            source.mkdir()
+            image = source / "album.flac"
+            image.write_bytes(b"test image bytes preserved exactly")
+            cue = source / "album.cue"
+            cue.write_text('FILE "album.flac" WAVE\n'
+                '  TRACK 01 AUDIO\n'
+                '    TITLE "First"\n'
+                '    INDEX 01 00:00:00\n'
+                '  TRACK 02 AUDIO\n'
+                '    TITLE "Second"\n'
+                '    INDEX 01 01:00:00\n'
+                '    INDEX 00 01:01:00\n', encoding="utf-8")
+            app = mlo.Organizer()
+            app.enable_splitting = True
+            app.enable_encoding = True
+            app.encoding_workers = 1
+            app._artist_root = "GIMS"
+            app._credit_consensus = {}
+            app._current_release_feature = ""
+            app._current_identity = {
+                "catalog": "88883792232", "physical": True,
+                "metadata_verified": True}
+            app._export_warnings = []
+            app._export_notices = []
+            with patch.object(mlo, "convert") as convert:
+                app._export_release(source, dest, "ALAC", "ffmpeg", "ffprobe")
+            convert.assert_not_called()
+            self.assertEqual((dest / "album.flac").read_bytes(), image.read_bytes())
+            self.assertTrue((dest / "88883792232.cue").is_file())
+            self.assertIn("INDEX 00 01:01:00",
+                          (dest / "88883792232.cue").read_text(encoding="utf-8"))
+            self.assertTrue(any("unsafe splitting skipped" in w
+                                for w in app._export_warnings))
+            info = {"metadata_verified": True, "physical": True,
+                    "country": "EU", "catalog": "88883792232",
+                    "notes": []}
+            self.assertIn("CUE or supporting-file fidelity not fully verified",
+                          mlo.completion_reasons(info, app._export_warnings, []))
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
