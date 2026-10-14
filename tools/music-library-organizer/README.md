@@ -1,10 +1,16 @@
 # Music Library Organizer
 
-**Candidate: v0.3.12 - Under construction ⚠️** (catalog, CD region and performance verification pending) (feature branch, unmerged; v0.3.5 remains on main)
+**Candidate: v0.3.13 - Under construction ⚠️** (minimal-click WebView2 update; real Windows tests pending; PR draft)
 
-**[Music Library Organizer v0.03.12.pyw](../Music%20Library%20Organizer%20v0.03.12.pyw)**
+**[Music Library Organizer v0.3.13.pyw](../Music%20Library%20Organizer%20v0.3.13.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.13 - simplified interface under updated GitHub UI rules
+
+Adopted the latest `main` [UI_UX_RULES.md](../../UI_UX_RULES.md) and [SOFTWARE_RULES.md](../../SOFTWARE_RULES.md) on the feature branch, including **radical simplicity and minimum-click workflows**. Removed redundant tutorials, helper text and decorative prose; kept necessary labels, explicit statuses and controls. The source/destination picker retains direct Browse and distinct open-folder actions. Paths already selected are remembered; selecting the source auto-generates an output destination; Organize is gated against empty paths, running and connection failure without a new confirmation step. Keeps all three immediately visible independent processing checkboxes, selected format and worker controls, Results Copy/Open log, dark MCC-style WebView2, keyboard/drag/drop, Undo and genuine embedded auCDtect.
+
+**Checks:** embedded JS syntax and mocked control-state/source=>destination interaction PASS; actual Python test suite and Windows renderer/screenshot/keyboard/workflow verification **NOT RUN**. Draft only, no stability promotion.
 
 ## v0.3.12 - exact MusicBrainz catalog identity and speed visibility
 
