@@ -8,11 +8,11 @@ Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or o
 
 ## v0.3.12 - exact MusicBrainz catalog identity and speed visibility
 
-Fixed the catalog search omission for digital editions: `HAB017`, `VPRVIP006`, `BETA021` are queried as **exact MusicBrainz catno** even if the source is WEB. Candidate verification checks normalized label catalog (e.g. BETA021 vs BETA 021), Digital Media rather than Vinyl, matching total audio track count and compatible title; ambiguous candidates remain unresolved rather than guessed. CD DiscID ambiguities are further screened by exact catalog and source region.
+Fixed the catalog search omission for digital editions: `HAB017`, `VPRVIP006`, `BETA021` are queried as **exact MusicBrainz catno** even if the source is WEB. Candidate verification checks normalized label catalog (e.g. BETA021 vs BETA 021), with a second spaced lookup when first results are only Vinyl, Digital Media rather than Vinyl, matching total audio track count and compatible title; ambiguous candidates remain unresolved rather than guessed. CD DiscID ambiguities are further screened by exact catalog and source region.
 
 CD source country/region `[EU - ...]`, `[AT - ...]` is retained when present; MusicBrainz country (often GB) is stored separately and never mislabeled as actual pressing manufacture. No blanket pressing-country PARTIAL when the source gives a region or MusicBrainz supplies documented release territory. Genuine uncertainty about edition identity continues to produce explicit PARTIAL.
 
-**Performance:** media/track screening precedes expensive MusicBrainz full-detail calls; same-name existing destination skips remote metadata lookup; the original inaccurate FFT logs remain flagged. Activity logs show `PERFORMANCE:` lines for initial all-track credit scan and individual metadata, encoding/copy, auCDtect and total elapsed times. Audio verification/PCM equality are unchanged. 72 regression methods currently committed, full Windows tests and real-user benchmark **NOT RUN**.
+**Performance:** media/track screening precedes expensive MusicBrainz full-detail calls; same-name existing destination skips remote metadata lookup; the original inaccurate FFT logs remain flagged. Activity logs show `PERFORMANCE:` lines for initial all-track credit scan and individual metadata, encoding/copy, auCDtect and total elapsed times. Audio verification/PCM equality are unchanged. 73 regression methods currently committed, full Windows tests and real-user benchmark **NOT RUN**.
 
 ## v0.3.11 - genuine AudioChecker included, no external setup
 
