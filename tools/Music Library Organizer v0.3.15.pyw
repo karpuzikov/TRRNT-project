@@ -3971,7 +3971,7 @@ def _session_profile():
 def _is_mlo_window_title(title):
     """Match only the actual versioned MLO GUI title, not unrelated windows."""
     return bool(re.fullmatch(
-        re.escape(APP) + r" v\\d+\\.\\d+\\.\\d+ - Under construction .*",
+        re.escape(APP) + r" v\d+\.\d+\.\d+ - Under construction .*",
         str(title or ""), flags=re.IGNORECASE))
 
 
@@ -4051,7 +4051,7 @@ def _single_instance():
         # delete another process's mutex, launch into shared state, or kill it.
         ctypes.windll.user32.MessageBoxW(
             None,
-            APP + " is running, but its window could not be found.\\n"
+            APP + " is running, but its window could not be found.\n"
             "Close the existing process in Task Manager, then try again.",
             APP, 0x40)
         return False
