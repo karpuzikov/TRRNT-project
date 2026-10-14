@@ -4040,19 +4040,19 @@ def _single_instance():
                       "(Windows error " + str(error) + ").")
     if error == 183:  # ERROR_ALREADY_EXISTS; another process holds the lock
         kernel32.CloseHandle(handle)
-        for _ in range(12):
+        for _ in range(24):
             try:
                 if _activate_existing_mlo_window():
                     return False  # normal, successful duplicate-launch exit
             except (OSError, AttributeError):
                 break
-            time.sleep(0.15)  # the other instance may still be starting
+            time.sleep(0.20)  # the other instance may still be starting
         # A live lock without a GUI means a hidden or hung process. Do not
         # delete another process's mutex, launch into shared state, or kill it.
         ctypes.windll.user32.MessageBoxW(
             None,
-            APP + " is running, but its window could not be found.\n"
-            "Close the existing process in Task Manager, then try again.",
+            APP + " is running or starting, but its window is not available.\n"
+            "Wait for it to open; if it stays hidden, close its process in Task Manager.",
             APP, 0x40)
         return False
     return handle
@@ -4323,12 +4323,12 @@ refresh(true);
 
 def main():
     ensure_data()
-    logger = _startup_logger()
     mutex = _single_instance()
     if mutex is False:
         # A second launch has already activated the running organizer or
         # shown an actionable notice. No new profile/window should be made.
         return
+    logger = _startup_logger()
     profile = _session_profile()
     try:
         logger.info("Starting %s v%s, Python %s, profile=%s", APP, VERSION,
