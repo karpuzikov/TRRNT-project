@@ -12,7 +12,7 @@ Windows permits **one active** Music Library Organizer instance to protect setti
 
 No new dialogs in the normal duplicate case; no lost running jobs and no concurrent Undo writer. The original dark WebView2, authentic embedded auCDtect, catalog/CUE corrections and three stage checkboxes are unchanged.
 
-**87 regression methods committed; full Python suite and actual Windows double-launch/minimized/hidden-process/UI acceptance NOT RUN.** Draft only.
+**89 regression methods committed; full Python suite and actual Windows double-launch/minimized/hidden-process/UI acceptance NOT RUN.** Draft only.
 
 ## v0.3.14 - correct numeric catalog, exact two-disc track count and safe CUE
 
