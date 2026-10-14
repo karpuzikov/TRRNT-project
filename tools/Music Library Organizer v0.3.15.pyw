@@ -4044,7 +4044,9 @@ def _single_instance():
             try:
                 if _activate_existing_mlo_window():
                     return False  # normal, successful duplicate-launch exit
-            except (OSError, AttributeError):
+            except (OSError, AttributeError, TypeError, ValueError):
+                # Unsupported/inaccessible window API: show a concise native
+                # notice rather than a new Python traceback.
                 break
             time.sleep(0.20)  # the other instance may still be starting
         # A live lock without a GUI means a hidden or hung process. Do not
