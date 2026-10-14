@@ -1,6 +1,58 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.5 - Under construction ⚠️. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.12 candidate - Under construction ⚠️; native engine bundled, Windows acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.12 - catalog diagnostics and slow-stage visibility
+
+No additional controls. For digital releases with known source catalog, `MusicBrainz exact catalog` is shown as lookup provenance in saved result metadata. Conflicting format/catalog/count yields a precise warning rather than silent `No matching concrete MusicBrainz edition`. Preserve user-supplied physical `EU`/`AT` suffixes and expose MusicBrainz release region separately, not overwrite it. Add `timings_seconds` into each result JSON and `PERFORMANCE` activity log for credit prescan/MB/encode/auCDtect/total. Existing Results selection, copy behavior, folder icons, keyboard controls and dark layout remain. Actual Windows responsiveness and timing/progress acceptance **NOT RUN**.
+
+## v0.3.11 - silent, genuine analyzer bootstrap (no new controls)
+
+The existing `#doChecker` checkbox is unchanged. When ON for WEB, the app now **automatically** restores the exact original freeware auCDtect and its original Readme from the *one-file, hash-verified embedded payload* into the Music Library Organizer's private dependency directory. No user-facing binary chooser, installer, ZIP picker, manual setup/download, network prompt or second window. The original source and existing release output are never touched. If a previously unpacked binary is tampered with, show an explicit integrity failure rather than executing it; preserve control focus/recovery behavior. When `#doChecker` is OFF, skip engine extraction and do not demand a report. Native WebView2 UI, status messages, progress and keyboard behavior require **real Windows testing**, not just a mocked JavaScript run.
+
+## v0.3.10 - three independent user controls (manual stage selection)
+
+| Control | Function | Disabled state and acceptance |
+| --- | --- | --- |
+| `#doEncode` (Encode audio checkbox, default ON) | Persist setting; ON converts ordinary tracks to chosen format using native encoders, OFF copies each ordinary source codec/extension and stages metadata. Never mutate original. | Keyboard Space/Tab, pointer, focus-visible; unchecked disables Encoding/Split workers only if Split is ALSO unchecked, and Output format only if Split also unchecked. Real Windows tests pending. |
+| `#doChecker` (AudioChecker checkbox, default ON) | Persist setting; ON runs only genuine auCDtect for WEB when binary available and generates original-style log; OFF skips analysis and removes its report compliance requirement. No ZIP chooser. | Unchecked disables AudioChecker workers. Real report/Windows tests pending. |
+| `#doSplit` (Split album images (CUE) checkbox, default ON) | ON splits verified CUE image to individual lossless tracks using chosen native encoder; OFF preserves whole album audio image and rewrites staged CUE FILE paths. | When Encoding is also OFF, Output format disabled; when Split ON but Encoding OFF, format must stay enabled for new split tracks. Real native splitter tests pending. |
+
+All controls are small integrated checkboxes in existing MCC-like form. States persist across restarts; show settings via bridge, expose processing choices in activity/report/Undo metadata, lock while run active, do not trigger actions merely by toggling. Mocked WebView2 DOM checked state restore and enabled/disabled interactions; **real Windows hover/keyboard, screen size/accessibility, validation and complete codec tests NOT RUN**.
+
+## v0.3.9 - correct AudioChecker availability status
+
+No ZIP browse UI. Actual auCDtect engine needed in program-private dependencies, not a new external user-facing setting. Automatic WEB analysis runs only when a verified user-owned engine exists; display explicit PARTIAL failure and do **not** create `audiochecker.log` if missing. Remove any UI promise of fully integrated no-dependency proprietary analyzer. CUE, files, tag flows and MCC-style WebView2 unchanged. Windows availability/failure UI validation NOT RUN.
+
+## v0.3.8 - transparent results status and restored naming
+
+No new controls. Existing Results column must display **why** each PARTIAL item is incomplete, not a generic `requirements unfinished` message. `last-run.json` records a structured `unmet_requirements` list. For each unmet requirement, show an English actionable phrase and retain all original source and target paths with immediate adjacent folder icons. A WEB barcode satisfies its identifier requirement even without a separate catalog. Physical pressing-manufacture evidence is stricter and must be explicit if missing.
+
+Result rows stay mouse-selectable/copyable during 1.5s status polling; Copy results copies the full visible reason. Native WebView2 test of this modified content, hover, click, Copy, keyboard focus, narrow/default/large window, actual INNA records and reader accessibility **NOT RUN**. CUE reports specify exact sector/pregap reason when reconstruction is not proven. No spurious new checkbox or review dialog.
+
+## v0.3.7 - integrated AudioChecker: no ZIP/file-picker UI
+
+The user explicitly rejected the ZIP/file picker workflow. Remove `#checkerZip`, `#chooseChecker`, `#openCheckerZip`, all associated input and folder icons, and the `browse_checker_zip` native bridge API. Do not substitute another checker installation screen. AudioChecker is a **built-in automatic stage** of Organize; retain `#checkWorkers` (manual bounded worker count) as the only checker-specific input. A single small passive label clarifies `AudioChecker is integrated. WEB releases are checked automatically; no external checker or ZIP is needed.`. Source/output path controls and result-path folder icons remain for real displayed paths.
+
+| Affected control | Purpose, actions, side effects | Focus/feedback, states, geometry and acceptance |
+| --- | --- | --- |
+| AudioChecker workers `#checkWorkers` | Select 1..detected logical CPU maximum for concurrent *built-in* per-track spectral checks; saved to this app's settings. | Existing 34px select, label, keyboard/Tab, pointer; disabled while run; validate output and persistence. Windows NOT RUN. |
+| Integrated checker status | Automatic, no separate click/ZIP. When organizing WEB release, show current stage `AudioChecker`; produce integrity-validated `audiochecker.log` with evidence/uncertainty; CD never invokes checker. | Descriptive warnings for strong bandlimiting, inconclusive or actual probe failure. Partial when not verified. No false auCDtect probability/compliance. Windows actual file workflow NOT RUN. |
+| Results table / Copy results / path folder icon | Preserve prior v0.3.6 fixes. Mouse/keyboard select/copy, folder icon adjacent to destination paths and app log controls. | Native focus, hovering, resizing, polling while selecting, selection restoration, horizontal text wrapping, error handling NOT RUN on Windows. |
+
+The prior v0.3.6 AudioChecker ZIP row contract below is **historical and superseded**. The current UI MUST NOT include its controls; do not revive the `auCDtect` upload/selection flow. The entire MCC-style WebView2 design tokens, source/destination controls and error recovery remain unchanged. Run min/default/large-size screenshots; keyboard-only, hover, pointer and real conversion/analysis tests before stable status.
+
+## v0.3.6 candidate - added/changed controls and selection stability
+
+| Control/state | Purpose/side effects | Mouse/keyboard, visual state, geometry, acceptance |
+| --- | --- | --- |
+| Results text selection | Preserve a user highlight across 1.5-second WebView2 status polls; `Ctrl+C` copies selected text. No file side effects. | Standard pointer selection; Tab should not steal focus. Re-render only if results content actually changes and selection is absent. Test during a running 94-row job, with updates and filters. Current real Windows test NOT RUN. |
+| Results path folder icon | Opens displayed existing release output folder with host `open_folder`; a failed/nonexistent destination produces actionable error. No duplicate global Open output action. | Small 28px square icon inline before each path, native click/Tab/Enter/Space, normal/hover/focus/disabled/error. Test many long paths and narrow widths. NOT RUN. |
+| AudioChecker ZIP path folder icon | Open the location of the selected existing ZIP in Explorer with the file selected; no extraction on click. | 34px folder icon immediately before readonly path, disabled when no path / disconnected, Tab/Enter/Space, hover/focus states; real native selection NOT RUN. |
+| Browse ZIP | Open pywebview file picker, validate both auCDtect and FLAC entries whether archive members start with `Codecs/` or a wrapper directory, remember selection in isolated settings; cancellation leaves earlier selection unchanged. | 34px-height existing text button, keyboard focus and error message. Actual Windows picker and genuine ZIP extraction NOT RUN. |
+| Open log / Open log folder | Unchanged adjacent controls. Open report in associated application or isolated folder, no mutation. | Click/keyboard, existing standard icons/sizes, NOT RUN on Windows. |
+
+Use MCC v0.5.18 as the unchanged dark WebView2 visual baseline. Colors/fonts, source/destination, format, worker selectors, Organize/Cancel/Undo and recovery controls must retain prior semantics. No confirmation or REVIEW gate. Mandatory minimum/default/large screenshots, keyboard-only navigation, mouse selection while polling, explicit Copy results, dialogs, forced close/reopen, real AudioChecker ZIP and status transitions all **NOT RUN** and block stable acceptance.
 
 ## v0.3.5 selectable Results and log/ZIP controls
 

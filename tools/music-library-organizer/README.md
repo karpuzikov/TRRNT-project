@@ -1,10 +1,69 @@
 # Music Library Organizer
 
-**Current: v0.3.5 - Under construction ⚠️**
+**Candidate: v0.3.12 - Under construction ⚠️** (catalog, CD region and performance verification pending) (feature branch, unmerged; v0.3.5 remains on main)
 
-**[Download Music Library Organizer v0.3.5.pyw](../Music%20Library%20Organizer%20v0.3.5.pyw)**
+**[Music Library Organizer v0.3.12.pyw](../Music%20Library%20Organizer%20v0.3.12.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.12 - exact MusicBrainz catalog identity and speed visibility
+
+Fixed the catalog search omission for digital editions: `HAB017`, `VPRVIP006`, `BETA021` are queried as **exact MusicBrainz catno** even if the source is WEB. Candidate verification checks normalized label catalog (e.g. BETA021 vs BETA 021), with a second spaced lookup when first results are only Vinyl, Digital Media rather than Vinyl, matching total audio track count and compatible title; ambiguous candidates remain unresolved rather than guessed. CD DiscID ambiguities are further screened by exact catalog and source region.
+
+CD source country/region `[EU - ...]`, `[AT - ...]` is retained when present; MusicBrainz country (often GB) is stored separately and never mislabeled as actual pressing manufacture. No blanket pressing-country PARTIAL when the source gives a region or MusicBrainz supplies documented release territory. Genuine uncertainty about edition identity continues to produce explicit PARTIAL.
+
+**Performance:** media/track screening precedes expensive MusicBrainz full-detail calls; same-name existing destination skips remote metadata lookup; the original inaccurate FFT logs remain flagged. Activity logs show `PERFORMANCE:` lines for initial all-track credit scan and individual metadata, encoding/copy, auCDtect and total elapsed times. Audio verification/PCM equality are unchanged. 74 regression methods currently committed, full Windows tests and real-user benchmark **NOT RUN**.
+
+## v0.3.11 - genuine AudioChecker included, no external setup
+
+**Original auCDtect now ships inside the single `.pyw` file.** No manual download, file selector, user ZIP or external analyzer installation. At first AudioChecker-enabled WEB run, the program automatically extracts the **exact original `aucdtect.exe`** (147,456 bytes, SHA-256 `efe47eec21c33431e7fceea4b171b8a15a729e3adcda967ee0fc165a6a41adba`) and original `Readme` into this app's isolated dependency folder; hashes are checked before execution and tampered files are rejected. No other codec binaries are packaged.
+
+The original 2004 Readme by Oleg Berngardt and Alexander Djourik explicitly permits free redistribution **as long as no charge is made**. This software and GitHub distribution must remain free of charge and preserve the Readme. Only a real auCDtect verdict is ever translated into the traditional `AUDIOCHECKER v2.0 beta (build 457)` layout/summary/checksum, never approximated from a custom FFT.
+
+This packages the **actual original engine**, not a new clean-room port of its proprietary signal model. This maximizes per-track parity without asking the user for prerequisites. Existing three independent processing checkboxes remain; AudioChecker OFF does not extract or run the executable.
+
+**Verified:** Source executable/Readme SHA-256 against the user's earlier packaged AudioChecker, PE32 static inspection, slim two-item archive decompression/length/hash test, same embedded payload committed to GitHub, WebView2 JavaScript syntax. **NOT YET VERIFIED:** Complete v0.3.11 Python compile/unittest runner on checked-out source, real Windows executable launch, all 55 real source tracks compared against the original reference, GUI/encoder acceptance. Status remains Under construction ⚠️.
+
+## v0.3.10 - optional processing checkboxes and precise digital dates
+
+The original compact WebView2 UI now has three **independent checkboxes** (default ON, persisted): **Encode audio**, **AudioChecker**, **Split album images (CUE)**. Disabling Encoding copies ordinary lossless audio in its original codec and extension and updates staged metadata where supported, without transcoding. Disabling Split keeps a CUE-referenced album image whole, with valid rewritten CUE paths. Enabling Split uses the selected native refalac64/Xiph encoder even if ordinary Encoding is unchecked, since a split must produce new audio tracks. Disabling AudioChecker skips analysis and its log requirement entirely. Enabling it still requires **authentic auCDtect**; the binary's fully legal self-contained provisioning remains unsolved (no fabricated verdicts).
+
+**New date rule:** For a DIGITAL/WEB release, January 1 (`YYYY-01-01`) is only a year placeholder. Output `YYYY - Album [identifier]`, never an invented month/day. Physical releases keep their actual supplied dates. New regression fixtures and isolated mock UI state checks added. Full application tests and real Windows acceptance **NOT RUN**. Existing folders are skipped, so choose an empty output destination for validation.
+
+## v0.3.9 - original auCDtect engine and historic AudioChecker report
+
+**Critical correction:** v0.3.7/v0.3.8's custom FFT did not reproduce AudioChecker's CDDA/MPEG classification. It is disabled and removed in v0.3.9. Genuine `auCDtect` output is mandatory for a report; original-style 2.0 beta build 457 report formatting, comma summary and checksum are implemented. The exact checksum **145533892** and summary **94,76% CDDA** were independently reproduced from the user's 55-track reference.
+
+**Existing output:** Already-organized directories with old `MLO Integrated AudioChecker v0.3.x` spectral reports are shown as **PARTIAL - INVALID report** instead of quietly SKIPPED. Existing files are never overwritten or removed. New empty output and genuine engine required for correction.
+
+**Not fully self-contained yet:** The original auCDtect binary is proprietary freeware. No verified redistribution permission and the publisher's binary link redirects away to unrelated content. The program can use an already present user-owned binary in its app-private dependencies; it cannot automatically safely install a missing original engine today. It does not prompt for a ZIP, scrape arbitrary mirrors, produce false CDDA/MPEG percentages or silently substitute a homemade classifier. Missing engine means **PARTIAL**, no `audiochecker.log`. Real native Windows scores and binary installation still **NOT RUN / NOT SOLVED**.
+
+## v0.3.8 - specific INNA naming/status and CUE repair
+
+- **Visible PARTIAL reasons:** An otherwise verified WEB edition may use barcode when its separate catalog is missing; it no longer gets a silent PARTIAL solely due to catalog absence. The result now includes `unmet_requirements` and an explicit message. Physical releases without verified country-of-manufacture evidence remain PARTIAL with that exact reason.
+- **Picard capitalization:** Read [English_Title_Capitalization.txt](https://github.com/karpuzikov/userscripts/blob/main/picard-tools/scripts/English_Title_Capitalization.txt). Lowercase internal English function words in track title and version descriptors while preserving proper artist names, acronyms and the script's phrasal exceptions. Examples: `10 Minutes (Club Mix by Play & Win)`, `We're Going in the Club`.
+- **Featured-credit parsing:** `More Than Friends feat. Daddy Yanke` -> `More Than Friends (ft. Daddy Yanke)`, `INNDiA feat. Play&Win` -> `INNDiA (ft. Play & Win)` in **both TITLE tags and filename**. Preserve richer filename features when TITLE tags are short.
+- **INNA diacritics:** Correct the specifically documented legacy `Déjá Vu` spelling to `Déjà Vu` for INNA releases; do not globally rewrite unaccented Deja Vu titles.
+- **CD Single inference:** Explicit legacy `(Maxi CD Single)`/`(CD Single)` source evidence may supply `- Single` in a provisional normalized folder, while unverified pressing facts remain unresolved. `(Deluxe Editon)` is corrected to `(Deluxe Edition)`.
+- **Legacy CD folders:** Clean provisional title even when the date/catalog/country is unresolved; do not preserve ugly original source-folder syntax or invent an identifier. Sanitize Windows-illegal punctuation in metadata titles rather than abandoning the whole renaming operation. Unverified naming remains PARTIAL.
+- **CUE:** A correct 16-track MusicBrainz DiscID release does not by itself verify an old full-image CUE's pregaps. When the image is missing but split tracks are present, reconstruct playable per-file CUE only if all track numbers, INDEX01 chronology and actual PCM CD-sector lengths match exactly, with no INDEX00/HTOA/pregap. Otherwise preserve documentary `Unresolved CUE` with the *specific reason*. Never touch source files.
+- **Tests:** New explicit fixtures checked into `test_organizer.py`, but full Python compilation/regressions, actual Windows WebView2 UI, native codec and real INNA 16-track audio/CUE validation remain **NOT RUN**. Test using a fresh blank destination or safe Undo; old sorted folders are skipped by design.
+
+## v0.3.7 - integrated AudioChecker in the single-file app
+
+**No AudioChecker ZIP, path field, Browse ZIP button, auCDtect executable or separate checker download required.** The program automatically performs its own spectral audio analysis for WEB releases and produces `audiochecker.log` in the staged organized output, with bounded AudioChecker workers and a SHA-256 report-integrity footer. Physical CDs never receive such a report. The source is never modified.
+
+**Important provenance:** This new analyzer uses original pure-Python FFT frequency-band analysis of PCM decoded through the existing FFmpeg/FFprobe toolchain. It can flag strong bandlimiting, find no strong cutoff, or return inconclusive; these are *not* auCDtect's proprietary CDDA/MPEG probability scores. A cutoff may be production EQ rather than proof of lossy re-encoding, and no cutoff cannot prove original CDDA/lossless provenance. No invented percentages. Flagged or inconclusive outputs remain PARTIAL; processing errors are explicit.
+
+**Verification:** The independent kernel compiled with Python 3.13.5 and real FFmpeg synthetic fullband/lowpass signals produced expected distinct diagnostic classes and a valid two-track report. Full v0.3.7 application compilation/regressions and actual Windows GUI/AudioChecker INNA workflow **NOT RUN**, still Under construction ⚠️. The input/output hierarchy, exclusive refalac64/Xiph encoders, DiscID/CUE logic, result selection, Undo and isolated settings remain.
+
+## Historical v0.3.6 - superseded checker ZIP workflow and Results fixes
+
+- Correctly install and accept the supplied AudioChecker ZIP whether `Codecs/Analyzer/aucdtect.exe` is stored at archive root or beneath an enclosing directory. Reject traversal, absolute ZIP members and conflicting duplicate binary entries; no third-party executables are committed.
+- For tracks that explicitly contain a featured performer, remove the same redundant performer from exact two-artist ARTIST spellings (e.g. `INNA & Marian Hill` -> `INNA` while retaining `(ft. Marian Hill)` in TITLE). Avoid guessing for unrelated credits.
+- Prevent the 1.5-second Results status poll from destroying text selection before Ctrl+C. Keep explicit Copy results, and show an Open folder control before each reported output path.
+- Add Open file location icon directly before the remembered ZIP path. Preserve adjacent Open log / Open log folder actions.
+- **Only WebView2 JavaScript syntax was checked.** Full Python compile/tests, native checker binaries, Windows UI/clipboard and INNA 94-release acceptance **NOT RUN**. Status remains Under construction ⚠️. Branch `mlo-v0.3.6-checker-results-fixes` is a candidate, not a stable download.
 
 ## v0.3.5 - INNA naming, DiscID, AudioChecker, results
 
