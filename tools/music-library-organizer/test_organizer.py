@@ -61,7 +61,7 @@ class UserExamples20261014(unittest.TestCase):
 
     def test_legacy_cd_promo_title_cleaning(self):
         self.assertEqual(mlo.clean_release_title(
-            "Inna - Déjá Vu (Maxi CD Single) (Promo)", "INNA"), "Déjá Vu")
+            "Inna - Déjá Vu (Maxi CD Single) (Promo)", "INNA"), "Déjà Vu")
         self.assertEqual(mlo.clean_release_title(
             "Inna - Party Never Ends (Part 2) (2013) [WPCR-15062]", "INNA"),
             "Party Never Ends (Part 2)")
