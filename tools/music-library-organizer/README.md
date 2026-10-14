@@ -1,10 +1,18 @@
 # Music Library Organizer
 
-**Candidate: v0.3.13 - Under construction ⚠️** (minimal-click WebView2 update; real Windows tests pending; PR draft)
+**Candidate: v0.3.14 - Under construction ⚠️** (minimal-click WebView2 update; real Windows tests pending; PR draft)
 
-**[Music Library Organizer v0.3.13.pyw](../Music%20Library%20Organizer%20v0.3.13.pyw)**
+**[Music Library Organizer v0.3.14.pyw](../Music%20Library%20Organizer%20v0.3.13.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.14 - correct numeric catalog, exact two-disc track count and safe CUE
+
+The source `[EU - 88883792232]` contains the **catalog number** 88883792232, not MusicBrainz barcode 888837922326. MLO now validates the GTIN check digit before treating a number as a barcode and queries the exact catalog in MusicBrainz. The supplied [Maître Gims `Subliminal : La Face cachée` edition](https://musicbrainz.org/release/ffa45ff6-45a8-4e3b-bc89-a46e8ff0652c) has 2×CD (18 + 6 tracks), catalog 88883792232 and barcode 888837922326. For a CD image stored as one audio file per disc, MLO uses complete CUE track counts, not audio file counts, and verifies each CD medium separately.
+
+When a unique album-image CUE has an impossible `INDEX 00` after `INDEX 01`, splitting is unsafe. Rather than discard the image or invent a corrected offset, the app copies the whole image unchanged with SHA-256 integrity verification, preserves source CUE indices in the staged sidecar, and marks **PARTIAL with explicit cause**. Unprovable CUE situations still fail safely; originals never change.
+
+**82 test methods committed; real Windows tests and the user's exact two-CD rip/audio verification NOT RUN.** Current version remains Under construction ⚠️.
 
 ## v0.3.13 - simplified interface under updated GitHub UI rules
 
