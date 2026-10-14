@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.10 - processing options and digital date regressions.
+# Music Library Organizer v0.3.11 - genuine embedded auCDtect engine regression tests.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.10.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.11.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -153,12 +153,35 @@ class OriginalCheckerRegression(unittest.TestCase):
         self.assertIn('prefix.startswith(b"MLO Integrated AudioChecker v0.3.")', code)
         self.assertIn("no originals or outputs changed", code)
 
-    def test_no_proprietary_binary_provisioning_from_untrusted_mirror(self):
+    def test_auto_extracts_authentic_engine_with_upstream_freeware_readme(self):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as td:
-            with patch.object(mlo, "DEPS", Path(td)):
-                with self.assertRaisesRegex(RuntimeError, "Original auCDtect"):
+            with patch.object(mlo, "DEPS", Path(td)), \
+                 patch.object(mlo, "IS_WIN", True):
+                exe = mlo._native_aucdtect()
+                self.assertTrue(exe.is_file())
+                self.assertEqual(exe.stat().st_size, 147456)
+                self.assertEqual(
+                    mlo.sha(exe),
+                    "efe47eec21c33431e7fceea4b171b8a15a729e3adcda967ee0fc165a6a41adba")
+                readme = exe.with_name("Readme")
+                self.assertTrue(readme.is_file())
+                self.assertIn("redistribute it freely as", readme.read_text(encoding="ascii"))
+                self.assertEqual(mlo._native_aucdtect(), exe)
+                exe.write_bytes(b"invalid swapped code")
+                with self.assertRaisesRegex(RuntimeError, "integrity mismatch"):
                     mlo._native_aucdtect()
+        self.assertNotIn("chooseChecker", mlo.HTML)
+
+    def test_native_engine_requires_no_network_zip_or_picker(self):
+        import inspect
+        source = inspect.getsource(mlo._native_aucdtect)
+        provision = inspect.getsource(mlo._embedded_aucdtect)
+        self.assertIn("return _embedded_aucdetect()", source)
+        self.assertIn("base64.b85decode", provision)
+        self.assertIn("sha(stage)", provision)
+        self.assertIn("zipfile.ZipFile", provision)
+        self.assertNotIn("urllib", provision)
         self.assertNotIn("chooseChecker", mlo.HTML)
 
     def test_native_output_parser_real_probabilities_only(self):
