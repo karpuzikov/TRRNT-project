@@ -1613,8 +1613,20 @@ def release_identity(folder, files, default_artist="", allow_network=True):
                 similarity = difflib.SequenceMatcher(
                     None, _key(title), _key(entry.get("title") or "")).ratio()
                 threshold = 0.60 if using_catalog else 0.82
-                if similarity >= threshold:
-                    preliminary.append((similarity, rid))
+                if similarity < threshold:
+                    continue
+                # MusicBrainz release search can already include per-medium
+                # format/track count and label fields. Reject incompatible
+                # vinyl/CD candidates here to avoid unnecessary full
+                # release lookups; verify again after retrieving the chosen
+                # concrete edition.
+                if entry.get("media") and not _release_medium_matches(
+                        entry, is_cd, len(audios)):
+                    continue
+                if using_catalog and entry.get("label-info") and not _matches_catalog(
+                        entry, result["catalog"]):
+                    continue
+                preliminary.append((similarity, rid))
             preliminary.sort(key=lambda pair: (-pair[0], pair[1]))
             compatible = []
             rejected_media = 0
