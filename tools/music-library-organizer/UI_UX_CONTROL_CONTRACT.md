@@ -1,6 +1,28 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.12 candidate - Under construction ⚠️; native engine bundled, Windows acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.13 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.13 - radical UI simplicity and minimum clicks
+
+The project-wide `UI_UX_RULES.md` and `SOFTWARE_RULES.md` were synchronized from the current main branch and now contain mandatory *radical simplicity* / *fewest clicks*. Preserve MCC-style dark WebView2, but remove tutorials and repeated explanatory text. No replacement with Tkinter or ASCII. Manual worker selectors remain directly accessible because HDD/SSD worker tuning is a user-requested common action; hiding behind Advanced would add an unnecessary click.
+
+| Control(s) | Unique action / keyboard / safety | Minimal-click impact |
+| --- | --- | --- |
+| `source` + `browseSource` | Type/drop/paste/source folder select; Tab to Browse, Enter to activate; auto-suggest destination when current destination was auto-generated | One source selection fills both required paths |
+| `openSource` | Open existing source location; distinct from browse/select action | Direct one-click folder open |
+| `dest` + `browseDest` | Type/drop/paste output path or select manually; never overwrite nonempty independently chosen path; focus, keyboard entry | No second destination picker when suggestion is suitable |
+| `openDest` | Open current destination; distinct from selecting a new one | Direct folder open |
+| `doEncode` / `doChecker` / `doSplit` | Three distinct independent checked states with Space and pointer; value persisted; lock during run | All options visible together; no submenu |
+| `format` / `encodeWorkers` / `checkWorkers` | Direct native selects, current values persisted; disabled only when unrelated work is off or job running | No Advanced menu or unnecessary confirmation |
+| `organize` | Single-step primary action. Disabled when source or destination is blank, desktop disconnected or job running; tooltip names missing path | Prevents avoidable failed click |
+| `cancel` / `undo` | Direct stop; Undo retained with essential existing destructive-action confirmation and hash checks | Recovery remains direct and safe |
+| `query`, `copyResults`, `openLog`, `openLogFolder`, result folder button | Filter, copy visible results, open activity log, open its parent and open row output, respectively; each action distinct | No repeated menu for per-row actions |
+
+Removed from rendered UI: redundant input/output heading, decorative 'Automatic/MCC-style' strapline, path label + placeholder duplicates, processing-toggles tutorial, saved-settings notice, constantly overwritten progress tutorial, lengthy button labels; empty results state now simply `No results`. Retained status/progress/error detail only when needed. All controls support focus/keyboard and existing responsive layout; tooltips available for occasional ambiguous options.
+
+**Minimal workflow counts:** Saved paths: 1 click (`Organize`). Fresh collection: `Browse Source` + choose folder + `Organize`; output suggestion avoids browsing destination. Changing codec/checkbox/worker is exactly one direct interaction each, followed by Organize. Undo intentionally retains its confirmation. No submenu, new modal or forced repeated selection.
+
+**Checks:** V8 source JS parsing PASS; deterministic mocked WebView2 states (empty source->disabled, source path->auto destination and enabled, emptied dest->disabled, running->disabled and checkboxes locked, disconnected->disabled) PASS. 4 new regression methods exist but native full tests NOT RUN. **Actual Windows WebView2 screenshots, reference-side visual match, resizing/DPI, tab order, hover/click, drag/drop, file changes, cancellation, and persistence across restart NOT RUN**. Do not mark accepted until actual Windows verification.
 
 ## v0.3.12 - catalog diagnostics and slow-stage visibility
 
