@@ -1258,6 +1258,18 @@ class CatalogIdentityAndPerformance20261014(unittest.TestCase):
         self.assertEqual({x["id"] for x in found}, {"vinyl", "digital"})
         self.assertEqual(len(searches), 2)
 
+    def test_incomplete_search_result_is_not_prematurely_discarded(self):
+        incomplete = {"media": [{"format": "Digital Media"}],
+                      "label-info": [{"label": {"name": "Beta Recordings"}}]}
+        self.assertFalse(mlo._known_search_medium_conflict(incomplete, False, 4))
+        self.assertTrue(mlo._known_search_medium_conflict(
+            {"media": [{"format": "12\" Vinyl"}]}, False, 4))
+        self.assertFalse(mlo._known_search_medium_conflict(
+            {"media": [{"track-count": 4}]}, False, 4))
+        self.assertTrue(mlo._known_search_medium_conflict(
+            {"media": [{"format": "Digital Media", "track-count": 5}]},
+            False, 4))
+
     def test_count_or_medium_conflict_rejected(self):
         item = {"media": [{"format": "Digital Media", "track-count": 2}]}
         self.assertTrue(mlo._release_medium_matches(item, False, 2))
