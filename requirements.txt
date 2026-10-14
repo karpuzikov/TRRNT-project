@@ -2,7 +2,7 @@
 # The apps install these automatically on first run (Windows), so you normally
 # do NOT need to install anything by hand. The unit tests need none of them.
 #
-# Music Library Organizer (tools/Music Library Organizer v0.3.5.pyw)
+# Music Library Organizer (tools/Music Library Organizer v0.03.05.pyw)
 pywebview>=5.4,<7
 mutagen>=1.47,<2
 

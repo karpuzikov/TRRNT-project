@@ -22,21 +22,21 @@ The following Git blob SHAs represent the **source-side originals** and allow lo
 | `PROJECT.md` | `cc4dd0765464c28e66bc7c01c2daeafe164f166d` |
 | `README.md` | `113f874692489d5922609350b26dda704416ff19` |
 | `RULES.md` | `c1b65937f80c0db25614d5cf48c07acecbb1154c` |
-| `tools/ALAC Conversion Automation v0.2.pyw` | `e16c73b2151c5d3dce018ace47b5b5129f3cf48d` |
-| `tools/AudioChecker Automation v0.1.pyw` | `3f75cca2c8ac432442eeafe9a0f401f47e0cde86` |
-| `tools/CUE Corrector - MusicBrainz DiscID 1.3.1.pyw` | `4c39f72298b021d28c6027a547ee8aaf9a7a9099` |
-| `tools/Duplicate Edition Analyzer v0.11.4.pyw` | `71e283e2db0b23412455ce4d9a6b495d8adb2acf` |
+| `tools/ALAC Conversion Automation v0.02.pyw` | `e16c73b2151c5d3dce018ace47b5b5129f3cf48d` |
+| `tools/AudioChecker Automation v0.01.pyw` | `3f75cca2c8ac432442eeafe9a0f401f47e0cde86` |
+| `tools/CUE Corrector - MusicBrainz DiscID 1.03.01.pyw` | `4c39f72298b021d28c6027a547ee8aaf9a7a9099` |
+| `tools/Duplicate Edition Analyzer v0.11.04.pyw` | `71e283e2db0b23412455ce4d9a6b495d8adb2acf` |
 | `tools/Duplicate Edition Analyzer v0.22.10.pyw` | `83a861cc817e0c5a2c5c59d60a242fd847f769ad` |
 | `tools/Duplicate Edition Analyzer v0.22.11.pyw` | `1ac72f342cb874f1aa053d173ad099a6694256f0` |
 | `tools/Duplicate Edition Analyzer v0.22.12.pyw` | `ae8bc4fb89c3afd939ec45365d068d461893d226` |
-| `tools/Duplicate Edition Analyzer v0.22.6.pyw` | `ca2391e7afd352fd8da71cccd5a13c6d6b860eff` |
-| `tools/Duplicate Edition Analyzer v0.22.7.pyw` | `01fbfe746c7d6fcfabc36f953d886039184eff57` |
-| `tools/Duplicate Edition Analyzer v0.22.8.pyw` | `c28ee7374250283644b68a9436a80c0c6cbbf53d` |
-| `tools/Duplicate Edition Analyzer v0.22.9.pyw` | `522251dd8146cf67cf43e31222c2ca089e19a713` |
+| `tools/Duplicate Edition Analyzer v0.22.06.pyw` | `ca2391e7afd352fd8da71cccd5a13c6d6b860eff` |
+| `tools/Duplicate Edition Analyzer v0.22.07.pyw` | `01fbfe746c7d6fcfabc36f953d886039184eff57` |
+| `tools/Duplicate Edition Analyzer v0.22.08.pyw` | `c28ee7374250283644b68a9436a80c0c6cbbf53d` |
+| `tools/Duplicate Edition Analyzer v0.22.09.pyw` | `522251dd8146cf67cf43e31222c2ca089e19a713` |
 | `tools/Folder Structure Scanner.pyw` | `57b89528aabc9ace98d5e3b095926daf8088693e` |
 | `workflow/ALAC + header.mte` | `f1040df2366e232dcec88d8c7742f18628a9cc7f` |
-| `workflow/CUE LOG 4.1.pyw` | `4a30c62e6371c112a45fd1e68a1697c390b879b2` |
-| `workflow/Photoshop script 500png 600jpg 1.4.jsx` | `1f30de522476e0c902b3da0db8492f3b7561b186` |
+| `workflow/CUE LOG 4.01.pyw` | `4a30c62e6371c112a45fd1e68a1697c390b879b2` |
+| `workflow/Photoshop script 500png 600jpg 1.04.jsx` | `1f30de522476e0c902b3da0db8492f3b7561b186` |
 | `workflow/Мой стандарт.mta` | `099d9545c8f184389b04a622379afbd6029252e9` |
 
 ## Development handoff
