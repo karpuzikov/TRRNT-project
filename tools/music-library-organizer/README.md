@@ -1,10 +1,18 @@
 # Music Library Organizer
 
-**Candidate: v0.3.14 - Under construction ⚠️** (minimal-click WebView2 update; real Windows tests pending; PR draft)
+**Candidate: v0.3.15 - Under construction ⚠️** (duplicate-start fix; real Windows tests pending; PR draft)
 
-**[Music Library Organizer v0.3.14.pyw](../Music%20Library%20Organizer%20v0.3.13.pyw)**
+**[Music Library Organizer v0.3.15.pyw](../Music%20Library%20Organizer%20v0.3.15.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.15 - no traceback when opening a second copy
+
+Windows permits **one active** Music Library Organizer instance to protect settings and Undo. A second launch now **restores and focuses the already-running GUI** (including minimized) and exits quietly. If a live process holds the lock but has no discoverable MLO window, a short native notification explains the condition, and the duplicate exits without killing any existing process.
+
+No new dialogs in the normal duplicate case; no lost running jobs and no concurrent Undo writer. The original dark WebView2, authentic embedded auCDtect, catalog/CUE corrections and three stage checkboxes are unchanged.
+
+**87 regression methods committed; full Python suite and actual Windows double-launch/minimized/hidden-process/UI acceptance NOT RUN.** Draft only.
 
 ## v0.3.14 - correct numeric catalog, exact two-disc track count and safe CUE
 
