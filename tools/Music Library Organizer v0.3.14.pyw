@@ -3524,6 +3524,7 @@ class Organizer:
         extension = ".m4a" if fmt == "ALAC" else ".flac"
         # A single CUE image must be handled as indivisible input.
         images, by_cue, source_images = [], {}, set()
+        unsafe_images = []
         for cp in cues:
             parsed = cue_read(cp)
             for rec in parsed["records"]:
@@ -3531,7 +3532,27 @@ class Organizer:
                     linked = (cp.parent / rec["file"].replace("\\", os.sep)).resolve()
                     if source != linked and source not in linked.parents:
                         raise RuntimeError("CUE audio escapes release folder: " + rec["file"])
-            found = cue_image_plan(cp, parsed)
+            try:
+                found = cue_image_plan(cp, parsed)
+            except ValueError as exc:
+                if str(exc) != "INDEX00 occurs after INDEX01.":
+                    raise
+                # Cannot correct impossible pregap positions without evidence.
+                # Preserve the whole image, do not invent an INDEX value or
+                # generate incorrectly cut track files.
+                all_refs = {rec.get("file", "").replace("\\", "/").casefold()
+                            for rec in parsed["records"]}
+                if len(all_refs) != 1 or not parsed["records"]:
+                    raise
+                common = parsed["records"][0]["file"]
+                original = (cp.parent / common.replace("\\", os.sep)).resolve()
+                if original.is_symlink() or not original.is_file() or original.suffix.lower() not in AUDIO:
+                    raise
+                if source != original and source not in original.parents:
+                    raise
+                unsafe_images.append((cp, original))
+                source_images.add(original)
+                continue
             if found:
                 if len(found) != 1 or len(found[0][1]) != len(parsed["records"]):
                     raise RuntimeError("Mixed/split image CUE needs manual review.")
@@ -3540,6 +3561,20 @@ class Organizer:
                 source_images.add(found[0][0].resolve())
         mapping = {}
         new_cues = {}
+        for cp, src_img in unsafe_images:
+            if src_img in mapping:
+                raise RuntimeError("Cannot preserve the same malformed CUE image twice.")
+            target = dest / src_img.relative_to(source)
+            if os.path.lexists(target):
+                raise RuntimeError("Malformed CUE preservation destination collision.")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src_img, target)
+            if sha(src_img) != sha(target):
+                raise RuntimeError("Malformed CUE image copy differs from original.")
+            mapping[src_img] = target
+            getattr(self, "_export_warnings", []).append(
+                cp.name + ": INDEX 00 occurs after INDEX 01 in the source CUE. "
+                "Original image and index data preserved; unsafe splitting skipped.")
         for cp, parsed, (src_img, records, ticks) in images:
             if not getattr(self, "enable_splitting", True):
                 # Retain one source album image: the CUE indexes remain intact.
