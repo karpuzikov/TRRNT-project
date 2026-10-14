@@ -56,6 +56,17 @@ Before ANY UI modification, record a control contract for the affected workflows
 | Real keyboard/hover/right-click, path browse/drop, settings persistence, real audio workflows | NOT RUN | Follow project UI control contract, verified native checker and disposable output, Undo |
 | Whole-product native Python suite and acceptance | NOT RUN | Run py_compile, unittest and full end-to-end before promoting status |
 
+### Music Library Organizer v0.3.15 - duplicate launch native acceptance (2026-10-15)
+
+| Required state | Current status | Expected result |
+| --- | --- | --- |
+| Second invocation with main organizer already open | NOT RUN (mock regressions committed) | Existing versioned window focused; second exits without an error dialog or new Undo/profile |
+| Previous window minimized | NOT RUN | Restore original window via `SW_RESTORE`, request focus |
+| Existing organizer processing an album | NOT RUN | No job interruption, no concurrent write, no forced termination |
+| Existing mutex with no discoverable window | NOT RUN | Short native information message, no exception traceback; do not discard live mutex |
+| Original source/webview integrity | PASS (source/static) | Single dark WebView2 and native auCDtect remain; no new visible controls |
+| Full Windows UI/UX and Python suite | NOT RUN | Execute installed candidate and regression suite with real Windows API |
+
 ## Next action
 
 Fill the control contract and real-world screenshot/interaction matrix for every UI surface above. Fix all FAIL and NOT RUN before declaring UI verified. Preserve software behavior and target-platform compatibility.
