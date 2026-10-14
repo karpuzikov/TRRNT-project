@@ -1604,6 +1604,41 @@ class DuplicateLaunch20261015(unittest.TestCase):
         user32.SetForegroundWindow.assert_called_once_with(222)
         user32.FlashWindow.assert_not_called()
 
+    def test_first_launch_retains_mutex_for_app_lifetime(self):
+        import ctypes
+        from types import SimpleNamespace
+        from unittest.mock import Mock, patch
+        kernel = SimpleNamespace(CreateMutexW=Mock(return_value=901),
+                                 GetLastError=Mock(return_value=0),
+                                 CloseHandle=Mock())
+        with patch.object(mlo, "IS_WIN", True), \
+             patch.object(ctypes, "windll",
+                          SimpleNamespace(kernel32=kernel), create=True):
+            self.assertEqual(mlo._single_instance(), 901)
+        kernel.CloseHandle.assert_not_called()
+
+    def test_windows_denies_foreground_flashes_existing_window(self):
+        import ctypes
+        from types import SimpleNamespace
+        from unittest.mock import Mock, patch
+        user32 = SimpleNamespace(
+            EnumWindows=Mock(), IsWindowVisible=Mock(return_value=True),
+            GetWindowTextLengthW=Mock(return_value=63),
+            GetWindowTextW=Mock(), ShowWindow=Mock(),
+            SetForegroundWindow=Mock(return_value=False),
+            FlashWindow=Mock())
+        def fill_window_text(hwnd, output, size):
+            output.value = "Music Library Organizer v0.3.14 - Under construction ⚠️"
+            return len(output.value)
+        user32.GetWindowTextW.side_effect = fill_window_text
+        user32.EnumWindows.side_effect = lambda cb, unused: cb(222, None)
+        with patch.object(mlo, "IS_WIN", True), \
+             patch.object(ctypes, "windll",
+                          SimpleNamespace(user32=user32), create=True), \
+             patch.object(ctypes, "WINFUNCTYPE", ctypes.CFUNCTYPE, create=True):
+            self.assertTrue(mlo._activate_existing_mlo_window())
+        user32.FlashWindow.assert_called_once_with(222, True)
+
     def test_duplicate_does_not_allocate_new_browser_profile(self):
         from unittest.mock import Mock, patch
         with patch.object(mlo, "ensure_data"), \
