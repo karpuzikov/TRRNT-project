@@ -150,7 +150,10 @@ class OriginalCheckerRegression(unittest.TestCase):
         import inspect
         code = inspect.getsource(mlo.Organizer._organize)
         self.assertIn("INVALID custom-FFT AudioChecker report(s)", code)
-        self.assertIn('prefix.startswith(b"MLO Integrated AudioChecker v0.3.")', code)
+        self.assertIn("_invalid_old_checker_reports(", code)
+        inspector = inspect.getsource(mlo._invalid_old_checker_reports)
+        self.assertIn('stream.read(60).startswith(b"MLO Integrated AudioChecker v0.3.")',
+                      inspector)
         self.assertIn("no originals or outputs changed", code)
 
     def test_auto_extracts_authentic_engine_with_upstream_freeware_readme(self):
