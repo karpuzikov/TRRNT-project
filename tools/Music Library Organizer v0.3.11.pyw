@@ -6311,7 +6311,7 @@ def _embedded_aucdtect():
     Zero external ZIP/download/engine installation steps. Explicitly verified
     SHA-256 before execution. Never overwrite nonmatching user-owned files.
     """
-    if os.name != "nt":
+    if not IS_WIN:
         raise RuntimeError("Original AudioChecker engine is Windows-only.")
     folder = DEPS / "auCDtect"
     binary = folder / "aucdtect.exe"
