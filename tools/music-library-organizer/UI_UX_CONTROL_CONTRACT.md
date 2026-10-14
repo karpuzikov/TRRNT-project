@@ -1,6 +1,10 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.10 candidate - Under construction ⚠️; native engine provisioning and Windows acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.11 candidate - Under construction ⚠️; native engine bundled, Windows acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.11 - silent, genuine analyzer bootstrap (no new controls)
+
+The existing `#doChecker` checkbox is unchanged. When ON for WEB, the app now **automatically** restores the exact original freeware auCDtect and its original Readme from the *one-file, hash-verified embedded payload* into the Music Library Organizer's private dependency directory. No user-facing binary chooser, installer, ZIP picker, manual setup/download, network prompt or second window. The original source and existing release output are never touched. If a previously unpacked binary is tampered with, show an explicit integrity failure rather than executing it; preserve control focus/recovery behavior. When `#doChecker` is OFF, skip engine extraction and do not demand a report. Native WebView2 UI, status messages, progress and keyboard behavior require **real Windows testing**, not just a mocked JavaScript run.
 
 ## v0.3.10 - three independent user controls (manual stage selection)
 
