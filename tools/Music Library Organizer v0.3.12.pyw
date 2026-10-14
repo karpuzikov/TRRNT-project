@@ -1443,7 +1443,7 @@ def _release_medium_matches(detail, physical, expected_audio_count):
     return sum(observed) == int(expected_audio_count) and all(n > 0 for n in observed)
 
 
-def _mb_catalog_search(catalog_number):
+def _mb_catalog_search(catalog_number, physical=None, audio_count=None):
     """Try indexed exact catalog, then spaced prefix-number equivalent.
 
     Search results are always verified against concrete labels/medium later.
@@ -1463,9 +1463,13 @@ def _mb_catalog_search(catalog_number):
             rid = str(entry.get("id") or "")
             if rid:
                 unique[rid] = entry
-        # If the exact catalog index returns hits, the normalized-query
-        # fallback is unnecessary (and costs another network request).
-        if unique:
+        # A catalog may have a Vinyl entry without the Digital one until
+        # the spaced form (e.g. BETA 021) is searched. Continue only when
+        # available search metadata disproves every existing candidate.
+        if unique and (physical is None or audio_count is None or
+                       any(not row.get("media") or
+                           _release_medium_matches(row, physical, audio_count)
+                           for row in unique.values())):
             break
     return list(unique.values())
 
@@ -1587,7 +1591,7 @@ def release_identity(folder, files, default_artist="", allow_network=True):
             using_catalog = bool(not barcode and result.get("catalog"))
             if using_catalog:
                 result["lookup_sources"].append("MusicBrainz exact catalog")
-                entries = _mb_catalog_search(result["catalog"])
+                entries = _mb_catalog_search(result["catalog"], is_cd, len(audios))
             elif not barcode:
                 if not (title and artist):
                     result["notes"].append(
