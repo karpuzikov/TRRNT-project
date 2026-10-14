@@ -1,9 +1,17 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.14 - Under construction ⚠️** (minimal-click WebView2 update; native Windows UI acceptance NOT RUN; PR draft/unmerged)
+Current version: **0.3.15 - Under construction ⚠️** (duplicate-instance startup corrected; native Windows acceptance NOT RUN; PR draft/unmerged)
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Candidate source: [`tools/Music Library Organizer v0.3.14.pyw`](../Music%20Library%20Organizer%20v0.3.13.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Candidate source: [`tools/Music Library Organizer v0.3.15.pyw`](../Music%20Library%20Organizer%20v0.3.15.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Current candidate - v0.3.15 safe Windows duplicate launch (2026-10-15)
+
+**User screenshot:** Executing `Music Library Organizer v0.3.14.pyw` raised a visible `pythonw.exe` traceback from `_single_instance()`: `RuntimeError: Music Library Organizer is already running. Close the existing window first.` The Windows named mutex indicated an existing live process; the program needlessly displayed a raw traceback instead of focusing its existing UI. This was **not a media corruption report**.
+
+**Implemented** in `tools/Music Library Organizer v0.3.15.pyw`: same process-held named mutex `Local\\Karpuzikov.MusicLibraryOrganizer` protects settings/output/Undo. On duplicate invocation, release only the new duplicate handle, enumerate Windows titles for **actual versioned MLO GUIs**, restore minimized previous window, attempt foreground activation and flash if Windows prevents stealing focus. Return `False` and exit `main()` **before creating any new WebView2 profile/window**. Do not interrupt/terminate an existing audio job. If mutex exists but no matching GUI appears, briefly retry for startup and then show an informational actionable Windows notice rather than a Python traceback. No new UI controls. The actual visible app/window/error must be tested on Windows.
+- **Five regression methods added** (87 test methods defined): actual MLO-version window filtering, Win32 duplicate mutex close-handle/no-throw, existing-window activation, invisible-process notification, main early-return without browser. Added tests have **not** run in complete Python suite. Embedded genuine auCDtect, three optional stages, music catalogs and multi-CD CUE logic remain.
+- **Next:** `py -3 -m py_compile "tools/Music Library Organizer v0.3.15.pyw"` and `py -3 "tools/music-library-organizer/test_organizer.py"`; Windows two-launch test with existing active/minimized window, GUI still starting, and genuine hidden-process condition. Keep PR draft and `Under construction ⚠️` pending real acceptance.
 
 ## Current candidate - v0.3.14 numerical Sony catalog and multi-disc CUE correctness (2026-10-15)
 
