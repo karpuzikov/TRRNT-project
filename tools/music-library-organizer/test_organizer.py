@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.11 - genuine embedded auCDtect engine regression tests.
+# Music Library Organizer v0.3.12 - catalog matching and processing-speed regression tests.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.11.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.12.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -1148,6 +1148,158 @@ class OptionalProcessingAndDigitalDates(unittest.TestCase):
             self.assertIn('FILE "02 B.m4a" WAVE',
                           (dest / "album.cue").read_text(encoding="utf-8"))
 
+
+
+class CatalogIdentityAndPerformance20261014(unittest.TestCase):
+    def test_catalog_equivalence_with_spaces_and_punctuation(self):
+        self.assertEqual(mlo._catalog_key("BETA021"), mlo._catalog_key("BETA 021"))
+        self.assertEqual(mlo._catalog_key("MFR001CD"), mlo._catalog_key("MFR-001 CD"))
+        self.assertTrue(mlo._matches_catalog(
+            {"label-info": [{"catalog-number": "BETA 021"}]}, "BETA021"))
+        self.assertFalse(mlo._matches_catalog(
+            {"label-info": [{"catalog-number": "BETA 022"}]}, "BETA021"))
+
+    def test_digital_catalog_editions_are_searched_directly(self):
+        from unittest.mock import patch
+        cases = [
+            ("2009-03-13 - Blow (Shock One RMX) - Single [HAB017]",
+             "Blow (Shock One RMX)", "HAB017", 2),
+            ("2009-03-31 - Get Funky - The Fear - Single [VPRVIP006]",
+             "Get Funky / The Fear", "VPRVIP006", 2),
+            ("2010-02-22 - Edge of Mind - EP [BETA021]",
+             "Edge of Mind EP", "BETA 021", 4),
+        ]
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for name, mbtitle, mbcatalog, count in cases:
+                with self.subTest(catalog=mbcatalog):
+                    folder = root / name
+                    folder.mkdir()
+                    files = []
+                    for index in range(1, count + 1):
+                        track = folder / f"{index:02d} Track {index}.flac"
+                        track.write_bytes(b"mocked audio")
+                        files.append(track)
+                    calls = []
+                    def fake_mb(path, **kwargs):
+                        calls.append(path)
+                        if path.startswith("release/?"):
+                            search = mlo.urllib.parse.parse_qs(
+                                mlo.urllib.parse.urlparse(path).query)["query"][0]
+                            self.assertIn("catno:", search)
+                            return {"releases": [
+                                {"id": "vinyl", "title": mbtitle,
+                                 "media": [{"format": "12\" Vinyl",
+                                            "track-count": count}]},
+                                {"id": "digital", "title": mbtitle,
+                                 "media": [{"format": "Digital Media",
+                                            "track-count": count}]}]}
+                        if path.startswith("release/digital?"):
+                            return {
+                                "id": "digital", "title": mbtitle,
+                                "media": [{"format": "Digital Media",
+                                           "track-count": count}],
+                                "release-group": {
+                                    "first-release-date": "2009-03-13",
+                                    "primary-type": "EP"},
+                                "label-info": [{"catalog-number": mbcatalog}],
+                                "date": "2009-03-13",
+                            }
+                        raise AssertionError("Unexpected request: " + path)
+                    with patch.object(mlo, "mb_json", side_effect=fake_mb):
+                        identity = mlo.release_identity(
+                            folder, files, default_artist="Camo & Krooked")
+                    self.assertTrue(identity["metadata_verified"],
+                                    str(identity))
+                    self.assertEqual(identity["selected_release"], "digital")
+                    self.assertEqual(mlo._catalog_key(identity["catalog"]),
+                                     mlo._catalog_key(mbcatalog))
+                    # Search metadata already identifies the vinyl candidate:
+                    # no detail request should be spent on it.
+                    self.assertFalse(any("release/vinyl?" in c for c in calls))
+                    self.assertEqual(len(calls), 2)
+                    self.assertIn("MusicBrainz exact catalog", identity["lookup_sources"])
+
+    def test_spaced_catalog_fallback_search_only_when_needed(self):
+        from unittest.mock import patch
+        calls = []
+        def lookup(path, **kwargs):
+            search = mlo.urllib.parse.parse_qs(
+                mlo.urllib.parse.urlparse(path).query)["query"][0]
+            calls.append(search)
+            if '"BETA021"' in search:
+                return {"releases": []}
+            return {"releases": [{"id": "correct", "title": "Edge of Mind EP"}]}
+        with patch.object(mlo, "mb_json", side_effect=lookup):
+            found = mlo._mb_catalog_search("BETA021")
+        self.assertEqual(len(found), 1)
+        self.assertEqual(len(calls), 2)
+        self.assertIn('"BETA 021"', calls[1])
+
+    def test_count_or_medium_conflict_rejected(self):
+        item = {"media": [{"format": "Digital Media", "track-count": 2}]}
+        self.assertTrue(mlo._release_medium_matches(item, False, 2))
+        self.assertFalse(mlo._release_medium_matches(item, False, 3))
+        self.assertFalse(mlo._release_medium_matches(item, True, 2))
+        self.assertFalse(mlo._release_medium_matches(
+            {"media": [{"format": "12\" Vinyl", "track-count": 2}]}, False, 2))
+        self.assertFalse(mlo._release_medium_matches({"media": []}, False, 2))
+
+    def test_source_eu_kept_when_musicbrainz_country_is_gb(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            folder = Path(temp) / "2011-10-03 - Cross the Line [EU - NHS194CD]"
+            folder.mkdir()
+            files = []
+            for idx in (1, 2):
+                fp = folder / f"{idx:02d} Song.flac"
+                fp.write_bytes(b"synthetic content")
+                files.append(fp)
+            def fake_mb(path, **kwargs):
+                if path.startswith("release/?"):
+                    return {"releases": [{"id": "exact", "title": "Cross the Line",
+                                          "media": [{"format": "CD",
+                                                     "track-count": 2}]}]}
+                return {"id": "exact", "title": "Cross the Line", "country": "GB",
+                        "media": [{"format": "CD", "track-count": 2}],
+                        "label-info": [{"catalog-number": "NHS194CD"}],
+                        "release-group": {"primary-type": "Album",
+                                          "first-release-date": "2011-10-03"},
+                        "date": "2011-10-03"}
+            with patch.object(mlo, "mb_json", side_effect=fake_mb):
+                info = mlo.release_identity(folder, files, "Camo & Krooked")
+            self.assertTrue(info["metadata_verified"])
+            self.assertEqual(info["country"], "EU")
+            self.assertEqual(info["source_region"], "EU")
+            self.assertEqual(info["musicbrainz_region"], "GB")
+            self.assertEqual(info["country_provenance"], "source-supplied-region")
+            self.assertEqual(
+                mlo.release_folder_target(info),
+                "2011-10-03 - Cross the Line [EU - NHS194CD]")
+            self.assertEqual(mlo.completion_reasons(
+                info, [], [{"results": 2}], checker_enabled=True), [])
+
+    def test_known_destination_skips_musicbrainz_before_network(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            source = base / "Input"
+            dest = base / "Dest"
+            source.mkdir()
+            dest.mkdir()
+            release = source / "2009-03-13 - Blow (Shock One RMX) - Single [HAB017]"
+            release.mkdir()
+            (release / "01 Blow.flac").write_bytes(b"test")
+            (dest / release.name).mkdir()
+            app = mlo.Organizer()
+            with patch.object(mlo, "discover", return_value=[release]), \
+                 patch.object(mlo, "release_identity",
+                              side_effect=AssertionError("Unnecessary lookup")):
+                app._organize(source, dest, "FLAC")
+            self.assertEqual(app.counts["skipped"], 1)
+            self.assertEqual(app.counts["failed"], 0)
+            self.assertEqual(app.results[0]["status"], "skipped")
+            self.assertIn("total_release", app.results[0]["timings_seconds"])
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
