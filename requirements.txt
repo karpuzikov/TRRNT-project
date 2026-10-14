@@ -1,0 +1,11 @@
+# Reference list of third-party Python packages the tools use.
+# The apps install these automatically on first run (Windows), so you normally
+# do NOT need to install anything by hand. The unit tests need none of them.
+#
+# Music Library Organizer (tools/Music Library Organizer v0.3.5.pyw)
+pywebview>=5.4,<7
+mutagen>=1.47,<2
+
+# Duplicate Edition Analyzer (tools/Duplicate Edition Analyzer v0.22.12.pyw)
+PySide6==6.11.2
+heybrochecklog @ https://github.com/ligh7s/hey-bro-check-log/archive/d3192ad2764f2682cffce4db2abc419f8ac68c69.zip
