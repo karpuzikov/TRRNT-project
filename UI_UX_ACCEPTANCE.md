@@ -45,6 +45,17 @@ Before ANY UI modification, record a control contract for the affected workflows
 - **MusicBrainz/Beatport/Harmony:** no duplicate import actions, responsive edit-relationships controls, ISRC/barcode selection and warnings, keyboard and retry behavior, unchanged stored links.
 - **Browser popups/userscripts:** injected controls in real host DOM, overlay stacking, conflicts with existing site controls, tooltips, focus and responsive behavior. Test real browser + Tampermonkey, not an isolated HTML mock.
 
+### Music Library Organizer v0.3.13 - minimum-click acceptance (2026-10-14)
+
+| Mandatory updated gate | Status | Evidence / outstanding action |
+| --- | --- | --- |
+| Canonical minimal-click rules synchronized from main into development branch | PASS | `SOFTWARE_RULES.md` and `UI_UX_RULES.md` now include radical simplicity requirements |
+| Compact dark WebView2 source and control contract | PASS - source audit | Redundant tutorials/header text removed; source->auto-destination; one-click Organize from saved settings; all distinct stage/checker/worker/results actions preserved |
+| Simulated bridge + keyboard-enabled DOM control state | PASS - mocked state only | Empty path disables Organize; source suggests destination; running/disconnected disables; legacy focus/drag/drop hooks retained |
+| Real Windows UI screenshots at default/minimum/large viewport and DPI | NOT RUN | Run exact v0.3.13 `.pyw` on target machine |
+| Real keyboard/hover/right-click, path browse/drop, settings persistence, real audio workflows | NOT RUN | Follow project UI control contract, verified native checker and disposable output, Undo |
+| Whole-product native Python suite and acceptance | NOT RUN | Run py_compile, unittest and full end-to-end before promoting status |
+
 ## Next action
 
 Fill the control contract and real-world screenshot/interaction matrix for every UI surface above. Fix all FAIL and NOT RUN before declaring UI verified. Preserve software behavior and target-platform compatibility.
