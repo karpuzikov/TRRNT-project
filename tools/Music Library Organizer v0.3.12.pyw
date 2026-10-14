@@ -3209,7 +3209,11 @@ class Organizer:
                 r"(?i)(?:\s+-\s+UPDATED.*|\s+(?:ALAC|FLAC))$", "", source.name).strip()
             self._artist_root = artist_main
             self.status = "Analyzing source artist credits..."
+            credits_start = time.monotonic()
             self._credit_consensus = collection_credit_consensus(releases, artist_main)
+            self.info("PERFORMANCE: initial artist credit scan | releases=" +
+                      str(len(releases)) + " | seconds=" +
+                      str(round(time.monotonic() - credits_start, 2)))
             for index, folder in enumerate(releases, 1):
                 if self.stop.is_set():
                     self.status = "Cancelled. Completed output can be undone."
