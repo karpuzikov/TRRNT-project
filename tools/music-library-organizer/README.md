@@ -1,10 +1,20 @@
 # Music Library Organizer
 
-**Candidate: v0.3.10 - Under construction ⚠️** (native auCDtect provisioning and Windows tests incomplete) (feature branch, unmerged; v0.3.5 remains on main)
+**Candidate: v0.3.11 - Under construction ⚠️** (original analyzer embedded; native Windows parity tests pending) (feature branch, unmerged; v0.3.5 remains on main)
 
-**[Music Library Organizer v0.3.10.pyw](../Music%20Library%20Organizer%20v0.3.10.pyw)**
+**[Music Library Organizer v0.3.11.pyw](../Music%20Library%20Organizer%20v0.3.11.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.11 - genuine AudioChecker included, no external setup
+
+**Original auCDtect now ships inside the single `.pyw` file.** No manual download, file selector, user ZIP or external analyzer installation. At first AudioChecker-enabled WEB run, the program automatically extracts the **exact original `aucdtect.exe`** (147,456 bytes, SHA-256 `efe47eec21c33431e7fceea4b171b8a15a729e3adcda967ee0fc165a6a41adba`) and original `Readme` into this app's isolated dependency folder; hashes are checked before execution and tampered files are rejected. No other codec binaries are packaged.
+
+The original 2004 Readme by Oleg Berngardt and Alexander Djourik explicitly permits free redistribution **as long as no charge is made**. This software and GitHub distribution must remain free of charge and preserve the Readme. Only a real auCDtect verdict is ever translated into the traditional `AUDIOCHECKER v2.0 beta (build 457)` layout/summary/checksum, never approximated from a custom FFT.
+
+This packages the **actual original engine**, not a new clean-room port of its proprietary signal model. This maximizes per-track parity without asking the user for prerequisites. Existing three independent processing checkboxes remain; AudioChecker OFF does not extract or run the executable.
+
+**Verified:** Source executable/Readme SHA-256 against the user's earlier packaged AudioChecker, PE32 static inspection, slim two-item archive decompression/length/hash test, same embedded payload committed to GitHub, WebView2 JavaScript syntax. **NOT YET VERIFIED:** Complete v0.3.11 Python compile/unittest runner on checked-out source, real Windows executable launch, all 55 real source tracks compared against the original reference, GUI/encoder acceptance. Status remains Under construction ⚠️.
 
 ## v0.3.10 - optional processing checkboxes and precise digital dates
 
