@@ -1,6 +1,10 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.11 candidate - Under construction ⚠️; native engine bundled, Windows acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.12 candidate - Under construction ⚠️; native engine bundled, Windows acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.12 - catalog diagnostics and slow-stage visibility
+
+No additional controls. For digital releases with known source catalog, `MusicBrainz exact catalog` is shown as lookup provenance in saved result metadata. Conflicting format/catalog/count yields a precise warning rather than silent `No matching concrete MusicBrainz edition`. Preserve user-supplied physical `EU`/`AT` suffixes and expose MusicBrainz release region separately, not overwrite it. Add `timings_seconds` into each result JSON and `PERFORMANCE` activity log for credit prescan/MB/encode/auCDtect/total. Existing Results selection, copy behavior, folder icons, keyboard controls and dark layout remain. Actual Windows responsiveness and timing/progress acceptance **NOT RUN**.
 
 ## v0.3.11 - silent, genuine analyzer bootstrap (no new controls)
 
