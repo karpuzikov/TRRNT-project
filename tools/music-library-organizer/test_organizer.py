@@ -12,7 +12,7 @@ import threading
 import unittest
 import wave
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.5.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.03.05.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
