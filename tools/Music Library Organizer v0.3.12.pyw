@@ -3023,6 +3023,24 @@ def completion_reasons(info, export_warnings, checker, checker_enabled=True):
     return reasons
 
 
+
+def _invalid_old_checker_reports(target):
+    """Detect historical fake FFT output without changing the existing files."""
+    if not target.is_dir() or target.is_symlink():
+        return 0
+    count = 0
+    for previous in target.rglob("audiochecker.log"):
+        if previous.is_symlink() or not previous.is_file():
+            continue
+        try:
+            with previous.open("rb") as stream:
+                if stream.read(60).startswith(b"MLO Integrated AudioChecker v0.3."):
+                    count += 1
+        except OSError:
+            continue
+    return count
+
+
 class Organizer:
     """One action: input -> organized output. No manual release-review gate."""
     def __init__(self):
@@ -3187,13 +3205,36 @@ class Organizer:
                 folder = folder.resolve(strict=True)
                 result = {"name": folder.name, "source": str(folder), "target": "",
                           "status": "", "message": "", "warnings": [],
-                          "metadata": {}, "checker": [],
+                          "metadata": {}, "checker": [], "timings_seconds": {},
                           "processing": {"encoding": self.enable_encoding,
                                          "audiochecker": self.enable_checker,
                                          "split_images": self.enable_splitting}}
+                started_release = time.monotonic()
                 try:
                     if source != folder and source not in folder.parents:
                         raise RuntimeError("Input release escaped the source root.")
+                    # When output already exists under the *same name*,
+                    # skip before expensive sequential MusicBrainz requests.
+                    # A fresh destination is required to reprocess releases.
+                    preexisting = dest / folder.name
+                    if os.path.lexists(preexisting):
+                        result["target"] = str(preexisting)
+                        obsolete_count = _invalid_old_checker_reports(preexisting)
+                        if obsolete_count:
+                            result["status"] = "partial"
+                            result["message"] = (
+                                f"Existing output contains {obsolete_count} "
+                                "INVALID custom-FFT AudioChecker report(s); "
+                                "no originals or outputs changed. Recreate in "
+                                "a new empty destination with genuine auCDtect.")
+                            result["warnings"].append(result["message"])
+                            result["unmet_requirements"] = ["Invalid historic FFT report"]
+                            self.counts["partial"] += 1
+                        else:
+                            result["status"] = "skipped"
+                            result["message"] = "Output already exists - not overwritten; no lookup required."
+                            self.counts["skipped"] += 1
+                        continue
                     files = collect_files(folder)
                     if not files:
                         raise RuntimeError("Release is empty.")
@@ -3201,7 +3242,10 @@ class Organizer:
                         raise RuntimeError("Lossy input present; conversion to purported lossless is prohibited.")
                     self.status = f"Looking up release {index}/{len(releases)}: {folder.name}"
                     artist_hint = re.sub(r"(?i)(?:\s+-\s+UPDATED.*|\s+(?:ALAC|FLAC))$", "", source.name).strip()
+                    metadata_start = time.monotonic()
                     info = release_identity(folder, files, default_artist=artist_hint)
+                    result["timings_seconds"]["musicbrainz_metadata"] = round(
+                        time.monotonic() - metadata_start, 2)
                     result["metadata"] = {k: v for k, v in info.items() if k != "folder"}
                     result["warnings"].extend(info["notes"])
                     out_name = release_folder_target(info)
@@ -3215,22 +3259,11 @@ class Organizer:
                         # Incompatible pre-v0.3.9 homemade FFT reports must
                         # never be treated as successfully verified AudioChecker
                         # results merely because the output folder exists.
-                        obsolete = []
-                        if target.is_dir():
-                            for prior in target.rglob("audiochecker.log"):
-                                if prior.is_symlink() or not prior.is_file():
-                                    continue
-                                try:
-                                    with prior.open("rb") as stream:
-                                        prefix = stream.read(60)
-                                except OSError:
-                                    continue
-                                if prefix.startswith(b"MLO Integrated AudioChecker v0.3."):
-                                    obsolete.append(prior)
-                        if obsolete:
+                        obsolete_count = _invalid_old_checker_reports(target)
+                        if obsolete_count:
                             result["status"] = "partial"
                             result["message"] = (
-                                "Existing output contains " + str(len(obsolete)) +
+                                "Existing output contains " + str(obsolete_count) +
                                 " INVALID custom-FFT AudioChecker report(s); "
                                 "no originals or outputs changed. Recreate in "
                                 "a new empty destination with genuine auCDtect.")
@@ -3264,10 +3297,14 @@ class Organizer:
                         self._export_notices = []
                         try:
                             self.status = f"Organizing {index}/{len(releases)}: {out_name}"
+                            export_started = time.monotonic()
                             self._export_release(folder, tmp, fmt, ff, ffprobe)
+                            result["timings_seconds"]["encoding_copy"] = round(
+                                time.monotonic() - export_started, 2)
                             result["warnings"].extend(self._export_warnings)
                             # Actual AudioChecker is performed before finalizing the release.
                             if not info["physical"] and self.enable_checker:
+                                checker_started = time.monotonic()
                                 try:
                                     self.status = f"AudioChecker {index}/{len(releases)}: {out_name}"
                                     result["checker"] = native_check_web_release(
@@ -3277,6 +3314,9 @@ class Organizer:
                                     raise
                                 except Exception as exc:
                                     result["warnings"].append("REQUIRED AudioChecker not completed: " + str(exc))
+                                finally:
+                                    result["timings_seconds"]["original_aucdetect"] = round(
+                                        time.monotonic() - checker_started, 2)
                             output_files = collect_files(tmp)
                             if not output_files:
                                 raise RuntimeError("No output generated.")
@@ -3334,7 +3374,13 @@ class Organizer:
                     result["status"], result["message"] = "failed", str(exc)
                     self.counts["failed"] += 1
                 finally:
+                    result["timings_seconds"]["total_release"] = round(
+                        time.monotonic() - started_release, 2)
                     if result["status"]:
+                        if result["timings_seconds"].get("total_release", 0) >= 2:
+                            self.info("PERFORMANCE: " + folder.name + " | " +
+                                " | ".join(k + "=" + str(v) + "s" for k, v in
+                                         result["timings_seconds"].items()))
                         self.counts["warnings"] += len(result["warnings"])
                         with self.lock:
                             self.results.append(result)
