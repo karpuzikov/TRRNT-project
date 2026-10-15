@@ -3453,7 +3453,12 @@ def _cover_save(folder, artwork, manifest):
         if sha(dest) != digest:
             raise ValueError("Saved cover checksum mismatch")
         manifest["created"].append({"path": str(dest.resolve()), "sha256": digest})
-        write_json(ARTWORK_UNDO, manifest)
+        try:
+            write_json(ARTWORK_UNDO, manifest)
+        except Exception:
+            # Avoid a stale Undo reference if persisting this image failed.
+            manifest["created"].pop()
+            raise
         committed = True
         return dest, True
     finally:
@@ -4369,8 +4374,14 @@ class Organizer:
             # Validate all paths and hashes before changing any file.
             for entry in files:
                 image = Path(entry["path"])
-                if (not image.is_file() or image.is_symlink() or
+                # A parent directory switched to a symlink must not allow
+                # Undo to unlink a file outside the original output root.
+                resolved = image.resolve(strict=True) if image.is_file() else image
+                symlink_parent = any(p.is_symlink() for p in image.parents
+                                     if p == root or root in p.parents)
+                if (not image.is_file() or image.is_symlink() or symlink_parent or
                         root not in image.parents or
+                        not resolved.is_relative_to(root) or
                         image.name != image.parent.name + ".jpg" or
                         sha(image) != entry["sha256"]):
                     raise RuntimeError("Cover changed since download; Undo blocked: " +
