@@ -1,6 +1,19 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.17 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.18 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.18 - Artwork button: strict UI control contract
+
+| Control/action | Purpose | Interaction, states and safety | Native test |
+| --- | --- | --- | --- |
+| `▣ Artwork` / `#artwork` (new footer button) | Search the existing **Destination** root for release folders and download missing cover JPGs by verified UPC, Apple then Spotify | Enabled only when bridge ready, an Output/Destination path is entered and nothing else is processing. Disabled during all other runs. Click once starts artwork-only job; no source audio reorganization, no automatic restart. Hover/keyboard focus inherits other dark footer buttons. Error returned when root missing or no audio releases. | NOT RUN |
+| `#dest` destination path (existing) | Shared selection for artwork only - in-place output folder | Must already exist and contain audio release folders, unlike Organize where Destination may be new. No automatic path guesses; current text is used. | NOT RUN |
+| `#status`, counts, Results (existing) | Show live artwork per-release status and source provider | During artwork, adapt labels to releases/downloaded/unavailable/covers exist. Row shows resolution/source/provider, per-release folder action still opens actual folder. Distinguish skipped existing cover from download failure. | NOT RUN |
+| `✕ Cancel` (existing) | Stop artwork between requests/releases | Already completed JPGs stay, later releases not processed. No overwrite of existing image. | NOT RUN |
+| `↶ Undo Artwork` / existing Undo | Safely reverse the last artwork operation | Label changes to artwork when latest journal is artwork. Confirm, verify SHA-256 of every created JPG and root path before deleting *any*; never remove audio or whole release folders. Undo Organize remains available for prior independent job. | NOT RUN |
+| `↗ Open log`, adjacent folder (existing) | Per-run isolated diagnostics | Every Artwork click gets independent `logs/artwork-*.log`, existing Open log opens active artwork log, folder icon opens isolated log directory. | NOT RUN |
+
+No additional dialogs, selectors, settings or duplicate controls. Native compact MCC-style design must be tested at min width/height, focus, keyboard, mouse, hover, error states and duplicate launch. No claim of a passed Windows GUI test.
 
 ## v0.3.17 - title case, valid multi-file CUE and Arhbo Single
 
