@@ -1,6 +1,10 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.16 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.17 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.17 - title case, valid multi-file CUE and Arhbo Single
+
+No new controls, clicks, settings, overlays or dialogs. Existing Results should show verified canonical folder names and true reason text rather than a false `INDEX00 occurs after INDEX01` failure or mislabeled `Catalog candidates` for barcode lookups. Release and track capitalization is shared with written file TITLE metadata; exact UPC `197089993382` resolves two-track Arhbo as `- Single` when the concrete Digital Media release/group is verified. For the user's six cross-file INDEX00 samples, the exporter must continue normal copy/encode, rewrite CUE FILE paths, preserve index positions and source bytes; retain strict same-file CUE validation. Native GUI, folder icons, copy/hover/keyboard and error visibility **NOT RUN**. No new interactive actions to test.
 
 ## v0.3.16 - per-run isolated logs, no new controls
 
