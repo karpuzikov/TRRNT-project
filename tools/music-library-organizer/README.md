@@ -1,10 +1,18 @@
 # Music Library Organizer
 
-**Candidate: v0.3.15 - Under construction ⚠️** (duplicate-start fix; real Windows tests pending; PR draft)
+**Candidate: v0.3.16 - Under construction ⚠️** (isolated log per run; real Windows tests pending; PR draft)
 
-**[Music Library Organizer v0.3.15.pyw](../Music%20Library%20Organizer%20v0.3.15.pyw)**
+**[Music Library Organizer v0.3.16.pyw](../Music%20Library%20Organizer%20v0.3.16.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.16 - one log per run, never mixed with settings
+
+- App-generated logs are isolated in `Documents\Karpuzikov Tools\Music Library Organizer\logs\`.
+- Every **Organize** and **Undo** creates a new timestamped collision-resistant `run-*.log` or `undo-*.log`; app session and startup diagnostics use separate `session-*.log` and `startup-*.log`. `Open log` opens the active run, or most recent processing run after reopening. Its folder icon opens `logs\`.
+- Legacy root-level `activity.log`, `webview-startup.log` and `startup-error.log` are preserved under `logs\legacy\` where safely movable, never overwritten/deleted. Startup exceptions get a separate `startup-error-*.log`.
+- No changes to source-CD EAC logs or per-release `audiochecker.log`. No extra GUI controls.
+- Six new regression definitions (95 total); static source validation PASS, full Python suite and real Windows test **NOT RUN**.
 
 ## v0.3.15 - no traceback when opening a second copy
 
