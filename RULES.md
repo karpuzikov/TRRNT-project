@@ -75,6 +75,8 @@ Example: `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is an **individual Remix 
 
 **File operation safety:** Show proposed renames before Apply; preserve real source files, timestamps where feasible, log text, disc data and Undo records. Do not overwrite files, invalidate CUE references, or modify the audio data. These supporting-file rules supplement the `NN Track Title.m4a` audio filename standard.
 
+**v0.3.19 additional safety:** When a previous Artwork Undo journal exists (including one created by the incorrect v0.3.18 nested layout), archive that complete journal under the organizer's private `artwork-undo-history/` before starting a new artwork pass. Refuse to replace an unreadable old journal. This preserves recovery evidence without touching the old nested JPGs; the active Undo action still handles the latest run. 122 uniquely named Python regression methods are now defined (not executed on Windows).
+
 ## 2026-10-15 - Artwork belongs in Destination root, never release folders (v0.3.19 superseding v0.3.18)
 
 **Mandatory correction:** The artwork downloader searches metadata inside the individual release directories but MUST save all downloaded cover JPG files **directly at the user-selected Destination root**, alongside those release directories, **not inside them**. Use exactly `Destination / (release_folder.name + ".jpg")`. Example: `GIMS - UPDATED - Sorted/2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034].jpg` alongside the original release directory.
