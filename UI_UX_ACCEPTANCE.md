@@ -56,6 +56,20 @@ Before ANY UI modification, record a control contract for the affected workflows
 | Real keyboard/hover/right-click, path browse/drop, settings persistence, real audio workflows | NOT RUN | Follow project UI control contract, verified native checker and disposable output, Undo |
 | Whole-product native Python suite and acceptance | NOT RUN | Run py_compile, unittest and full end-to-end before promoting status |
 
+### Music Library Organizer v0.3.19 - flat Destination artwork (2026-10-15)
+
+| Behavior | Status | Required live verification |
+| --- | --- | --- |
+| Existing Destination release folders scanned | NOT RUN | Each release UPC resolved as before; one JPG per release written directly under selected Destination |
+| `À Contrecœur (Pilule Violette)` album example | NOT RUN | `Destination/2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034].jpg`, **NOT** `Destination/<release>/<release>.jpg` |
+| Existing root JPG | NOT RUN | Never overwritten; SKIPPED without Apple/Spotify request |
+| Existing old nested JPG v0.3.18 | NOT RUN | Leave old file untouched; corrected root JPEG may still be downloaded |
+| Duplicate release folder names | NOT RUN | BOTH marked PARTIAL before downloading rather than collision/choosing random edition |
+| Undo Artwork v0.3.19 | NOT RUN | SHA-verified root filenames; remove only newly saved root JPEGs, keep album/audio/other covers |
+| Undo Artwork v0.3.18 legacy journal | NOT RUN | Previously nested images can still be hash-verified and undone when old journal is active |
+| WebView2 hover, click, status, Results folder | NOT RUN | Tooltip accurately states Destination root; output folder button opens root; count/status/error states readable |
+| Regression compilation/120 defined tests | NOT RUN | Complete Python suite and full Windows acceptance before stable |
+
 ### Music Library Organizer v0.3.18 - Artwork (2026-10-15)
 
 | Workflow/control | Status | Native acceptance criteria |
