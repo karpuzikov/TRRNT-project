@@ -75,6 +75,14 @@ Example: `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is an **individual Remix 
 
 **File operation safety:** Show proposed renames before Apply; preserve real source files, timestamps where feasible, log text, disc data and Undo records. Do not overwrite files, invalidate CUE references, or modify the audio data. These supporting-file rules supplement the `NN Track Title.m4a` audio filename standard.
 
+## 2026-10-15 - Artwork belongs in Destination root, never release folders (v0.3.19 superseding v0.3.18)
+
+**Mandatory correction:** The artwork downloader searches metadata inside the individual release directories but MUST save all downloaded cover JPG files **directly at the user-selected Destination root**, alongside those release directories, **not inside them**. Use exactly `Destination / (release_folder.name + ".jpg")`. Example: `GIMS - UPDATED - Sorted/2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034].jpg` alongside the original release directory.
+
+All existing source/release files and old artwork are read-only. A root cover already present must never be overwritten. When two different nested release directories would produce the same Destination-level basename (case-insensitively), do not assign an arbitrary image; flag both ambiguous and leave them untouched. Existing older v0.3.18 images stored within releases must not be silently moved/deleted. New artwork Undo must validate exact Destination-root destination, source folder name and SHA-256 before deleting only JPGs newly created by the action. Retain compatibility with any previous nested-artwork Undo journal, and preserve the original audio/CUE, Album/Title metadata and independent Organize/Undo.
+
+No new UI controls are required. Revise the Artwork tooltip, Results target, progress status and tests to reflect flat Destination output. Software must retain `v0.3.19 - Under construction ⚠️` pending actual Windows GUI and audio/artwork acceptance.
+
 ## 2026-10-15 - Music Library Organizer v0.3.18 artwork downloader
 
 **Art function:** Existing destination release folders can receive *one* optional `<release directory name>.jpg` without running Organize. Do not touch original audio, album tags, CUE, user logs or any existing art; refuse overwriting. User explicitly chooses the existing Destination root. Discover all qualifying release folders, not individual tracks. Search first by validated folder GTIN/UPC (including equivalent 12/13-digit UPC/EAN); where a CD identifier is a non-barcode catalog, recover uniquely verified GTIN from tagged UPC/barcode or concrete exact-title, exact-catalog and compatible-medium MusicBrainz evidence. Never confuse an 11-digit catalog with a 12-digit UPC. No arbitrary edition selection.
