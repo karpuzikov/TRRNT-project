@@ -56,6 +56,17 @@ Before ANY UI modification, record a control contract for the affected workflows
 | Real keyboard/hover/right-click, path browse/drop, settings persistence, real audio workflows | NOT RUN | Follow project UI control contract, verified native checker and disposable output, Undo |
 | Whole-product native Python suite and acceptance | NOT RUN | Run py_compile, unittest and full end-to-end before promoting status |
 
+### Music Library Organizer v0.3.16 - per-run isolated logs native acceptance (2026-10-15)
+
+| Workflow/control | Status | Actual Windows acceptance |
+| --- | --- | --- |
+| Multiple Organize runs in one session and after restart | NOT RUN (source checks; tests defined) | Different files in `logs/` with timestamp+unique suffix; earlier logs unchanged, full errors/timings preserved |
+| Undo/cancel/failure | NOT RUN | Separate Undo/run logs, preserved diagnostics, no accidental overwrites or source edits |
+| Legacy log migration | NOT RUN | Old `activity.log`, WebView2 and startup-error files preserved in `logs/legacy/` even on collisions |
+| Open log / adjacent folder icon | NOT RUN | Open current/latest operation log and its dedicated folder with native keyboard/mouse |
+| Startup and permissions | NOT RUN | Separate new startup/crash logs; log allocation failures visible; existing running instance untouched |
+| Full Python compile/95 regression suite and real Windows GUI screenshots | NOT RUN | Run on exact v0.3.16 candidate; mock/static validations are not real acceptance |
+
 ### Music Library Organizer v0.3.15 - duplicate launch native acceptance (2026-10-15)
 
 | Required state | Current status | Expected result |
