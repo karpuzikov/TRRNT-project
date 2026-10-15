@@ -1,9 +1,19 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.15 - Under construction ⚠️** (duplicate-instance startup corrected; native Windows acceptance NOT RUN; PR draft/unmerged)
+Current version: **0.3.16 - Under construction ⚠️** (run-isolated app diagnostics; native Windows acceptance NOT RUN; PR draft/unmerged)
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Candidate source: [`tools/Music Library Organizer v0.3.15.pyw`](../Music%20Library%20Organizer%20v0.3.15.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Candidate source: [`tools/Music Library Organizer v0.3.16.pyw`](../Music%20Library%20Organizer%20v0.3.16.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Current candidate - v0.3.16 separate logs for each invocation/processing job (2026-10-15)
+
+**User-provided data directory listing:** `Music Library Organizer/` contains separate `dependencies/`, `metadata-cache/`, `undo-history/` and `webview2-sessions/` directories, but a mixed root with `activity.log`, `webview-startup.log`, `startup-error.log`, `settings.json`, `undo.json` and `last-run.json`. User rejects accumulated multi-run app logs and mixed root diagnostic/storage files. New account-wide logging invariant is in canonical `karpuzikov/userscripts/SOFTWARE_RULES.md`, synchronized to all eight accessible owner repos and the active TRRNT development branch.
+
+**Implementation in `tools/Music Library Organizer v0.3.16.pyw`:** all newly created diagnostic/operation log files live under `Documents/Karpuzikov Tools/Music Library Organizer/logs/`. `_new_log(kind)` uses timestamp, random suffix and exclusive `x` creation. Each Organize action gets `run-...`, each Undo gets `undo-...`, app initialization gets `session-...`, WebView2 setup gets `startup-...`, and unexpected startup exceptions get `startup-error-...`. `Organizer.info()` appends only to the currently selected operation's own log; a log write failure sets visible `state.error` instead of being discarded. A new job's log must be created before processing starts or the job is rejected with an actionable error.
+
+**Navigation/migration:** existing Open log opens the active operation or the most recent existing run/undo when the app just reopened. Existing Open log folder opens `logs/`. Legacy root `activity.log`, `webview-startup.log` and `startup-error.log` are moved, without overwriting conflicts, into `logs/legacy/` after the single-instance mutex is acquired; exceptions are reported in the new startup log. Keep existing `settings.json`, `undo.json`, `last-run.json` and structured application data intact. Release-specific original rip logs/CUE and `audiochecker.log` stay with their audio releases.
+
+**Validation:** 95 regression definitions, including six new log-isolation tests (unique names; repeat Organize; Undo; safe legacy migration/collision; Open log/folder after reopen; unwritable log). Source readback verified. Full Python compile/unittest, real Windows startup, two-launch, log migration, folder navigation, actual organize/undo/log lifecycle, MusicBrainz/CUE/AudioChecker/encoder/media acceptance and screenshots **NOT RUN**. Do not merge, label stable or touch original music. Continue with checked-out Windows tests: `py -3 -m py_compile "tools/Music Library Organizer v0.3.16.pyw"`, `py -3 "tools/music-library-organizer/test_organizer.py"`, plus UI/manual workflows and generated-log inspection.
 
 ## Current candidate - v0.3.15 safe Windows duplicate launch (2026-10-15)
 
