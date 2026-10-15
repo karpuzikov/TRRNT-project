@@ -56,6 +56,8 @@ Before ANY UI modification, record a control contract for the affected workflows
 | Real keyboard/hover/right-click, path browse/drop, settings persistence, real audio workflows | NOT RUN | Follow project UI control contract, verified native checker and disposable output, Undo |
 | Whole-product native Python suite and acceptance | NOT RUN | Run py_compile, unittest and full end-to-end before promoting status |
 
+**v0.3.19 additional safety:** When a previous Artwork Undo journal exists (including one created by the incorrect v0.3.18 nested layout), archive that complete journal under the organizer's private `artwork-undo-history/` before starting a new artwork pass. Refuse to replace an unreadable old journal. This preserves recovery evidence without touching the old nested JPGs; the active Undo action still handles the latest run. 122 uniquely named Python regression methods are now defined (not executed on Windows).
+
 ### Music Library Organizer v0.3.19 - flat Destination artwork (2026-10-15)
 
 | Behavior | Status | Required live verification |
