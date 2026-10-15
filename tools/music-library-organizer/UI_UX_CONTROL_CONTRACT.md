@@ -1,6 +1,10 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.18 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.19 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.19 - corrected Artwork Destination placement
+
+Same single footer `▣ Artwork` button, no additional controls or settings. Read release names/UPCs by recursively scanning **Destination**, but save each cover `<release folder name>.jpg` immediately in **Destination root**, alongside the release directories, not inside them. Button tooltip and hover title explicitly say "directly in Destination". A Results folder icon should open Destination root, where the JPG actually resides. Existing root artwork must be skipped; duplicated release names in different subfolders must be marked PARTIAL without selecting a random cover or overwriting. New Undo Artwork layout removes only hash-matching Destination-root covers created this run, while preserving support for pre-v0.3.19 nested-artwork journals. Previous nested files never moved/deleted by a download. Windows UI, hover, resizes, keyboard, cancellation, network and Undo acceptance **NOT RUN**.
 
 ## v0.3.18 - Artwork button: strict UI control contract
 
