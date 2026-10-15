@@ -3461,6 +3461,61 @@ def _cover_save(folder, artwork, manifest):
             dest.unlink(missing_ok=True)
 
 
+
+def _cover_release_barcode(folder):
+    """Prefer folder UPC, then tagged UPC, then verified MusicBrainz catalog."""
+    ident, physical = catalog(folder.name)
+    if _valid_gtin(ident):
+        return ident
+    for file in collect_files(folder):
+        if file.suffix.casefold() not in AUDIO:
+            continue
+        try:
+            from mutagen import File as MutagenFile
+            tags = MutagenFile(str(file), easy=True)
+            for key in ("barcode", "upc"):
+                candidate = str((tags.get(key) or [""])[0]) if tags else ""
+                if _valid_gtin(candidate):
+                    return candidate
+        except Exception:
+            pass
+        break
+    if not ident:
+        return ""
+    # An 11-digit physical CD catalog is NOT a UPC. MusicBrainz must
+    # corroborate an exact catalog, edition type and release title before
+    # allowing the public Apple UPC artwork lookup.
+    title_match = _RELEASE_PARTS.fullmatch(folder.name)
+    title = title_match.group("title") if title_match else folder.name
+    try:
+        entries = _mb_catalog_search(ident, physical=physical)
+        accepted = set()
+        for entry in entries[:25]:
+            if _release_title_similarity(title, entry.get("title", "")) < 0.65:
+                continue
+            release_id = str(entry.get("id") or "")
+            if not release_id:
+                continue
+            concrete = mb_json("release/" + release_id +
+                               "?inc=labels+media+release-groups&fmt=json")
+            if not _matches_catalog(concrete, ident):
+                continue
+            media = concrete.get("media") or []
+            if not media or not all(
+                    ("cd" in str(m.get("format") or "").lower() if physical
+                     else "digital media" in str(m.get("format") or "").lower())
+                    for m in media):
+                continue
+            code = str(concrete.get("barcode") or "")
+            if _valid_gtin(code):
+                accepted.add(code.lstrip("0"))
+        if len(accepted) == 1:
+            return next(iter(accepted))
+    except (OSError, ValueError, RuntimeError):
+        return ""
+    return ""
+
+
 def _cover_undo_latest():
     if not ARTWORK_UNDO.is_file():
         return False
@@ -4248,10 +4303,10 @@ class Organizer:
                         row["message"] = "Cover already exists; not overwritten"
                         self.counts["skipped"] += 1
                         continue
-                    code, _physical = catalog(folder.name)
+                    code = _cover_release_barcode(folder)
                     if not _valid_gtin(code):
                         row["status"] = "partial"
-                        row["message"] = "Release folder does not contain a verified UPC/EAN"
+                        row["message"] = "No unique verified UPC/EAN from folder, audio tags or exact MusicBrainz catalog"
                         self.counts["partial"] += 1
                         continue
                     match = _RELEASE_PARTS.fullmatch(folder.name)
