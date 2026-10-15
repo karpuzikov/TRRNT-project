@@ -56,6 +56,19 @@ Before ANY UI modification, record a control contract for the affected workflows
 | Real keyboard/hover/right-click, path browse/drop, settings persistence, real audio workflows | NOT RUN | Follow project UI control contract, verified native checker and disposable output, Undo |
 | Whole-product native Python suite and acceptance | NOT RUN | Run py_compile, unittest and full end-to-end before promoting status |
 
+### Music Library Organizer v0.3.18 - Artwork (2026-10-15)
+
+| Workflow/control | Status | Native acceptance criteria |
+| --- | --- | --- |
+| One-click `▣ Artwork` on existing Destination | NOT RUN | Available with existing output path, no Organize side effects, processes each release exactly once, no new required config |
+| Apple UPC `886445932034` high-res artwork | NOT RUN | Correct exact-cover Apple album, maximum available un-upscaled JPEG preferred, actual JPEG decode and dimensions verified, named exactly like release folder with `.jpg` |
+| Spotify fallback after no Apple match | NOT RUN | Correct exact-GTIN MusicBrainz linked Spotify album, official public oEmbed thumbnail, no wrong edition or guessed cover |
+| Catalog-only CD and barcode tagged sources | NOT RUN | Only use verified barcode; reject ambiguous catalogs/no match without modifying audio |
+| Existing JPG, download failure, Cancel and re-run | NOT RUN | Never overwrite artwork, no half-file, correct failure/not-found status, progress and per-run log |
+| Undo Artwork and old Organize Undo | NOT RUN | SHA protects user modifications; remove only newly created JPGs, never release folders/audio; retain old Organize Undo safety |
+| Dark WebView2 UI screenshots/keyboard/focus | NOT RUN | Footer control geometry, hover, selection, ESC/Cancel, error and no-connection, labels on all widths |
+| Python full compilation, 116 regressions, live network/actual files | NOT RUN | Execute on Windows and compare Apple/CDN/Spotify downloads with known release; keep draft pending |
+
 ### Music Library Organizer v0.3.17 - title case, CUE and MusicBrainz acceptance (2026-10-15)
 
 | Workflow/control | Status | Native acceptance criteria |
