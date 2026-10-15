@@ -4,6 +4,14 @@ Last updated: 2026-10-13
 
 **Canonical semantic vocabulary for TRRNT-project, Music Collection Cleaner (MCC), Duplicate Edition Analyzer, and the planned ALAC filename organizer.** This glossary is derived from the existing MCC `RULES.md` taxonomy and the latest user clarifications. All participating tools must apply the same **meanings** to track titles and artist credits, while retaining tool-specific algorithms. For MCC's actual implemented classification and audio-routing contracts, consult [MCC RULES.md](https://github.com/karpuzikov/MCC/blob/main/RULES.md) and [current MCC source](https://github.com/karpuzikov/MCC/blob/main/Music%20Collection%20Cleaner%20v0.5.18.pyw). This glossary documents shared terminology and intended naming; it does not claim the filename organizer exists yet.
 
+## Soundtrack attribution in Single/EP output names (2026-10-15)
+
+For Singles and EPs, a trailing **source-production attribution**, e.g. `[Music from the FIFA World Cup Qatar 2022 Official Soundtrack]`, `(From the Original Motion Picture "Ralph Breaks The Internet")`, `(From the Original Motion Picture Soundtrack ELVIS)` or `(Music from the HBO Original Series)`, is **not the song's essential base title or a recording version**. Strip the entire standalone promotional `(...)`/`[...]` qualifier from the output *release/folder title, song/track filename, ALBUM/TITLE tag and safely rewritten CUE TITLE*, while preserving the genuine song or release name and its real mix/feature and numbered episode/part designators. Preserve ` - Single`/` - EP` on release titles only, not on each track.
+
+Examples: `Zero - Single`, `Vegas - Single`, `The Idol Episode 4 - Single`, `The Idol Episode 5 Part 1 - Single`, `The Idol Episode 3 - EP`, `The Idol Episode 5 Part 2 - EP` and `Arhbo - Single`. This applies to both `(Music from ...)` and `[Music from ...]` variants without hardcoding one show/movie. Keep genuine artistic title components, feature/remix notation, and album/compilation titles; never remove the whole title or repurpose this rule as a destructive source-file cleanup. For lookup and edition verification, retain authoritative unstripped MusicBrainz/source titles and identifiers; **remove the attribution only in rendered output names/tags**. The full strict acceptance contract is in [TRRNT RULES.md](RULES.md).
+
+**Documented naming requirement, NOT YET IMPLEMENTED in Music Library Organizer v0.3.17.**
+
 ## Core semantic terms
 
 | Term | Meaning | Important distinction |
