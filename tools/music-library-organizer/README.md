@@ -1,10 +1,17 @@
 # Music Library Organizer
 
-**Candidate: v0.3.16 - Under construction ⚠️** (isolated log per run; real Windows tests pending; PR draft)
+**Candidate: v0.3.17 - Under construction ⚠️** (title case + original CUE cross-file INDEX semantics + exact Arhbo barcode; Windows tests pending; PR draft)
 
-**[Music Library Organizer v0.3.16.pyw](../Music%20Library%20Organizer%20v0.3.16.pyw)**
+**[Music Library Organizer v0.3.17.pyw](../Music%20Library%20Organizer%20v0.3.17.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.17 - GIMS capitalization, cross-file CUE and 2-track Single metadata
+
+- **True Picard-style title case:** previously the case helper only lowercased English minor words and left ordinary source words unchanged. Now case-standardize release and track titles (including metadata) while preserving minor-word rules, Unicode/accented words, acronyms, CamelCase, and protected artist names: `Best life` -> `Best Life`, `SIN TI` -> `Sin Ti`, `JOE PESCI` -> `Joe Pesci`; `3OH!3` and `G-DRAGON` remain protected.
+- **Actual CUE file context:** `cue_read` tracks each index's source `FILE` and binds `rec.file` to the file holding `INDEX 01`. Track 04's `INDEX 00 04:09:65` may be in track 03's file while track 04's `INDEX 01 00:00:00` is in its own file. Preserve original CUE sequence and sector indexes while rewriting only filenames; do not reject valid split-track CUE. Reject inverted indexes when genuinely in the *same* image file, preserving original image evidence.
+- **Arhbo (barcode 197089993382):** normalize square-bracket `[Music from the ...]` to parenthesized soundtrack release subtitle; tolerate a missing *descriptive* soundtrack note in MusicBrainz search indexes when the base title, exact barcode, digital medium and 2-track count match. A MusicBrainz release-group type `Single` is authoritative even when there are two tracks. Target: `2022-11-19 - Arhbo (Music from the FIFA World Cup Qatar 2022 Official Soundtrack) - Single [197089993382]`.
+- Seven added regressions, **102 uniquely named tests defined**. Source readback and targeted static review done. Full Python compile/unittest and real Windows, MusicBrainz network, CUE/AudioChecker, encode, Undo and GUI acceptance **NOT RUN**.
 
 ## v0.3.16 - one log per run, never mixed with settings
 
