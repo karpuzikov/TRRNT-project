@@ -2106,6 +2106,62 @@ class Artwork20261015(unittest.TestCase):
                                  "Another operation is running.")
                 self.assertFalse((folder / (folder.name + ".jpg")).exists())
 
+
+    def test_cd_catalog_number_resolves_single_verified_barcode(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            release = Path(td) / "2013-05-13 - Subliminal - La Face Cachée [EU - 88883792232]"
+            release.mkdir()
+            (release / "01 Example.m4a").write_bytes(b"placeholder")
+            entry = {"title": "Subliminal (La face cachée)", "id": "cd-one"}
+            detail = {"barcode": "888837922326",
+                      "label-info": [{"catalog-number": "88883792232"}],
+                      "media": [{"format": "CD", "track-count": 18}]}
+            with patch.object(mlo, "_mb_catalog_search", return_value=[entry]) as catalog_search, \
+                 patch.object(mlo, "mb_json", return_value=detail):
+                self.assertEqual(mlo._cover_release_barcode(release), "888837922326")
+            catalog_search.assert_called_once()
+
+    def test_artwork_operation_creates_jpg_in_release_folder_without_touching_audio(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            folder = root / "2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034]"
+            folder.mkdir()
+            source = folder / "01 Ma Beauté.m4a"
+            source.write_bytes(b"original unchanged audio")
+            art = {"bytes": self.jpeg_stub(), "provider": "Apple Music",
+                   "size": "3000x3000", "link": "https://music.apple.com/us/album/1234"}
+            app = mlo.Organizer()
+            with patch.object(mlo, "ARTWORK_UNDO", root / "artwork-undo.json"), \
+                 patch.object(mlo, "_cover_apple", return_value=(art, [])), \
+                 patch.object(mlo, "_cover_spotify", side_effect=AssertionError("Apple available")):
+                app._download_artwork(root, [folder])
+                output = folder / (folder.name + ".jpg")
+                self.assertTrue(output.is_file())
+                self.assertEqual(output.read_bytes(), self.jpeg_stub())
+                self.assertEqual(source.read_bytes(), b"original unchanged audio")
+                self.assertEqual(app.counts["done"], 1)
+                self.assertTrue((root / "artwork-undo.json").is_file())
+                app._undo_artwork(mlo.read_json(root / "artwork-undo.json", {}))
+                self.assertFalse(output.exists())
+                self.assertTrue(source.is_file())
+
+    def test_artwork_do_not_guess_ambiguous_cd_barcode_editions(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            release = Path(td) / "2013-05-13 - Subliminal [EU - 88883792232]"
+            release.mkdir()
+            detail = {"label-info": [{"catalog-number": "88883792232"}],
+                      "media": [{"format": "CD"}]}
+            with patch.object(mlo, "_mb_catalog_search", return_value=[
+                {"id": "one", "title": "Subliminal"},
+                {"id": "two", "title": "Subliminal"}]), \
+                 patch.object(mlo, "mb_json", side_effect=lambda path: dict(
+                     detail, barcode=("888837922326" if "/one?" in path
+                                      else "602547020295"))):
+                self.assertEqual(mlo._cover_release_barcode(release), "")
+
     def test_artwork_webview_button_bridge_enabled_and_undo_control(self):
         self.assertIn('id="artwork"', mlo.HTML)
         self.assertIn('call("download_artwork",$(' + "'dest').value)", mlo.HTML)
