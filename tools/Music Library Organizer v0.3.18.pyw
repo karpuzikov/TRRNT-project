@@ -4607,7 +4607,7 @@ button.folder{width:34px;padding:0}.options{display:flex;align-items:center;gap:
 <section class="card" id="results"><div class="head"><strong>Results</strong></div><div class="tools"><input type="text" id="query" placeholder="Filter results..." aria-label="Filter results"><button id="openLog">↗ Open log</button><button id="openLogFolder" title="Open folder containing organizer logs" aria-label="Open log folder">📁</button><button id="copyResults" title="Copy visible results to clipboard">Copy</button><span class="space"></span><span id="resultCount" class="muted">Not started</span></div>
 <div class="tablewrap"><table><thead><tr><th style="width:14%">Result</th><th style="width:31%">Release</th><th>Details</th></tr></thead><tbody id="rows"><tr><td colspan="3" class="empty">No results</td></tr></tbody></table></div></section>
 </main>
-<footer id="foot"><button class="primary" id="organize" disabled>▶ Organize</button><button id="cancel" disabled>✕ Cancel</button><button id="undo" disabled title="Undo the most recent completed run">↶ Undo</button><button id="reconnect" style="display:none" title="Retry connecting to the local Python application">↻ Retry connection</button><span class="space"></span><span id="message" aria-live="polite" role="status"></span></footer>
+<footer id="foot"><button class="primary" id="organize" disabled>▶ Organize</button><button id="artwork" disabled title="Add missing Apple Music / Spotify JPEG artwork to release folders in Destination">▣ Artwork</button><button id="cancel" disabled>✕ Cancel</button><button id="undo" disabled title="Undo the most recent completed run">↶ Undo</button><button id="reconnect" style="display:none" title="Retry connecting to the local Python application">↻ Retry connection</button><span class="space"></span><span id="message" aria-live="polite" role="status"></span></footer>
 <script>
 let state=null,initialized=false,working=false,query="",suggestedDest="";
 let pollBusy=false,bridgeFailures=0,nextRetry=0,connected=false,renderedResultMarkup=null;
@@ -4634,7 +4634,7 @@ async function deadline(promise,ms){
 function setBridgeState(ready){
  connected=ready;
  if(!ready){
-  for(const id of ["organize","browseSource","browseDest","openLog","openLogFolder","copyResults","openSource","openDest","undo","cancel","doEncode","doChecker","doSplit"])$(id).disabled=true;
+  for(const id of ["organize","artwork","browseSource","browseDest","openLog","openLogFolder","copyResults","openSource","openDest","undo","cancel","doEncode","doChecker","doSplit"])$(id).disabled=true;
   if(!state)$('status').textContent="Connecting to desktop...";
   if(Date.now()-bootTime>8000){
    $('status').textContent="Connection unavailable";
@@ -4664,6 +4664,8 @@ function updateOrganizeAvailability(){
  const src=$('source').value.trim(),dst=$('dest').value.trim();
  $('organize').disabled=!connected||working||!src||!dst;
  $('organize').title=!src?"Choose a source folder":!dst?"Choose a destination folder":"Organize collection";
+ $('artwork').disabled=!connected||working||!dst;
+ $('artwork').title=dst?"Download covers into existing release folders in Destination":"Choose Destination to download artwork";
 }
 function updateTaskControls(){
  const locked=!connected||working;
@@ -4695,6 +4697,7 @@ function render(){
  updateTaskControls();
  updateOrganizeAvailability();
  $('cancel').disabled=!working;$('undo').disabled=working||!state.undo;
+ $('undo').textContent=state.undo_kind==="artwork"?"↶ Undo Artwork":"↶ Undo";
  $('openSource').disabled=!String($('source').value||"").trim();
  $('openDest').disabled=!String($('dest').value||"").trim();
  $('openLog').disabled=false;$('openLogFolder').disabled=false;$('copyResults').disabled=false;
@@ -4798,9 +4801,10 @@ $('copyResults').onclick=async()=>{
  }catch(e){error("Clipboard unavailable; select Results with your mouse and press Ctrl+C.");}
 };
 for(const id of ['doEncode','doChecker','doSplit'])$(id).addEventListener('change',updateTaskControls);
+$('artwork').onclick=()=>{$('message').textContent="";call("download_artwork",$('dest').value);};
 $('organize').onclick=()=>{$('message').textContent="";call("organize",$('source').value,$('dest').value,$('format').value,Number($('encodeWorkers').value),Number($('checkWorkers').value),$('doEncode').checked,$('doChecker').checked,$('doSplit').checked);};
 $('cancel').onclick=()=>call("cancel");
-$('undo').onclick=()=>{if(confirm("Remove unchanged output from the last run? Original files are not touched."))call("undo");};
+$('undo').onclick=()=>{if(confirm(state&&state.undo_kind==="artwork"?"Delete only unmodified JPGs created by the latest artwork operation?":"Remove unchanged output from the last run? Original files are not touched."))call("undo");};
 $('query').oninput=()=>{query=$('query').value.trim().toLowerCase();render();};
 for(let [zone,input] of [["sourceDrop","source"],["destDrop","dest"]]){
 let z=$(zone);z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("drag");});
