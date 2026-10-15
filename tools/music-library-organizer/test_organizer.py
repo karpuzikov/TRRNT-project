@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.15 - duplicate-launch window activation regressions.
+# Music Library Organizer v0.3.16 - per-run logs and isolated app data regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.15.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.16.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -1647,6 +1647,116 @@ class DuplicateLaunch20261015(unittest.TestCase):
              patch.object(mlo, "_session_profile",
                           side_effect=AssertionError("Must not create another profile")):
             self.assertIsNone(mlo.main())
+
+
+class PerRunLogging20261015(unittest.TestCase):
+    def test_distinct_logs_with_collision_safe_names(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td, patch.object(mlo, "DATA", Path(td)):
+            first = mlo._new_log("run")
+            second = mlo._new_log("run")
+            other = mlo._new_log("undo")
+            self.assertEqual(len({first, second, other}), 3)
+            self.assertEqual(first.parent, Path(td) / "logs")
+            self.assertTrue(all(p.is_file() for p in (first, second, other)))
+            self.assertFalse((Path(td) / "activity.log").exists())
+
+    def test_each_organize_operation_opens_new_log_even_without_relaunch(self):
+        from unittest.mock import Mock, patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source = root / "input"
+            output = root / "output"
+            source.mkdir()
+            names = {"DATA": root / "app", "SETTINGS": root / "app" / "settings.json",
+                     "UNDO": root / "app" / "undo.json"}
+            with patch.multiple(mlo, **names), \
+                 patch.object(mlo, "check_paths", return_value=(source, output)), \
+                 patch.object(mlo.threading, "Thread", return_value=Mock()):
+                app = mlo.Organizer()
+                self.assertEqual(app.organize(str(source), str(output), "FLAC", 1, 1),
+                                 {"ok": True})
+                first = app.log_path
+                self.assertIn("RUN START", first.read_text(encoding="utf-8"))
+                app.running = False  # A completed worker in this isolated mock.
+                self.assertEqual(app.organize(str(source), str(output), "FLAC", 1, 1),
+                                 {"ok": True})
+                second = app.log_path
+                self.assertNotEqual(first, second)
+                self.assertTrue(first.is_file())
+                self.assertTrue(second.is_file())
+                self.assertEqual(len(list((root / "app" / "logs").glob("run-*.log"))), 2)
+
+    def test_undo_has_its_own_log_and_preserves_processing_log(self):
+        from unittest.mock import Mock, patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            data = root / "data"
+            undo = data / "undo.json"
+            with patch.object(mlo, "DATA", data), patch.object(mlo, "UNDO", undo), \
+                 patch.object(mlo.threading, "Thread", return_value=Mock()):
+                app = mlo.Organizer()
+                old_log = app.log_path
+                mlo.write_json(undo, {"created": []})
+                self.assertEqual(app.undo(), {"ok": True})
+                self.assertNotEqual(old_log, app.log_path)
+                self.assertTrue(app.log_path.name.startswith("undo-"))
+                self.assertTrue(old_log.exists())
+                self.assertIn("UNDO START", app.log_path.read_text(encoding="utf-8"))
+
+    def test_legacy_migration_preserves_all_logs_even_on_name_collision(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            (data / "activity.log").write_text("old activity", encoding="utf-8")
+            (data / "webview-startup.log").write_text("old startup", encoding="utf-8")
+            legacy = data / "logs" / "legacy"
+            legacy.mkdir(parents=True)
+            (legacy / "activity.log").write_text("previous", encoding="utf-8")
+            with patch.object(mlo, "DATA", data), \
+                 patch.object(mlo, "LOG", data / "activity.log"):
+                self.assertEqual(mlo._migrate_legacy_logs(), [])
+            self.assertEqual((legacy / "activity.log").read_text(encoding="utf-8"),
+                             "previous")
+            self.assertTrue(any(p.read_text(encoding="utf-8") == "old activity"
+                                for p in legacy.glob("activity-*.log")))
+            self.assertEqual((legacy / "webview-startup.log").read_text(encoding="utf-8"),
+                             "old startup")
+            self.assertFalse((data / "activity.log").exists())
+
+    def test_open_log_prefers_last_run_after_restart_and_folder_is_isolated(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            data = Path(td)
+            with patch.object(mlo, "DATA", data), \
+                 patch.object(mlo, "IS_WIN", True), \
+                 patch.object(mlo.os, "startfile", create=True) as open_file:
+                previous = mlo._new_log("run")
+                app = mlo.Organizer()
+                self.assertEqual(app.open_log(), {"ok": True})
+                open_file.assert_called_once_with(str(previous))
+                with patch.object(app, "open_folder", return_value={"ok": True}) as folder:
+                    self.assertEqual(app.open_log_folder(), {"ok": True})
+                    folder.assert_called_once_with(str(data / "logs"))
+
+    def test_unwritable_log_path_is_a_visible_operation_error(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source, dest = root / "src", root / "dst"
+            source.mkdir()
+            data = root / "app"
+            with patch.object(mlo, "DATA", data), \
+                 patch.object(mlo, "SETTINGS", data / "settings.json"), \
+                 patch.object(mlo, "UNDO", data / "undo.json"), \
+                 patch.object(mlo, "check_paths", return_value=(source, dest)):
+                app = mlo.Organizer()
+                with patch.object(mlo, "_new_log", side_effect=OSError("access denied")):
+                    self.assertIn("access denied", app.organize(
+                        str(source), str(dest), "FLAC", 1, 1)["error"])
+                self.assertFalse(app.running)
+
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
