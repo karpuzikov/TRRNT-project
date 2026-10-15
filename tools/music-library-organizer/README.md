@@ -1,10 +1,26 @@
 # Music Library Organizer
 
-**Candidate: v0.3.18 - Under construction ⚠️** (title case + original CUE cross-file INDEX semantics + exact Arhbo barcode; Windows tests pending; PR draft)
+**Candidate: v0.3.19 - Under construction ⚠️** (all artwork directly in Destination; real Windows acceptance pending; PR draft)
 
-**[Music Library Organizer v0.3.18.pyw](../Music%20Library%20Organizer%20v0.3.18.pyw)**
+**[Music Library Organizer v0.3.19.pyw](../Music%20Library%20Organizer%20v0.3.19.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.19 - Artwork saved directly in Destination (corrected layout)
+
+**User correction:** In v0.3.18 the artwork was incorrectly written inside each release folder. In v0.3.19 it is saved **directly in the selected Destination root**, with the **release folder's exact name** and `.jpg` extension. Example:
+
+```text
+GIMS - UPDATED - Sorted/
+├── 2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034]/
+│   ├── 01 Ma Beauté.m4a
+│   └── audiochecker.log
+└── 2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034].jpg
+```
+
+Artwork lookup reads identifiers from each release subfolder, but its output target is `Destination / (release_folder.name + ".jpg")`. Existing Destination-root files are skipped without overwrite; old art created *inside* the release by v0.3.18 remains there unchanged and is not silently moved/deleted. If nested releases have duplicate names (case-insensitive), both are flagged PARTIAL because flattening would collide; no arbitrary cover is selected. Results' Open Folder action opens the Destination root where the resulting JPG is located. Undo Artwork validates recorded names/hashes and removes only newly generated Destination-root art; it can still read earlier v0.3.18 nested-artwork journals.
+
+**Verification:** Four new explicit regression methods bring total to **120 defined unique tests**. GitHub source/test content and static checks checked; real Python regression run and native Windows GUI/live CDN tests still **NOT RUN**. Under construction until verified.
 
 ## v0.3.18 - Artwork download into existing Destination (under construction)
 
