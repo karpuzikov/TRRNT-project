@@ -2159,7 +2159,7 @@ class Artwork20261015(unittest.TestCase):
                 {"id": "two", "title": "Subliminal"}]), \
                  patch.object(mlo, "mb_json", side_effect=lambda path: dict(
                      detail, barcode=("888837922326" if "/one?" in path
-                                      else "602547020295"))):
+                                      else "197089993382"))):
                 self.assertEqual(mlo._cover_release_barcode(release), "")
 
     def test_artwork_webview_button_bridge_enabled_and_undo_control(self):
