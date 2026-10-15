@@ -75,6 +75,32 @@ Example: `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is an **individual Remix 
 
 **File operation safety:** Show proposed renames before Apply; preserve real source files, timestamps where feasible, log text, disc data and Undo records. Do not overwrite files, invalidate CUE references, or modify the audio data. These supporting-file rules supplement the `NN Track Title.m4a` audio filename standard.
 
+## 2026-10-15 - remove soundtrack source attributions from Single/EP titles (mandatory naming rule)
+
+**Scope:** For releases verified as **Single** or **EP** (including a MusicBrainz `Single` release group with `Soundtrack` secondary type), strip *only clearly identifiable promotional source-attribution subtitles* from **all newly rendered output titles**. Apply consistently to the release folder name, track audio filenames, output `ALBUM` and `TITLE` tags, and CUE `TITLE` fields if an output CUE is legitimately rewritten. Preserve the originals, the real release/recording identities and the MusicBrainz source fields; this is a **display/output naming rule**, not a reason to delete soundtrack metadata or relabel release types. Do not alter artist credits, cover art, audio, identifiers, checksums or source files.
+
+- Target a **distinct delimited qualifier** (parentheses `(...)` or square brackets `[...]`) that explicitly attributes the song/release to a movie, film, motion picture, television series, TV program, streaming/episode soundtrack, or equivalent production. Recognize case-insensitively variants such as `(From the Original Motion Picture "Ralph Breaks The Internet")`, `(From the Original Motion Picture Soundtrack ELVIS)`, `(Music from the HBO Original Series)`, `[Music from the FIFA World Cup Qatar 2022 Official Soundtrack]` and `(From the Soundtrack to ...)`. Do **not** rely on a single hardcoded film/network title or just one English phrasing. Recognize meaningful production attributions by syntax and semantics, not by matching only these examples.
+- Remove *the entire attribution*, including its brackets, and normalize leftover spaces; keep the approved ` - Single` or ` - EP` suffix exactly once in the **release** title and folder (not automatically in individual track titles). Preserve the true standalone base title and all meaningful song-version, remix, featured-artist, numbered episode and part information. In particular, `The Idol Episode 5 Part 2` must remain `The Idol Episode 5 Part 2`; the bracketed `Music from the HBO Original Series` is the removable material.
+- Do **not** indiscriminately delete every parenthesis, every substring containing `soundtrack`, or a real distinctive song title. A full soundtrack **Album/Compilation** is not in scope; a genuine artistic title `Soundtrack`, genuine alternate recording/mix or non-promotional descriptor must be preserved. If a removal would empty the title or classification is uncertain, preserve the original text and log a reviewable warning rather than guessing.
+- **Matching vs output:** Use the unstripped original title, identifier (UPC/barcode/catalog), MusicBrainz recording/release facts and optional stripped comparison keys for edition matching. Never make a correct exact-barcode Single appear unverified just because one provider includes/omits the soundtrack subtitle. Strip the attribution **after identifying the correct concrete edition** when rendering the output. Do not confuse secondary release type `Soundtrack` with primary `Single`/`EP`.
+- Preserve original source file names and tags byte-for-byte; update the output audio filename, ALBUM/TITLE tags and verified CUE FILE/TITLE references as a coherent unit. Continue existing collision detection, audio fidelity, safe CUE index handling and Undo; do not add new GUI controls.
+
+**Mandatory acceptance examples (the source-qualifier portion may appear in either `(...)` or `[...]`):**
+
+| Input Single/EP release title | Correct output release title |
+| --- | --- |
+| `Zero (From the Original Motion Picture "Ralph Breaks The Internet") - Single` | `Zero - Single` |
+| `Vegas (From the Original Motion Picture Soundtrack ELVIS) - Single` | `Vegas - Single` |
+| `The Idol Episode 4 (Music from the HBO Original Series) - Single` | `The Idol Episode 4 - Single` |
+| `The Idol Episode 5 Part 1 (Music from the HBO Original Series) - Single` | `The Idol Episode 5 Part 1 - Single` |
+| `The Idol Episode 3 (Music from the HBO Original Series) - EP` | `The Idol Episode 3 - EP` |
+| `The Idol Episode 5 Part 2 (Music from the HBO Original Series) - EP` | `The Idol Episode 5 Part 2 - EP` |
+| `Arhbo [Music from the FIFA World Cup Qatar 2022 Official Soundtrack] - Single` | `Arhbo - Single` |
+
+Example audio output: `01 Zero (From the Original Motion Picture "Ralph Breaks The Internet").m4a` -> `01 Zero.m4a`, `01 Vegas (From the Original Motion Picture Soundtrack ELVIS).m4a` -> `01 Vegas.m4a`. Keep authentic track-level version/feature notes. Test both the audio filename and its written `TITLE` tag, the `ALBUM` tag, and the release folder. Do not create fake track names by copying the release title blindly.
+
+**Implementation status:** **Rule approved/documented; current v0.3.17 source has NOT yet implemented this removal.** Do not claim native validation, regenerate outputs, or bump the application version until the next authorized software update. Regressions and actual Windows acceptance remain **NOT RUN**.
+
 ## 2026-10-15 Music Library Organizer v0.3.17 - true title case, correct CUE files and Soundtrack Singles
 
 **Title and tags:** `picard_small_word_case` must actually capitalize ordinary words, not only lowercase minor words. The same canonical title must appear in release directory names, track filenames and TITLE metadata. Preserve meaningful acronyms, CamelCase, unicode accents, protected names (`3OH!3`, `G-DRAGON`) and lowercase `ft.` feature credits; examples: `Best life` -> `Best Life`, `SIN TI` -> `Sin Ti`, `JOE PESCI` -> `Joe Pesci`.
