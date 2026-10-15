@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.16 - per-run logs and isolated app data regressions.
+# Music Library Organizer v0.3.17 - case, soundtrack and cross-file CUE regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.16.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.17.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -1755,6 +1755,192 @@ class PerRunLogging20261015(unittest.TestCase):
                     self.assertIn("access denied", app.organize(
                         str(source), str(dest), "FLAC", 1, 1)["error"])
                 self.assertFalse(app.running)
+
+
+
+
+class TitlesCueAndSoundtrack20261015(unittest.TestCase):
+    def test_user_title_case_examples_folder_track_and_tags(self):
+        cases = (
+            ("Best life", "Best Life", "2021-09-29", "3616840189842"),
+            ("SIN TI", "Sin Ti", "2024-02-15", "5054197975707"),
+            ("JOE PESCI", "Joe Pesci", "2024-04-26", "3617387248313"),
+        )
+        for raw, expected, date, barcode in cases:
+            with self.subTest(raw=raw):
+                self.assertEqual(mlo.clean_release_title(raw), expected)
+                self.assertEqual(mlo.normalized_title(raw), expected)
+                self.assertEqual(mlo.track_filename(1, raw, ".m4a"),
+                                 "01 " + expected + ".m4a")
+                data = {"title": raw, "root_artist": "GIMS",
+                        "release_type": "Single", "physical": False,
+                        "track_count": 1, "date": date,
+                        "barcode": barcode, "catalog": "", "notes": []}
+                self.assertEqual(
+                    mlo.release_folder_target(data),
+                    date + " - " + expected + " - Single [" + barcode + "]")
+
+    def test_casing_preserves_acronyms_mixed_case_feature_and_protected_names(self):
+        self.assertEqual(mlo.normalized_title("3OH!3"), "3OH!3")
+        self.assertEqual(mlo.normalized_title("G-DRAGON"), "G-DRAGON")
+        self.assertEqual(mlo.picard_small_word_case("FIFA and DJ Snake"),
+                         "FIFA and DJ Snake")
+        self.assertEqual(mlo.picard_small_word_case("iPhone vs. eBay"),
+                         "iPhone vs. eBay")
+        self.assertEqual(mlo.normalized_title("Good Time (ft. Marian Hill)"),
+                         "Good Time (ft. Marian Hill)")
+        self.assertEqual(mlo.picard_small_word_case("THE OUTSIDE (OUTSIDERS VERSION)"),
+                         "The Outside (Outsiders Version)")
+        self.assertEqual(mlo.normalized_title("déjà vu"), "Déjà Vu")
+
+    def test_cross_file_index00_belongs_to_prior_file_and_index01_to_current(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            previous = root / "03 J'me tire.m4a"
+            current = root / "04 Freedom (ft. H Magnum).m4a"
+            previous.write_bytes(b"audio 03")
+            current.write_bytes(b"audio 04")
+            cue = root / "88883792232.cue"
+            cue.write_text(
+                'FILE "03 J\'me tire.m4a" WAVE\n'
+                '  TRACK 03 AUDIO\n    TITLE "J\'me tire"\n    INDEX 01 00:00:00\n'
+                '  TRACK 04 AUDIO\n    TITLE "Freedom"\n    INDEX 00 04:09:65\n'
+                'FILE "04 Freedom (ft. H Magnum).m4a" WAVE\n'
+                '    INDEX 01 00:00:00\n', encoding="utf-8")
+            parsed = mlo.cue_read(cue)
+            self.assertEqual(parsed["records"][1]["file"], current.name)
+            self.assertEqual(parsed["records"][1]["index_files"][0], previous.name)
+            self.assertEqual(parsed["records"][1]["index_files"][1], current.name)
+            self.assertTrue(mlo.cue_index_source_consistent(parsed["records"][1]))
+            self.assertEqual(mlo.cue_image_plan(cue, parsed), [])
+            refs = {previous.name.casefold(): "03 J'me Tire.m4a",
+                    current.name.casefold(): "04 Freedom (ft. H Magnum).m4a"}
+            rewritten = mlo.normal_cue_text(parsed, refs)
+            self.assertIn("INDEX 00 04:09:65", rewritten)
+            self.assertIn('FILE "03 J\'me Tire.m4a" WAVE', rewritten)
+            self.assertIn('FILE "04 Freedom (ft. H Magnum).m4a" WAVE', rewritten)
+            self.assertEqual(rewritten.count("INDEX 01 00:00:00"), 2)
+
+    def test_same_file_inverted_index00_is_still_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "album.flac"
+            path.write_bytes(b"placeholder")
+            cue = path.with_suffix(".cue")
+            cue.write_text('FILE "album.flac" WAVE\n'
+                           '  TRACK 01 AUDIO\n    TITLE "A"\n'
+                           '    INDEX 01 00:00:00\n'
+                           '  TRACK 02 AUDIO\n    TITLE "B"\n'
+                           '    INDEX 00 00:10:00\n'
+                           '    INDEX 01 00:09:00\n', encoding="utf-8")
+            parsed = mlo.cue_read(cue)
+            self.assertFalse(mlo.cue_index_source_consistent(parsed["records"][1]))
+            with self.assertRaisesRegex(ValueError, "same audio file"):
+                mlo.cue_image_plan(cue, parsed)
+
+    def test_cross_file_cue_export_preserves_audio_and_rewrites_index_references(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            inp, out = root / "Release", root / "Output"
+            inp.mkdir()
+            original = {
+                "03 J'me tire.m4a": b"audio track 3",
+                "04 Freedom (ft. H Magnum).m4a": b"audio track 4",
+            }
+            for name, content in original.items():
+                (inp / name).write_bytes(content)
+            cue = inp / "old.cue"
+            cue.write_text(
+                'FILE "03 J\'me tire.m4a" WAVE\n'
+                '  TRACK 03 AUDIO\n    TITLE "J\'me tire"\n'
+                '    INDEX 01 00:00:00\n'
+                '  TRACK 04 AUDIO\n    TITLE "Freedom"\n'
+                '    INDEX 00 04:09:65\n'
+                'FILE "04 Freedom (ft. H Magnum).m4a" WAVE\n'
+                '    INDEX 01 00:00:00\n', encoding="utf-8")
+            app = mlo.Organizer()
+            app._current_identity = {"catalog": "88883792232",
+                                     "physical": True,
+                                     "metadata_verified": True}
+            app._artist_root = "GIMS"
+            app._export_warnings, app._export_notices = [], []
+            app.enable_encoding = False
+            app.enable_splitting = True
+            app.encoding_workers = 1
+            def meta(path):
+                number, name = path.stem.split(" ", 1)
+                return number, name, "GIMS"
+            with patch.object(mlo, "metadata", side_effect=meta), \
+                 patch.object(mlo, "probe", return_value={"codec_name": "alac"}), \
+                 patch.object(mlo, "_update_copied_track_tags", return_value=None):
+                app._export_release(inp, out, "ALAC", "ffmpeg", "ffprobe")
+            expected_three = out / "03 J'me Tire.m4a"
+            expected_four = out / "04 Freedom (ft. H Magnum).m4a"
+            self.assertEqual(expected_three.read_bytes(), original["03 J'me tire.m4a"])
+            self.assertEqual(expected_four.read_bytes(),
+                             original["04 Freedom (ft. H Magnum).m4a"])
+            result_cue = (out / "88883792232.cue").read_text(encoding="utf-8")
+            self.assertIn("INDEX 00 04:09:65", result_cue)
+            self.assertIn('FILE "03 J\'me Tire.m4a" WAVE', result_cue)
+            self.assertIn('FILE "04 Freedom (ft. H Magnum).m4a" WAVE', result_cue)
+            self.assertEqual(app._export_warnings, [])
+            self.assertTrue(cue.exists())
+
+    def test_arhbo_barcode_edition_two_track_single_even_with_subtitle_variant(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            folder = root / (
+                "2022-11-19 - Arhbo [Music from the FIFA World Cup Qatar 2022 "
+                "Official Soundtrack] [197089993382]")
+            folder.mkdir()
+            files = [folder / "01 Arhbo.m4a",
+                     folder / "02 Arhbo (FIFA Walkout Anthem).m4a"]
+            for f in files:
+                f.write_bytes(b"audio")
+            release_id = "e4fba227-a357-4dda-9982-455b5ab21202"
+            search = {"releases": [{
+                "id": release_id, "title": "Arhbo",  # Index may omit soundtrack note.
+                "barcode": "197089993382",
+                "media": [{"format": "Digital Media", "track-count": 2}]}]}
+            detail = {"id": release_id,
+                      "title": ("Arhbo (music from the FIFA World Cup Qatar 2022 "
+                                "Official Soundtrack)"),
+                      "barcode": "197089993382", "date": "2022-11-19",
+                      "media": [{"format": "Digital Media", "track-count": 2}],
+                      "label-info": [],
+                      "release-group": {"primary-type": "Single",
+                                        "secondary-types": ["Soundtrack"],
+                                        "first-release-date": "2022-11-19"}}
+            urls = []
+            def musicbrainz(path, **kwargs):
+                urls.append(path)
+                return search if path.startswith("release/?") else detail
+            with patch.object(mlo, "mb_json", side_effect=musicbrainz):
+                identity = mlo.release_identity(folder, files, "GIMS")
+            self.assertEqual(identity["selected_release"], release_id, identity)
+            self.assertTrue(identity["metadata_verified"], identity)
+            self.assertEqual(identity["release_type"], "Single")
+            self.assertEqual(identity["track_count"], 2)
+            self.assertEqual(identity["barcode"], "197089993382")
+            self.assertEqual(
+                mlo.release_folder_target(identity),
+                "2022-11-19 - Arhbo (Music from the FIFA World Cup Qatar 2022 "
+                "Official Soundtrack) - Single [197089993382]")
+            self.assertTrue(any("barcode%3A197089993382" in p for p in urls), urls)
+            self.assertFalse(any("catno%3A" in p for p in urls), urls)
+
+    def test_soundtrack_title_match_does_not_ignore_remixes(self):
+        self.assertGreaterEqual(mlo._release_title_similarity(
+            "Arhbo [Music from the FIFA World Cup Qatar 2022 Official Soundtrack]",
+            "Arhbo"), 0.95)
+        self.assertEqual(mlo._release_title_similarity(
+            "Arhbo (Music from the FIFA World Cup Qatar 2022 Official Soundtrack)",
+            "Arhbo [music from the FIFA World Cup Qatar 2022 Official Soundtrack]"),
+            1.0)
+        self.assertLess(mlo._release_title_similarity(
+            "Arhbo (Music from the FIFA World Cup Qatar 2022 Official Soundtrack)",
+            "Arhbo (Club Remix)"), 0.82)
 
 
 
