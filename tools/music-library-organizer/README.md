@@ -6,6 +6,8 @@
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
 
+**v0.3.19 additional safety:** When a previous Artwork Undo journal exists (including one created by the incorrect v0.3.18 nested layout), archive that complete journal under the organizer's private `artwork-undo-history/` before starting a new artwork pass. Refuse to replace an unreadable old journal. This preserves recovery evidence without touching the old nested JPGs; the active Undo action still handles the latest run. 122 uniquely named Python regression methods are now defined (not executed on Windows).
+
 ## v0.3.19 - Artwork saved directly in Destination (corrected layout)
 
 **User correction:** In v0.3.18 the artwork was incorrectly written inside each release folder. In v0.3.19 it is saved **directly in the selected Destination root**, with the **release folder's exact name** and `.jpg` extension. Example:
@@ -20,7 +22,7 @@ GIMS - UPDATED - Sorted/
 
 Artwork lookup reads identifiers from each release subfolder, but its output target is `Destination / (release_folder.name + ".jpg")`. Existing Destination-root files are skipped without overwrite; old art created *inside* the release by v0.3.18 remains there unchanged and is not silently moved/deleted. If nested releases have duplicate names (case-insensitive), both are flagged PARTIAL because flattening would collide; no arbitrary cover is selected. Results' Open Folder action opens the Destination root where the resulting JPG is located. Undo Artwork validates recorded names/hashes and removes only newly generated Destination-root art; it can still read earlier v0.3.18 nested-artwork journals.
 
-**Verification:** Four new explicit regression methods bring total to **120 defined unique tests**. GitHub source/test content and static checks checked; real Python regression run and native Windows GUI/live CDN tests still **NOT RUN**. Under construction until verified.
+**Verification:** Four new explicit regression methods bring total to **122 defined unique tests**. GitHub source/test content and static checks checked; real Python regression run and native Windows GUI/live CDN tests still **NOT RUN**. Under construction until verified.
 
 ## v0.3.18 - Artwork download into existing Destination (under construction)
 
