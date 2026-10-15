@@ -3525,6 +3525,28 @@ def _cover_release_barcode(folder):
     return ""
 
 
+def _cover_archive_prior_undo():
+    """Preserve the preceding artwork journal before a new download run.
+
+    This matters when a user previously ran v0.3.18, which put images
+    inside release directories. Preserve that recovery evidence rather
+    than overwriting it with the new flat-output operation.
+    """
+    if not os.path.lexists(ARTWORK_UNDO):
+        return None
+    if ARTWORK_UNDO.is_symlink() or not ARTWORK_UNDO.is_file():
+        raise ValueError("Previous Artwork Undo journal is not a regular file")
+    if not isinstance(read_json(ARTWORK_UNDO, None), dict):
+        raise ValueError("Previous Artwork Undo journal is unreadable; refusing to overwrite")
+    history = DATA / "artwork-undo-history"
+    history.mkdir(parents=True, exist_ok=True)
+    archive = history / (
+        "artwork-undo-" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S") +
+        "-" + uuid.uuid4().hex[:12] + ".json")
+    ARTWORK_UNDO.replace(archive)
+    return archive
+
+
 def _cover_undo_latest():
     if not ARTWORK_UNDO.is_file():
         return False
@@ -4297,6 +4319,9 @@ class Organizer:
                     "layout": "destination-root", "kind": "artwork",
                     "started": datetime.now().isoformat()}
         try:
+            saved_journal = _cover_archive_prior_undo()
+            if saved_journal:
+                self.info("ARTWORK PRIOR UNDO SAVED: " + str(saved_journal))
             write_json(ARTWORK_UNDO, manifest)
             # A flat artwork directory cannot safely represent same-named
             # releases from different subfolders. Reject every ambiguous
