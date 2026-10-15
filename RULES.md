@@ -75,6 +75,16 @@ Example: `01 Plain Jane (Remix) [ft. Nicki Minaj].m4a` is an **individual Remix 
 
 **File operation safety:** Show proposed renames before Apply; preserve real source files, timestamps where feasible, log text, disc data and Undo records. Do not overwrite files, invalidate CUE references, or modify the audio data. These supporting-file rules supplement the `NN Track Title.m4a` audio filename standard.
 
+## 2026-10-15 Music Library Organizer v0.3.17 - true title case, correct CUE files and Soundtrack Singles
+
+**Title and tags:** `picard_small_word_case` must actually capitalize ordinary words, not only lowercase minor words. The same canonical title must appear in release directory names, track filenames and TITLE metadata. Preserve meaningful acronyms, CamelCase, unicode accents, protected names (`3OH!3`, `G-DRAGON`) and lowercase `ft.` feature credits; examples: `Best life` -> `Best Life`, `SIN TI` -> `Sin Ti`, `JOE PESCI` -> `Joe Pesci`.
+
+**CUE file semantics:** `INDEX 00` can reference the previous `FILE`, while `INDEX 01` references the new `FILE` within the same TRACK. Associate a track with the file containing its INDEX 01, track per-index file ownership, compare timestamp order only within the same file. When already split, preserve all sectors/index values and rewrite FILE filenames to the actual verified output tracks. Do not infer missing pregaps or split malformed single images. Never fail a complete album solely because unrelated files have different index timestamps.
+
+**Concrete MusicBrainz release matching:** A two-track Digital Media release with exact barcode `197089993382` can be a Single if its MusicBrainz release group type is Single. Match an optional `(music from the ...)` / `[Music from the ...]` editorial soundtrack subtitle without discarding true edition/remix distinctions; verify full release identity (barcode, format, count and group type) before applying Single. An unverified edition remains PARTIAL; never guess. Keep exact user-supplied album audio original.
+
+All fixes must retain the global unique-run logs rule and existing compact dark UX; no new mandatory UI steps. Native Windows acceptance and full regression suite are **NOT RUN**.
+
 ## 2026-10-15 Music Library Organizer v0.3.16 - per-operation log isolation
 
 Follow the canonical `SOFTWARE_RULES.md` mandatory logging requirement for every program. Music Library Organizer must allocate a unique activity log in its dedicated `Documents/Karpuzikov Tools/Music Library Organizer/logs/` for every Organize and Undo action, not append across jobs. Keep separate startup/session/error diagnostics there. Existing Open log / folder actions must open the current or last processing log and `logs/`, with no extra controls or dialogs. Preserve legacy mixed-root files without overwrite by migrating them to `logs/legacy/` after acquiring the existing named mutex. Log-write failures must be reported, not silently ignored. **Never move original rip logs or generated release `audiochecker.log` into app diagnostics**: these must remain with the relevant music release. Run regression + actual Windows acceptance; under construction until verified.
