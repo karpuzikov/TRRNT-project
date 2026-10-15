@@ -56,6 +56,17 @@ Before ANY UI modification, record a control contract for the affected workflows
 | Real keyboard/hover/right-click, path browse/drop, settings persistence, real audio workflows | NOT RUN | Follow project UI control contract, verified native checker and disposable output, Undo |
 | Whole-product native Python suite and acceptance | NOT RUN | Run py_compile, unittest and full end-to-end before promoting status |
 
+### Music Library Organizer v0.3.17 - title case, CUE and MusicBrainz acceptance (2026-10-15)
+
+| Workflow/control | Status | Native acceptance criteria |
+| --- | --- | --- |
+| GIMS 2021 Best life, 2024 SIN TI, JOE PESCI | NOT RUN (seven additional mock tests defined, full suite unexecuted) | Folder, track filenames, and TITLE tags use Best Life, Sin Ti and Joe Pesci; preserve 3OH!3 and protected names |
+| Actual 88883792232.cue and six cross-file INDEX 00 cases | NOT RUN | Preserve per-file INDEX 00 + next-file INDEX 01 references and original cue bytes; rename FILE mappings, no false FAILED |
+| Invalid single-image INDEX 00 after INDEX 01 | NOT RUN | Refuse unsafe cuts; preserve image and cue with appropriate PARTIAL reason |
+| Arhbo 197089993382 | NOT RUN (mock regression defined) | Exact MusicBrainz release, two Digital Media tracks, Soundtrack + Single -> parenthesized descriptive subtitle with `- Single` |
+| No changed UI controls | NOT RUN | Existing Results selection/Copy, Open log/folder, progress, Undo, keyboard and dark visuals still work |
+| Python compile, 102 regression tests and actual Windows GUI/files | NOT RUN | Execute on exact v0.3.17 source and test real GIMS fixture without modifying originals |
+
 ### Music Library Organizer v0.3.16 - per-run isolated logs native acceptance (2026-10-15)
 
 | Workflow/control | Status | Actual Windows acceptance |
