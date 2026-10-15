@@ -1,6 +1,18 @@
 # Music Library Organizer - UI Control Contract
 
-Status: v0.3.15 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+Status: v0.3.16 candidate - Under construction ⚠️; updated radical simplicity rules applied, Windows UI acceptance NOT RUN. Reference: `karpuzikov/MCC` `Music Collection Cleaner v0.5.18.pyw` main WebView2 window `_webview_main_html()`.
+
+## v0.3.16 - per-run isolated logs, no new controls
+
+| Existing control/operation | Unique outcome / persisted effect | Input, keyboard, error and test status |
+| --- | --- | --- |
+| Organize | After validating paths and Undo safety, allocate a new `logs/run-<timestamp>-<unique>.log` without modifying earlier run logs. Record processing/warnings/timing there. | Same single click, keyboard Enter/Space, initial/running disable semantics. Log allocation failure returns actionable error and does not start a worker. Native Windows **NOT RUN**. |
+| Undo | Create a new `logs/undo-<timestamp>-<unique>.log` before running Undo, with original output audit and recovery intact. | Existing confirmation stays; no new dialog. The previous run log is preserved. Native Windows **NOT RUN**. |
+| `#openLog` | Open the current Organize/Undo log, or most recent processing log after restart, not aggregated historic log. | Existing 34px button, Tab/Enter/Space and native file-open. No picker added. Native Windows **NOT RUN**. |
+| `#openLogFolder` | Open `Documents/Karpuzikov Tools/Music Library Organizer/logs/`, not the mixed app data root. | Existing folder icon, focus/hover/disabled states unchanged. Native Windows **NOT RUN**. |
+| Startup/early crash | Use separate startup/session/startup-error log files and preserve old root logs under `logs/legacy/`; neither operation modifies source audio. | No new UI and no routine dialogs. Real startup and migration **NOT RUN**. |
+
+Do not treat `audiochecker.log` or source CD ripping logs as application logs. No extra menu, preference, banner or history-picker. Visual theme and controls unchanged.
 
 ## v0.3.15 - duplicate-launch focus and clean shutdown
 
