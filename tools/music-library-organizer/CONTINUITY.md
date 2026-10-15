@@ -1,9 +1,19 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.18 - Under construction ⚠️** (existing-output artwork downloader; Apple UPC 10k JPG and verified Spotify fallback; native Windows acceptance NOT RUN; PR draft/unmerged)
+Current version: **0.3.19 - Under construction ⚠️** (artwork directly in Destination; original releases untouched; native Windows acceptance NOT RUN; PR draft/unmerged)
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Candidate source: [`tools/Music Library Organizer v0.3.18.pyw`](../Music%20Library%20Organizer%20v0.3.18.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Candidate source: [`tools/Music Library Organizer v0.3.19.pyw`](../Music%20Library%20Organizer%20v0.3.19.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Current candidate - v0.3.19 flat Destination artwork path (2026-10-15)
+
+**User explicitly corrected v0.3.18:** Images must **NOT** be put inside each release folder. Scan each release *for metadata*, but **SAVE every resulting JPG directly in Destination**. Exact example:
+`C:\\!deemix Music\\GIMS test\\GIMS - UPDATED - Sorted\\2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034].jpg`,
+alongside the `2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034]\\` folder.
+
+**Implementation (v0.3.19):** `_cover_save(root, folder, artwork, manifest)` now creates `root / (folder.name + ".jpg")` using exclusive file creation, JPEG and SHA checks; `_download_artwork(root, releases)` checks only root artwork existence, sets each result destination to root, detects duplicate case-insensitive folder basenames and flags all ambiguous cases PARTIAL before downloading. New manifest stores `layout="destination-root"` and `release_name`; hash-verified Undo validates root-level location plus stored source name. Earlier v0.3.18 nested-journal layout still accepted by Undo for legitimate previously generated nested art; old nested artwork is not migrated/deleted during the new download operation. Existing covers/audio remain unchanged. The artwork button's tooltip is updated to "directly in Destination". **No other functionality or provider order changed.**
+
+**Tests:** 120 uniquely named methods defined (four new checks for root-only output, collision safety, old nested source remains unchanged, legacy nested Undo and new journal path integrity; the old fixture tests were revised). Source and test commits/readback verified; JS syntax and Python execution are still subject to separately reported results. **Native Windows UI, actual CDN/network, real file processing and full regression suite NOT RUN**. Keep PR #1 draft, stable main unchanged.
 
 ## Current candidate - v0.3.18 Apple/Spotify artwork (2026-10-15)
 
