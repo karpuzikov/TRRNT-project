@@ -3518,7 +3518,9 @@ class Organizer:
                     "worker_limit": worker_limit(),
                     "counts": dict(self.counts),
                     "results": list(self.results), "error": self.error,
-                    "activity": list(self.activity), "undo": UNDO.is_file()}
+                    "activity": list(self.activity),
+                    "undo": UNDO.is_file() or ARTWORK_UNDO.is_file(),
+                    "undo_kind": "artwork" if _cover_undo_latest() else "organize"}
 
     def open_log_folder(self):
         return self.open_folder(str(DATA / "logs"))
@@ -4189,13 +4191,153 @@ class Organizer:
             if fp.suffix.lower() == ".cue" and fp not in unresolved_cues and not (dest / fp.parent.relative_to(source) / (cat + ".cue" if physical and valid_cat else fp.name)).is_file():
                 raise RuntimeError("A CUE was lost during export.")
 
+
+    def download_artwork(self, directory):
+        """Scan releases already in Destination; add only missing cover JPGs."""
+        with self.lock:
+            if self.running:
+                return {"error": "Another operation is running."}
+            try:
+                root = Path(str(directory).strip().strip('"')).expanduser().resolve(strict=True)
+                if not root.is_dir() or root.is_symlink():
+                    raise ValueError("Destination must be an existing normal folder")
+                releases = discover(root)
+                if not releases:
+                    raise ValueError("No releases with audio found in Destination")
+                if any(p.is_symlink() or (p != root and root not in p.parents)
+                       for p in releases):
+                    raise ValueError("Unsafe release folder")
+                next_log = _new_log("artwork")
+            except (ValueError, OSError) as exc:
+                return {"error": str(exc)}
+            self.log_path = next_log
+            self.dest = str(root)
+            self.running, self.error, self.progress = True, "", 0
+            self.status = "Finding release artwork..."
+            self.stop.clear()
+            self.counts = {"total": len(releases), "done": 0, "partial": 0,
+                           "skipped": 0, "failed": 0, "warnings": 0}
+            self.results, self.activity = [], []
+        self.info("ARTWORK START: " + str(root) +
+                  " | Apple UPC maximum JPG; Spotify fallback by exact MusicBrainz release")
+        threading.Thread(target=self._download_artwork, args=(root, releases),
+                         daemon=True).start()
+        return {"ok": True}
+
+    def _download_artwork(self, root, releases):
+        manifest = {"root": str(root), "created": [],
+                    "kind": "artwork", "started": datetime.now().isoformat()}
+        try:
+            write_json(ARTWORK_UNDO, manifest)
+            for index, folder in enumerate(releases, 1):
+                if self.stop.is_set():
+                    self.status = "Artwork cancelled; created covers can be undone."
+                    break
+                row = {"name": folder.name, "source": str(folder),
+                       "target": str(folder), "status": "",
+                       "message": "", "warnings": []}
+                try:
+                    if folder.is_symlink() or folder.resolve(strict=True) != folder:
+                        raise ValueError("Release directory changed or is symlinked")
+                    target = folder / (folder.name + ".jpg")
+                    if os.path.lexists(target):
+                        row["status"] = "skipped"
+                        row["message"] = "Cover already exists; not overwritten"
+                        self.counts["skipped"] += 1
+                        continue
+                    code, _physical = catalog(folder.name)
+                    if not _valid_gtin(code):
+                        row["status"] = "partial"
+                        row["message"] = "Release folder does not contain a verified UPC/EAN"
+                        self.counts["partial"] += 1
+                        continue
+                    match = _RELEASE_PARTS.fullmatch(folder.name)
+                    title = match.group("title") if match else folder.name
+                    self.status = f"Artwork {index}/{len(releases)}: {folder.name}"
+                    cover, notes = _cover_apple(code, title, self.stop)
+                    if not cover:
+                        self.info("APPLE MISS: " + folder.name + " | " + "; ".join(notes[-2:]))
+                        cover, spotify_notes = _cover_spotify(code, title, self.stop)
+                        if not cover:
+                            row["status"] = "partial"
+                            row["message"] = "Neither Apple nor exact-match Spotify artwork available"
+                            row["warnings"] = (notes[-2:] + spotify_notes[-2:])
+                            self.counts["partial"] += 1
+                            continue
+                    if self.stop.is_set():
+                        raise InterruptedError("Artwork cancelled")
+                    image, written = _cover_save(folder, cover["bytes"], manifest)
+                    row["status"] = "done" if written else "skipped"
+                    row["message"] = (cover["provider"] + " " + cover["size"] + " JPG"
+                                      if written else "Cover was already created")
+                    row["artwork_source"] = str(cover["link"])
+                    self.counts["done" if written else "skipped"] += 1
+                    self.info("ARTWORK " + row["status"].upper() + ": " +
+                              str(image) + " | " + row["message"] +
+                              " | " + str(cover["link"]))
+                except InterruptedError:
+                    self.status = "Artwork cancelled; completed covers remain Undo-able."
+                    break
+                except Exception as exc:
+                    row["status"], row["message"] = "failed", str(exc)[:350]
+                    self.counts["failed"] += 1
+                    self.info("ARTWORK FAILED: " + folder.name + " | " +
+                              traceback.format_exc()[-1800:])
+                finally:
+                    self.counts["warnings"] += len(row["warnings"])
+                    if row["status"]:
+                        with self.lock:
+                            self.results.append(row)
+                    with self.lock:
+                        self.progress = round(index * 100 / len(releases))
+            if not self.stop.is_set():
+                self.status = (f"Artwork complete: {self.counts['done']} added, "
+                               f"{self.counts['skipped']} existing, "
+                               f"{self.counts['partial']} unavailable, "
+                               f"{self.counts['failed']} failed.")
+                self.info(self.status)
+        except Exception as exc:
+            self.error = str(exc)
+            self.status = "Artwork batch failed: " + str(exc)
+            self.info("ARTWORK ERROR: " + traceback.format_exc()[-2000:])
+        finally:
+            with self.lock:
+                self.running = False
+
+    def _undo_artwork(self, manifest):
+        try:
+            root = Path(manifest["root"]).resolve(strict=True)
+            files = manifest.get("created", [])
+            # Validate all paths and hashes before changing any file.
+            for entry in files:
+                image = Path(entry["path"])
+                if (not image.is_file() or image.is_symlink() or
+                        root not in image.parents or
+                        image.name != image.parent.name + ".jpg" or
+                        sha(image) != entry["sha256"]):
+                    raise RuntimeError("Cover changed since download; Undo blocked: " +
+                                       str(image))
+            for entry in reversed(files):
+                Path(entry["path"]).unlink()
+            ARTWORK_UNDO.unlink(missing_ok=True)
+            self.status = "Artwork Undo complete; audio and existing covers untouched."
+            self.info(self.status)
+        except Exception as exc:
+            self.error = str(exc)
+            self.status = "Artwork Undo blocked: " + str(exc)
+            self.info("ARTWORK UNDO ERROR: " + traceback.format_exc()[-1800:])
+        finally:
+            with self.lock:
+                self.running = False
+
     def undo(self):
         with self.lock:
             if self.running:
                 return {"error": "Job is busy."}
-            journal = read_json(UNDO, None)
+            art_is_latest = _cover_undo_latest()
+            journal = read_json(ARTWORK_UNDO if art_is_latest else UNDO, None)
             if not journal:
-                return {"error": "No prior export to undo."}
+                return {"error": "No prior operation to undo."}
             try:
                 next_log = _new_log("undo")
             except OSError as exc:
@@ -4206,7 +4348,8 @@ class Organizer:
             self.status = "Checking Undo safety..."
             self.stop.clear()
         self.info("UNDO START: verifying prior output before removing it.")
-        threading.Thread(target=self._undo, args=(journal,), daemon=True).start()
+        worker = self._undo_artwork if art_is_latest else self._undo
+        threading.Thread(target=worker, args=(journal,), daemon=True).start()
         return {"ok": True}
 
     def _undo(self, manifest):
@@ -4272,6 +4415,9 @@ class DesktopBridge:
         return self._organizer.organize(
             source, dest, fmt, encoding_workers, checker_workers,
             enable_encoding, enable_checker, enable_splitting)
+
+    def download_artwork(self, folder):
+        return self._organizer.download_artwork(folder)
 
     def cancel(self):
         return self._organizer.cancel()
