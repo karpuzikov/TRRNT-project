@@ -1,10 +1,20 @@
 # Music Library Organizer
 
-**Candidate: v0.3.17 - Under construction ⚠️** (title case + original CUE cross-file INDEX semantics + exact Arhbo barcode; Windows tests pending; PR draft)
+**Candidate: v0.3.18 - Under construction ⚠️** (title case + original CUE cross-file INDEX semantics + exact Arhbo barcode; Windows tests pending; PR draft)
 
-**[Music Library Organizer v0.3.17.pyw](../Music%20Library%20Organizer%20v0.3.17.pyw)**
+**[Music Library Organizer v0.3.18.pyw](../Music%20Library%20Organizer%20v0.3.18.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.18 - Artwork download into existing Destination (under construction)
+
+**New separate `▣ Artwork` button** beside Organize. Select your existing *organized music collection* in **Destination** and click Artwork. No need to run Organize or provide a Source again. One release folder = one artwork operation; audio files, logs, CUE and existing images stay untouched. Result progress shows downloaded / covers exist / unavailable / failed, with each release's lookup link and artwork dimensions in a unique `logs/artwork-...` run log. Cancel stops between lookups; the existing Undo button becomes **Undo Artwork** when appropriate and deletes **only hash-verified JPGs** created by the latest artwork pass, without deleting a release directory or audio.
+
+**Lookup:** Exact verified UPC/EAN suffix; if a CD folder ends in a catalog rather than valid GTIN, try first track's BARCODE/UPC tags and finally the MusicBrainz *exact catalog + compatible physical/digital format + title + unambiguous UPC* (reject guessing). Public Apple iTunes Lookup API `lookup?upc=...&entity=album`, testing US/GB/FR/JP and UPC/EAN leading-zero equivalents. If a matching release supplies `artworkUrl100`, try maximum Apple JPEG CDN variants starting `10000x0w-999.jpg`, then step down through lower JPEG variants. Reject PNG/HTML instead of misnaming as JPG. If Apple fails, search a MusicBrainz release with the exact GTIN/title for linked Spotify album URLs and use the official **public Spotify oEmbed** thumbnail; Spotify fallback only works when that exact release has a usable Spotify link, it does **not** guess across different UPCs. Preserve provider attribution as a source URL in the operation log.
+
+**Output:** `<release folder>/<release folder name>.jpg`, e.g. `2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034]/2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034].jpg`. Existing same-name artwork is never overwritten; exclusive create, JPEG signature/SOF/EOI and dimension verification, bounded HTTPS downloads to allowlisted providers, SHA-256 readback, separate Undo manifest. User source audio is not touched; only a new cover JPG may be added to the chosen existing output folder.
+
+**Verification:** 116 unique test methods defined (14 added to baseline 102); GitHub source readback and embedded JS syntax checked. Actual Python suite, live CDN/API responses, Windows WebView2 actions, real image decoder and Undo acceptance **NOT RUN**. **The previously documented Single/EP soundtrack title-stripping rule is still pending implementation and is not silently bundled into this artwork change.**
 
 ## v0.3.17 - GIMS capitalization, cross-file CUE and 2-track Single metadata
 
