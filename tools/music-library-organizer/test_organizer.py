@@ -2236,6 +2236,37 @@ class Artwork20261015(unittest.TestCase):
                 self.assertTrue(target.exists())
                 self.assertIn("Undo blocked", app.status)
 
+    def test_v0318_artwork_journal_archived_before_flat_rerun(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            appdata = root / "appdata"
+            appdata.mkdir()
+            old = appdata / "artwork-undo.json"
+            record = {"root": str(root), "created": [
+                {"path": "previous-nested-cover.jpg", "sha256": "abc"}]}
+            mlo.write_json(old, record)
+            with patch.object(mlo, "DATA", appdata), \
+                 patch.object(mlo, "ARTWORK_UNDO", old):
+                archive = mlo._cover_archive_prior_undo()
+                self.assertFalse(old.exists())
+                self.assertTrue(archive.is_file())
+                self.assertEqual(mlo.read_json(archive, {}), record)
+                self.assertEqual(archive.parent.name, "artwork-undo-history")
+                self.assertIsNone(mlo._cover_archive_prior_undo())
+
+    def test_artwork_archive_refuses_unreadable_prior_journal(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            target = root / "artwork-undo.json"
+            target.write_bytes(b"invalid")
+            with patch.object(mlo, "DATA", root), \
+                 patch.object(mlo, "ARTWORK_UNDO", target):
+                with self.assertRaisesRegex(ValueError, "unreadable"):
+                    mlo._cover_archive_prior_undo()
+            self.assertTrue(target.exists())
+
     def test_artwork_webview_button_bridge_enabled_and_undo_control(self):
         self.assertIn('id="artwork"', mlo.HTML)
         self.assertIn('call("download_artwork",$(' + "'dest').value)", mlo.HTML)
