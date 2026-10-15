@@ -253,6 +253,8 @@ def picard_small_word_case(text):
             normalized = word
         elif word.upper() in _TITLE_ACRONYMS:
             normalized = word.upper()
+        elif word.casefold() in {"ft", "feat", "featuring", "vs"}:
+            normalized = word.lower()
         elif (word.casefold() in _PICARD_MINOR_WORDS and not first
               and phrase not in _PICARD_PHRASAL):
             normalized = word.lower()
