@@ -3484,6 +3484,7 @@ class Organizer:
         self.enable_checker = bool(settings.get("enable_checker", True))
         self.enable_splitting = bool(settings.get("enable_splitting", True))
         self.running = False
+        self.mode = "organize"
         self.stop = threading.Event()
         self.status = "Choose input and output folders, then Organize."
         self.progress = 0
@@ -3509,7 +3510,7 @@ class Organizer:
     def state(self):
         with self.lock:
             return {"source": self.source, "dest": self.dest, "format": self.fmt,
-                    "running": self.running, "status": self.status,
+                    "running": self.running, "mode": self.mode, "status": self.status,
                     "progress": self.progress, "encoding_workers": self.encoding_workers,
                     "checker_workers": self.checker_workers,
                     "enable_encoding": self.enable_encoding,
@@ -3609,6 +3610,7 @@ class Organizer:
                                   "enable_checker": self.enable_checker,
                                   "enable_splitting": self.enable_splitting})
             self.running = True
+            self.mode = "organize"
             self.stop.clear()
             self.status, self.progress, self.error = "Discovering releases...", 0, ""
             self.counts = {"total": 0, "done": 0, "partial": 0,
@@ -4212,6 +4214,7 @@ class Organizer:
                 return {"error": str(exc)}
             self.log_path = next_log
             self.dest = str(root)
+            self.mode = "artwork"
             self.running, self.error, self.progress = True, "", 0
             self.status = "Finding release artwork..."
             self.stop.clear()
@@ -4602,7 +4605,7 @@ button.folder{width:34px;padding:0}.options{display:flex;align-items:center;gap:
 <label for="checkWorkers">Check workers</label><select id="checkWorkers" aria-label="Number of simultaneous AudioChecker workers"></select>
 </div></div></section>
 <section class="card" id="progress"><div class="progress-head"><span id="status" role="status" aria-live="polite">Connecting to desktop...</span><span id="percent">0%</span></div><div class="track" id="progressBar" role="progressbar" aria-label="Organization progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill" id="fill"></div></div>
-<div class="counts"><span><b id="total">0</b> found</span><span><b id="done">0</b> compliant</span><span><b id="partial">0</b> partial</span><span><b id="skipped">0</b> existing</span><span><b id="failed">0</b> failed</span><span><b id="warnings">0</b> warnings</span></div>
+<div class="counts"><span><b id="total">0</b> <span id="totalLabel">found</span></span><span><b id="done">0</b> <span id="doneLabel">compliant</span></span><span><b id="partial">0</b> <span id="partialLabel">partial</span></span><span><b id="skipped">0</b> <span id="skippedLabel">existing</span></span><span><b id="failed">0</b> failed</span><span><b id="warnings">0</b> warnings</span></div>
 <div id="detail" role="status" aria-live="polite"></div></section>
 <section class="card" id="results"><div class="head"><strong>Results</strong></div><div class="tools"><input type="text" id="query" placeholder="Filter results..." aria-label="Filter results"><button id="openLog">↗ Open log</button><button id="openLogFolder" title="Open folder containing organizer logs" aria-label="Open log folder">📁</button><button id="copyResults" title="Copy visible results to clipboard">Copy</button><span class="space"></span><span id="resultCount" class="muted">Not started</span></div>
 <div class="tablewrap"><table><thead><tr><th style="width:14%">Result</th><th style="width:31%">Release</th><th>Details</th></tr></thead><tbody id="rows"><tr><td colspan="3" class="empty">No results</td></tr></tbody></table></div></section>
@@ -4692,6 +4695,11 @@ function render(){
  $('status').textContent=state.status||"Ready";
  const pct=Number(state.progress||0);$('percent').textContent=pct+"%";$('fill').style.width=pct+"%";$('progressBar').setAttribute("aria-valuenow",String(pct));
  let c=state.counts||{};for(let name of ["total","done","partial","skipped","failed","warnings"])$(name).textContent=c[name]||0;
+ const isArtwork=state.mode==="artwork";
+ $('totalLabel').textContent=isArtwork?"releases":"found";
+ $('doneLabel').textContent=isArtwork?"downloaded":"compliant";
+ $('partialLabel').textContent=isArtwork?"unavailable":"partial";
+ $('skippedLabel').textContent=isArtwork?"covers exist":"existing";
  $('detail').textContent=state.error||"";
  for(let id of ["source","dest","browseSource","browseDest"])$(id).disabled=working;
  updateTaskControls();
