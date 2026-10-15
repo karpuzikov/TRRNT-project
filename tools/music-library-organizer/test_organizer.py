@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.17 - case, soundtrack and cross-file CUE regressions.
+# Music Library Organizer v0.3.18 - artwork operation regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.17.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.18.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -1942,6 +1942,175 @@ class TitlesCueAndSoundtrack20261015(unittest.TestCase):
             "Arhbo (Music from the FIFA World Cup Qatar 2022 Official Soundtrack)",
             "Arhbo (Club Remix)"), 0.82)
 
+
+
+
+class Artwork20261015(unittest.TestCase):
+    @staticmethod
+    def jpeg_stub():
+        # Sufficient for SOF and JPEG magic tests, not a decoded image.
+        return (b"\xff\xd8" + b"\xff\xe0\x00\x10" + b"JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00" +
+                b"\xff\xc0\x00\x11\x08\x0b\xb8\x0b\xb8\x03\x01\x11\x00\x02\x11\x01\x03\x11\x01" +
+                b"\xff\xda\x00\x08\x01\x01\x00\x00\x3f\x00" + b"\x00" * 48 + b"\xff\xd9")
+
+    def test_upc_ean_equivalence_and_catalog_rejection(self):
+        self.assertEqual(mlo._cover_upcs("886445932034"),
+                         ["886445932034", "0886445932034"])
+        self.assertEqual(mlo._cover_upcs("0886445932034"),
+                         ["0886445932034", "886445932034"])
+        self.assertEqual(mlo._cover_upcs("88883792232"), [])
+        self.assertEqual(mlo._cover_upcs("ABC123"), [])
+
+    def test_maximum_apple_image_url_and_safe_hosts(self):
+        thumb = ("https://is1-ssl.mzstatic.com/image/thumb/Music71/v4/"
+                 "fc/2d/f0/fc2df0b6-31db-871b-2cf7-258b06cff487/"
+                 "886445932034.jpg/600x600bb.jpg")
+        candidates = mlo._cover_apple_urls(thumb)
+        self.assertEqual(candidates[0],
+                         thumb.replace("600x600bb.jpg", "10000x0w-999.jpg"))
+        self.assertEqual(candidates[-1], thumb)
+        self.assertEqual(mlo._cover_apple_urls("http://is1-ssl.mzstatic.com/a.jpg/100.jpg"), [])
+        self.assertEqual(mlo._cover_apple_urls("https://not-apple.com/a.jpg/100.jpg"), [])
+
+    def test_jpeg_signature_and_image_dimensions_not_png_renamed(self):
+        self.assertEqual(mlo._cover_jpeg_size(self.jpeg_stub()), (3000, 3000))
+        with self.assertRaisesRegex(ValueError, "JPEG"):
+            mlo._cover_jpeg_size(b"\x89PNG\r\n\x1a\n" + b"a" * 200)
+        with self.assertRaisesRegex(ValueError, "complete JPEG"):
+            mlo._cover_jpeg_size(self.jpeg_stub()[:-2])
+
+    def test_apple_upc_api_and_first_high_resolution_jpeg(self):
+        from unittest.mock import patch
+        folder = "À Contrecœur (Pilule Violette)"
+        body = {"resultCount": 1, "results": [{
+            "wrapperType": "collection",
+            "collectionName": folder + " - EP",
+            "artworkUrl100": ("https://is1-ssl.mzstatic.com/image/thumb/"
+                              "Music71/v4/abc/886445932034.jpg/100x100bb.jpg"),
+            "collectionViewUrl": "https://music.apple.com/us/album/1234"}]}
+        urls = []
+        def retrieve(url, hosts, *args):
+            urls.append(url)
+            return self.jpeg_stub()
+        with patch.object(mlo, "_cover_json", return_value=body) as lookup, \
+             patch.object(mlo, "_cover_request", side_effect=retrieve):
+            cover, notes = mlo._cover_apple("886445932034", folder + " - EP", threading.Event())
+        self.assertIsNotNone(cover)
+        self.assertEqual(cover["provider"], "Apple Music")
+        self.assertEqual(cover["size"], "3000x3000")
+        self.assertTrue(urls[0].endswith("/10000x0w-999.jpg"))
+        self.assertIn("upc=886445932034", lookup.call_args[0][0])
+        self.assertEqual(notes, [])
+
+    def test_apple_provider_miss_still_falls_back_without_guessing(self):
+        from unittest.mock import patch
+        with patch.object(mlo, "_cover_json", return_value={"resultCount": 0, "results": []}):
+            cover, reasons = mlo._cover_apple(
+                "886445932034", "À Contrecœur (Pilule Violette)", threading.Event())
+        self.assertIsNone(cover)
+        self.assertEqual(reasons, [])
+
+    def test_spotify_link_discovery_exact_gtin_via_musicbrainz(self):
+        from unittest.mock import patch
+        spotify_id = "3jjkjjjjjjjjjjjjjjjjjj"
+        album_url = "https://open.spotify.com/album/" + spotify_id
+        release_id = "12222222-2222-2222-2222-222222222222"
+        def mb(path):
+            if path.startswith("release/?"):
+                return {"releases": [{"id": release_id, "barcode": "886445932034",
+                                      "title": "À Contrecœur (Pilule Violette)"}]}
+            if path.startswith("release-group/"):
+                return {"relations": [{"url": {"resource": album_url}}]}
+            return {"release-group": {"id": "some-group"},
+                    "relations": [{"url": {"resource": album_url}}]}
+        with patch.object(mlo, "mb_json", side_effect=mb), \
+             patch.object(mlo, "_cover_json", return_value={
+                 "thumbnail_url": "https://i.scdn.co/image/ab67616d0000b273ABC"}), \
+             patch.object(mlo, "_cover_request", return_value=self.jpeg_stub()):
+            cover, reasons = mlo._cover_spotify(
+                "886445932034", "À Contrecœur (Pilule Violette)", threading.Event())
+        self.assertEqual(cover["provider"], "Spotify")
+        self.assertEqual(cover["link"], album_url)
+        self.assertEqual(cover["size"], "3000x3000")
+
+    def test_atomic_create_only_and_hash_undo(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            folder = root / "2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034]"
+            folder.mkdir()
+            journal = {"root": str(root), "kind": "artwork", "created": []}
+            with patch.object(mlo, "ARTWORK_UNDO", root / "undo.json"):
+                art = self.jpeg_stub()
+                target, written = mlo._cover_save(folder, art, journal)
+                self.assertTrue(written)
+                self.assertEqual(target.name, folder.name + ".jpg")
+                self.assertEqual(target.read_bytes(), art)
+                same, rewritten = mlo._cover_save(folder, b"different", journal)
+                self.assertFalse(rewritten)
+                self.assertEqual(target.read_bytes(), art)
+                app = mlo.Organizer()
+                app._undo_artwork(journal)
+                self.assertFalse(target.exists())
+                self.assertTrue(folder.is_dir())
+                self.assertFalse((root / "undo.json").exists())
+
+    def test_undo_refuses_changed_artwork(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            folder = root / "2020-01-01 - Example [1234567890128]"
+            folder.mkdir()
+            manifest = {"root": str(root), "created": []}
+            with patch.object(mlo, "ARTWORK_UNDO", root / "art-undo.json"):
+                image, _ = mlo._cover_save(folder, self.jpeg_stub(), manifest)
+                image.write_bytes(b"changed")
+                app = mlo.Organizer()
+                app._undo_artwork(manifest)
+                self.assertTrue(image.exists())
+                self.assertIn("Undo blocked", app.status)
+
+    def test_artwork_existing_destination_not_overwritten_no_download(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            folder = root / "2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034]"
+            folder.mkdir()
+            (folder / "01 Song.m4a").write_bytes(b"song")
+            cover = folder / (folder.name + ".jpg")
+            cover.write_bytes(b"existing cover")
+            app = mlo.Organizer()
+            with patch.object(mlo, "ARTWORK_UNDO", root / "art-undo.json"), \
+                 patch.object(mlo, "_cover_apple", side_effect=AssertionError("Must skip lookup")), \
+                 patch.object(mlo, "_cover_spotify", side_effect=AssertionError("Must skip fallback")):
+                app._download_artwork(root, [folder])
+                self.assertEqual(app.counts["skipped"], 1)
+                self.assertEqual(cover.read_bytes(), b"existing cover")
+
+    def test_artwork_explicit_separate_operation_and_cancellation(self):
+        from unittest.mock import Mock, patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            folder = root / "2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034]"
+            folder.mkdir()
+            (folder / "01 Song.m4a").write_bytes(b"song")
+            with patch.object(mlo.threading, "Thread", return_value=Mock()), \
+                 patch.object(mlo, "DATA", root / "private"):
+                app = mlo.Organizer()
+                self.assertEqual(app.download_artwork(str(root)), {"ok": True})
+                self.assertEqual(app.counts["total"], 1)
+                self.assertTrue(app.log_path.name.startswith("artwork-"))
+                self.assertEqual(app.cancel(), {"ok": True})
+                self.assertTrue(app.stop.is_set())
+                self.assertEqual(app.download_artwork(str(root))["error"],
+                                 "Another operation is running.")
+                self.assertFalse((folder / (folder.name + ".jpg")).exists())
+
+    def test_artwork_webview_button_bridge_enabled_and_undo_control(self):
+        self.assertIn('id="artwork"', mlo.HTML)
+        self.assertIn('call("download_artwork",$(' + "'dest').value)", mlo.HTML)
+        self.assertIn('state.undo_kind==="artwork"', mlo.HTML)
+        self.assertTrue(hasattr(mlo.DesktopBridge, "download_artwork"))
 
 
 if __name__ == "__main__":
