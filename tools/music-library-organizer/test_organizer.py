@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.18 - artwork operation regressions.
+# Music Library Organizer v0.3.19 - flat Destination artwork regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.18.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.19.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -2039,14 +2039,14 @@ class Artwork20261015(unittest.TestCase):
             root = Path(td)
             folder = root / "2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034]"
             folder.mkdir()
-            journal = {"root": str(root), "kind": "artwork", "created": []}
+            journal = {"root": str(root), "layout": "destination-root", "kind": "artwork", "created": []}
             with patch.object(mlo, "ARTWORK_UNDO", root / "undo.json"):
                 art = self.jpeg_stub()
-                target, written = mlo._cover_save(folder, art, journal)
+                target, written = mlo._cover_save(root, folder, art, journal)
                 self.assertTrue(written)
-                self.assertEqual(target.name, folder.name + ".jpg")
+                self.assertEqual(target, root / (folder.name + ".jpg"))
                 self.assertEqual(target.read_bytes(), art)
-                same, rewritten = mlo._cover_save(folder, b"different", journal)
+                same, rewritten = mlo._cover_save(root, folder, b"different", journal)
                 self.assertFalse(rewritten)
                 self.assertEqual(target.read_bytes(), art)
                 app = mlo.Organizer()
@@ -2061,9 +2061,9 @@ class Artwork20261015(unittest.TestCase):
             root = Path(td)
             folder = root / "2020-01-01 - Example [1234567890128]"
             folder.mkdir()
-            manifest = {"root": str(root), "created": []}
+            manifest = {"root": str(root), "layout": "destination-root", "created": []}
             with patch.object(mlo, "ARTWORK_UNDO", root / "art-undo.json"):
-                image, _ = mlo._cover_save(folder, self.jpeg_stub(), manifest)
+                image, _ = mlo._cover_save(root, folder, self.jpeg_stub(), manifest)
                 image.write_bytes(b"changed")
                 app = mlo.Organizer()
                 app._undo_artwork(manifest)
@@ -2077,7 +2077,7 @@ class Artwork20261015(unittest.TestCase):
             folder = root / "2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034]"
             folder.mkdir()
             (folder / "01 Song.m4a").write_bytes(b"song")
-            cover = folder / (folder.name + ".jpg")
+            cover = root / (folder.name + ".jpg")
             cover.write_bytes(b"existing cover")
             app = mlo.Organizer()
             with patch.object(mlo, "ARTWORK_UNDO", root / "art-undo.json"), \
@@ -2104,7 +2104,7 @@ class Artwork20261015(unittest.TestCase):
                 self.assertTrue(app.stop.is_set())
                 self.assertEqual(app.download_artwork(str(root))["error"],
                                  "Another operation is running.")
-                self.assertFalse((folder / (folder.name + ".jpg")).exists())
+                self.assertFalse((root / (folder.name + ".jpg")).exists())
 
 
     def test_cd_catalog_number_resolves_single_verified_barcode(self):
@@ -2122,7 +2122,7 @@ class Artwork20261015(unittest.TestCase):
                 self.assertEqual(mlo._cover_release_barcode(release), "888837922326")
             catalog_search.assert_called_once()
 
-    def test_artwork_operation_creates_jpg_in_release_folder_without_touching_audio(self):
+    def test_artwork_operation_creates_jpg_in_destination_root_without_touching_audio(self):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -2137,7 +2137,7 @@ class Artwork20261015(unittest.TestCase):
                  patch.object(mlo, "_cover_apple", return_value=(art, [])), \
                  patch.object(mlo, "_cover_spotify", side_effect=AssertionError("Apple available")):
                 app._download_artwork(root, [folder])
-                output = folder / (folder.name + ".jpg")
+                output = root / (folder.name + ".jpg")
                 self.assertTrue(output.is_file())
                 self.assertEqual(output.read_bytes(), self.jpeg_stub())
                 self.assertEqual(source.read_bytes(), b"original unchanged audio")
@@ -2161,6 +2161,80 @@ class Artwork20261015(unittest.TestCase):
                      detail, barcode=("888837922326" if "/one?" in path
                                       else "197089993382"))):
                 self.assertEqual(mlo._cover_release_barcode(release), "")
+
+    def test_new_artwork_output_does_not_modify_previous_nested_jpg(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            release = root / "2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034]"
+            release.mkdir()
+            (release / "01 Ma Beauté.m4a").write_bytes(b"untouched audio")
+            old_nested = release / (release.name + ".jpg")
+            old_nested.write_bytes(b"previous v0.3.18 nested cover")
+            art = {"bytes": self.jpeg_stub(), "provider": "Apple Music",
+                   "size": "3000x3000", "link": "https://music.apple.com/us/album/123"}
+            with patch.object(mlo, "ARTWORK_UNDO", root / "cover-journal.json"), \
+                 patch.object(mlo, "_cover_apple", return_value=(art, [])):
+                app = mlo.Organizer()
+                app._download_artwork(root, [release])
+                new_flat = root / (release.name + ".jpg")
+                self.assertTrue(new_flat.is_file())
+                self.assertEqual(new_flat.read_bytes(), self.jpeg_stub())
+                self.assertEqual(old_nested.read_bytes(), b"previous v0.3.18 nested cover")
+                self.assertEqual(app.counts["done"], 1)
+
+    def test_duplicate_release_folder_names_do_not_choose_wrong_cover(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            first = root / "Artist A" / "2022-11-19 - Arhbo [197089993382]"
+            second = root / "Artist B" / first.name
+            first.mkdir(parents=True)
+            second.mkdir(parents=True)
+            for release in (first, second):
+                (release / "01 Test.m4a").write_bytes(b"audio")
+            with patch.object(mlo, "ARTWORK_UNDO", root / "art-journal.json"), \
+                 patch.object(mlo, "_cover_apple", side_effect=AssertionError(
+                     "Must not download ambiguous same-name releases")):
+                app = mlo.Organizer()
+                app._download_artwork(root, [first, second])
+                self.assertEqual(app.counts["partial"], 2)
+                self.assertFalse((root / (first.name + ".jpg")).exists())
+                self.assertTrue(all("Duplicate release" in x["message"]
+                                    for x in app.results))
+
+    def test_legacy_v0318_nested_artwork_undo_still_supported(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            release = root / "2022-11-19 - Arhbo [197089993382]"
+            release.mkdir()
+            jpeg = self.jpeg_stub()
+            old_cover = release / (release.name + ".jpg")
+            old_cover.write_bytes(jpeg)
+            old_journal = {"root": str(root), "created": [
+                {"path": str(old_cover), "sha256": mlo.hashlib.sha256(jpeg).hexdigest()}]}
+            with patch.object(mlo, "ARTWORK_UNDO", root / "artwork-undo.json"):
+                app = mlo.Organizer()
+                app._undo_artwork(old_journal)
+            self.assertFalse(old_cover.exists())
+            self.assertTrue(release.is_dir())
+
+    def test_new_flat_artwork_undo_rejects_wrong_release_name(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            release = root / "2022-11-19 - Arhbo [197089993382]"
+            release.mkdir()
+            journal = {"root": str(root), "layout": "destination-root", "created": []}
+            with patch.object(mlo, "ARTWORK_UNDO", root / "artwork-undo.json"):
+                target, created = mlo._cover_save(root, release, self.jpeg_stub(), journal)
+                self.assertTrue(created)
+                journal["created"][0]["release_name"] = "Different Album"
+                app = mlo.Organizer()
+                app._undo_artwork(journal)
+                self.assertTrue(target.exists())
+                self.assertIn("Undo blocked", app.status)
 
     def test_artwork_webview_button_bridge_enabled_and_undo_control(self):
         self.assertIn('id="artwork"', mlo.HTML)
