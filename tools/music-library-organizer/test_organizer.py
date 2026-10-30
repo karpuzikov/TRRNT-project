@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.19 - flat Destination artwork regressions.
+# Music Library Organizer v0.3.20 - edition grouping and naming regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.19.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.20.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -1377,7 +1377,7 @@ class MinimalWebViewUX20261014(unittest.TestCase):
     def test_diagnostic_help_is_conditional_not_constant_tutorial(self):
         html = mlo.HTML
         self.assertIn("Retry the desktop connection if it remains unavailable.", html)
-        self.assertIn("$('detail').textContent=state.error||\"\\";", html)
+        self.assertIn("textContent=state.error||" + '"";', html)
         self.assertIn("#detail:empty{display:none}", html)
         self.assertNotIn("Genuine errors do not block later releases.", html)
         self.assertIn("state.error", html)
@@ -2272,6 +2272,270 @@ class Artwork20261015(unittest.TestCase):
         self.assertIn('call("download_artwork",$(' + "'dest').value)", mlo.HTML)
         self.assertIn('state.undo_kind==="artwork"', mlo.HTML)
         self.assertTrue(hasattr(mlo.DesktopBridge, "download_artwork"))
+
+
+class EverythingEverything20261030(unittest.TestCase):
+    def test_arc_two_disc_siblings_become_one_release(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            disc1 = root / "2013 - Arc (Deluxe Edition) CD 1"
+            disc2 = root / "2013 - Arc (Deluxe Edition) CD 2"
+            unrelated = root / "2017.08 - A Fever Dream"
+            for folder, count in ((disc1, 13), (disc2, 6), (unrelated, 2)):
+                folder.mkdir()
+                for number in range(1, count + 1):
+                    (folder / f"{number:02d} Song {number}.flac").write_bytes(b"audio")
+            grouped = mlo.group_disc_releases(mlo.discover(root))
+            self.assertEqual(len(grouped), 2)
+            arc = next(x for x in grouped if "Arc" in x[0])
+            self.assertEqual(arc[0], "2013 - Arc (Deluxe Edition)")
+            self.assertEqual(arc[1], (disc1, disc2))
+            self.assertEqual(mlo.source_disc_counts(arc[1]), (13, 6))
+
+    def test_orphan_cd2_is_never_grouped_or_lost(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            disc2 = root / "2013 - Arc (Deluxe Edition) CD 2"
+            disc2.mkdir()
+            (disc2 / "01 Awe-Arc.flac").write_bytes(b"audio")
+            grouped = mlo.group_disc_releases(mlo.discover(root))
+            self.assertEqual(grouped, [(disc2.name, (disc2,))])
+
+    def test_incomplete_disc_set_and_digital_disc_labels_not_forced_to_cd(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            names = ("2013 - Arc (Deluxe Edition) CD 1",
+                     "2013 - Arc (Deluxe Edition) CD 3",
+                     "2020 - Digital Album Disc 1",
+                     "2020 - Digital Album Disc 2")
+            for name in names:
+                folder = root / name
+                folder.mkdir()
+                (folder / "01 Track.flac").write_bytes(b"audio")
+            grouped = mlo.group_disc_releases(mlo.discover(root))
+            self.assertEqual(len(grouped), 4)
+            self.assertTrue(all(len(members) == 1 for _, members in grouped))
+
+    def test_deeper_sea_date_and_non_rip_log(self):
+        with tempfile.TemporaryDirectory() as td:
+            folder = Path(td) / "2018.02 - A Deeper Sea - EP"
+            folder.mkdir()
+            for i in range(1, 5):
+                (folder / f"{i:02d} Song.flac").write_bytes(b"audio")
+            (folder / "analysis.log").write_text("spectrum scan complete", encoding="utf-8")
+            identity = mlo.release_identity(folder, mlo.collect_files(folder),
+                                            "Everything Everything", allow_network=False)
+            self.assertFalse(identity["physical"])
+            self.assertEqual(identity["date"], "2018-02")
+            self.assertEqual(identity["title"], "A Deeper Sea - EP")
+            self.assertEqual(mlo.release_folder_target(identity),
+                             "2018-02 - A Deeper Sea - EP")
+
+    def test_genuine_eac_rip_log_stays_physical(self):
+        with tempfile.TemporaryDirectory() as td:
+            folder = Path(td) / "2018.02 - A Deeper Sea - EP"
+            folder.mkdir()
+            (folder / "01 Song.flac").write_bytes(b"audio")
+            (folder / "rip.log").write_text(
+                "Exact Audio Copy V1.6 from 23. October 2020\nEAC extraction logfile",
+                encoding="utf-8")
+            identity = mlo.release_identity(folder, mlo.collect_files(folder),
+                                            "Everything Everything", allow_network=False)
+            self.assertTrue(identity["physical"])
+
+    def test_windows_utf16_eac_rip_log_stays_physical(self):
+        with tempfile.TemporaryDirectory() as td:
+            folder = Path(td) / "2018.02 - A Deeper Sea - EP"
+            folder.mkdir()
+            (folder / "01 Song.flac").write_bytes(b"audio")
+            (folder / "rip.log").write_bytes(
+                "Exact Audio Copy V1.6\r\nEAC extraction logfile".encode("utf-16"))
+            identity = mlo.release_identity(
+                folder, mlo.collect_files(folder), "Everything Everything",
+                allow_network=False)
+            self.assertTrue(identity["physical"])
+
+    def test_deeper_sea_searches_base_title_without_ep_suffix(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            folder = Path(td) / "2018.02 - A Deeper Sea - EP"
+            folder.mkdir()
+            for number in range(1, 5):
+                (folder / f"{number:02d} Song.flac").write_bytes(b"audio")
+            candidate = {"id": "deeper-sea", "title": "A Deeper Sea",
+                         "media": [{"format": "Digital Media", "track-count": 4}]}
+            detail = dict(candidate, **{
+                "label-info": [{"catalog-number": "EVEV-EP"}], "date": "2018-02-27",
+                "release-group": {"first-release-date": "2018-02-27", "primary-type": "EP"}})
+            searches = []
+            def fake_mb(path, **kwargs):
+                if path.startswith("release/?"):
+                    searches.append(mlo.urllib.parse.parse_qs(
+                        path.partition("?")[2]).get("query", [""])[0])
+                    return {"releases": [candidate] if
+                            'release:"A Deeper Sea"' in searches[-1] else []}
+                if path.startswith("release/deeper-sea?"):
+                    return detail
+                raise AssertionError(path)
+            with patch.object(mlo, "mb_json", side_effect=fake_mb):
+                identity = mlo.release_identity(
+                    folder, mlo.collect_files(folder), "Everything Everything")
+            self.assertTrue(identity["metadata_verified"], searches)
+            self.assertEqual(identity["release_type"], "EP")
+            self.assertEqual(mlo.release_folder_target(identity),
+                             "2018-02-27 - A Deeper Sea - EP [EVEV-EP]")
+
+    def test_arc_two_disc_export_keeps_track_names_separate(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source = root / "Input"
+            output = root / "Output"
+            for n, count in ((1, 13), (2, 6)):
+                disc = source / f"2013 - Arc (Deluxe Edition) CD {n}"
+                disc.mkdir(parents=True)
+                for num in range(1, count + 1):
+                    (disc / f"{num:02d} Song {num}.flac").write_bytes(
+                        f"disc{n}-track{num}".encode())
+            discs = tuple(sorted(source.iterdir()))
+            with patch.object(mlo, "DATA", root / "data"):
+                app = mlo.Organizer()
+                app.encoding_workers = 2
+                app.enable_encoding = False
+                app._artist_root = "Everything Everything"
+                with patch.object(mlo, "probe", return_value={"codec_name": "flac"}), \
+                     patch.object(mlo, "_update_copied_track_tags"):
+                    app._export_release(source, output, "FLAC", "ffmpeg", "ffprobe",
+                                        source_files=[f for disc in discs
+                                                      for f in mlo.collect_files(disc)],
+                                        disc_folders=discs)
+            self.assertEqual(len(list((output / "CD 1").glob("*.flac"))), 13)
+            self.assertEqual(len(list((output / "CD 2").glob("*.flac"))), 6)
+            self.assertTrue((output / "CD 1" / "01 Song 1.flac").is_file())
+            self.assertTrue((output / "CD 2" / "01 Song 1.flac").is_file())
+
+    def test_grouped_cd_cue_and_log_remain_in_their_own_disc(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source = root / "Input"
+            output = root / "Output"
+            for n in (1, 2):
+                disc = source / f"Arc Deluxe CD {n}"
+                disc.mkdir(parents=True)
+                (disc / "01 Song.flac").write_bytes(f"disc {n}".encode())
+                (disc / "rip.cue").write_text(
+                    'FILE "01 Song.flac" WAVE\n  TRACK 01 AUDIO\n'
+                    '    TITLE "Song"\n    INDEX 01 00:00:00\n', encoding="utf-8")
+                (disc / "rip.log").write_text(
+                    "Exact Audio Copy V1.6\nEAC extraction logfile", encoding="utf-8")
+            discs = tuple(sorted(source.iterdir()))
+            files = [fp for disc in discs for fp in mlo.collect_files(disc)]
+            with patch.object(mlo, "DATA", root / "private"):
+                app = mlo.Organizer()
+                app.enable_encoding = False
+                app.encoding_workers = 2
+                app._artist_root = "Everything Everything"
+                app._current_identity = {"physical": True, "catalog": "CAT-123",
+                                         "metadata_verified": True}
+                with patch.object(mlo, "probe", return_value={"codec_name": "flac"}), \
+                     patch.object(mlo, "_update_copied_track_tags"):
+                    app._export_release(
+                        source, output, "FLAC", "ff", "ffprobe",
+                        source_files=files, disc_folders=discs)
+            for n in (1, 2):
+                self.assertTrue((output / f"CD {n}" / "CAT-123.cue").is_file())
+                self.assertTrue((output / f"CD {n}" / "CAT-123.log").is_file())
+                self.assertIn('FILE "01 Song.flac"',
+                              (output / f"CD {n}" / "CAT-123.cue").read_text())
+
+    def test_arc_deluxe_identity_uses_complete_medium_counts(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            source = Path(td)
+            discs = []
+            for disc_number, count in ((1, 13), (2, 6)):
+                disc = source / f"2013 - Arc (Deluxe Edition) CD {disc_number}"
+                disc.mkdir()
+                for number in range(1, count + 1):
+                    (disc / f"{number:02d} Song.flac").write_bytes(b"audio")
+                discs.append(disc)
+            standard = {"id": "standard", "title": "Arc",
+                        "media": [{"format": "CD", "track-count": 13}]}
+            # A genuine two-CD deluxe release can be indexed simply as "Arc".
+            deluxe = {"id": "deluxe", "title": "Arc",
+                      "media": [{"format": "CD", "track-count": 13},
+                                {"format": "CD", "track-count": 6}]}
+            full_deluxe = dict(deluxe, **{
+                "label-info": [{"catalog-number": "88725473752"}],
+                "country": "GB", "date": "2013-01-14",
+                "barcode": "0887254737520",
+                "release-group": {"first-release-date": "2013-01-11",
+                                  "primary-type": "Album"}})
+            def fake_mb(path, **kwargs):
+                if path.startswith("release/?"):
+                    return {"releases": [standard, deluxe]}
+                if "release/deluxe" in path:
+                    return full_deluxe
+                if "release/standard" in path:
+                    return standard
+                raise AssertionError(path)
+            with patch.object(mlo, "mb_json", side_effect=fake_mb):
+                result = mlo.release_identity(
+                    source, [f for disc in discs for f in mlo.collect_files(disc)],
+                    "Everything Everything", source_name="2013 - Arc (Deluxe Edition)",
+                    disc_folders=tuple(discs))
+            self.assertTrue(result["metadata_verified"])
+            self.assertEqual(result["selected_release"], "deluxe")
+            self.assertEqual(result["source_medium_counts"], [13, 6])
+            self.assertEqual(result["catalog"], "88725473752")
+            self.assertEqual(mlo.release_folder_target(result),
+                             "2013-01-11 - Arc (Deluxe Edition) [GB - 88725473752]")
+
+    def test_organize_arc_siblings_as_one_batch_result(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            source = root / "Everything Everything - UPDATED"
+            destination = root / "Sorted"
+            for disc_number, count in ((1, 13), (2, 6)):
+                disc = source / f"2013 - Arc (Deluxe Edition) CD {disc_number}"
+                disc.mkdir(parents=True)
+                for number in range(1, count + 1):
+                    (disc / f"{number:02d} Song {number}.flac").write_bytes(b"audio")
+            metadata = {"title": "Arc (Deluxe Edition)", "date": "2013-01-11",
+                        "catalog": "88725473752", "barcode": "",
+                        "physical": True, "country": "GB", "edition_date": "",
+                        "release_type": "Album", "metadata_verified": True,
+                        "notes": [], "root_artist": "Everything Everything",
+                        "track_count": 19}
+            seen = []
+            def verify_identity(folder, files, default_artist, **kwargs):
+                seen.append((kwargs.get("source_name"), kwargs.get("disc_folders"),
+                             sum(fp.suffix == ".flac" for fp in files)))
+                return dict(metadata)
+            with patch.object(mlo, "DATA", root / "private"), \
+                 patch.object(mlo, "UNDO", root / "undo.json"), \
+                 patch.object(mlo, "REPORT", root / "report.json"), \
+                 patch.object(mlo, "HISTORY", root / "history"), \
+                 patch.object(mlo, "release_identity", side_effect=verify_identity), \
+                 patch.object(mlo, "ensure_ffmpeg", return_value=("ff", "ffprobe")), \
+                 patch.object(mlo, "probe", return_value={"codec_name": "flac"}), \
+                 patch.object(mlo, "_update_copied_track_tags"), \
+                 patch.object(mlo, "collection_credit_consensus", return_value={}):
+                app = mlo.Organizer()
+                app.enable_encoding = False
+                app.enable_checker = False
+                app._organize(source, destination, "FLAC")
+            self.assertEqual(app.counts["total"], 1)
+            self.assertEqual(app.counts["done"], 1, app.results)
+            self.assertEqual(len(seen), 1)
+            self.assertEqual(seen[0][0], "2013 - Arc (Deluxe Edition)")
+            self.assertEqual(len(seen[0][1]), 2)
+            self.assertEqual(seen[0][2], 19)
+            album = destination / "2013-01-11 - Arc (Deluxe Edition) [GB - 88725473752]"
+            self.assertEqual(len(list((album / "CD 1").glob("*.flac"))), 13)
+            self.assertEqual(len(list((album / "CD 2").glob("*.flac"))), 6)
 
 
 if __name__ == "__main__":
