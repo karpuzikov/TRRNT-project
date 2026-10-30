@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.20 - edition grouping and naming regressions.
+# Music Library Organizer v0.3.21 - edition grouping and naming regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.20.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.21.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -2275,6 +2275,19 @@ class Artwork20261015(unittest.TestCase):
 
 
 class EverythingEverything20261030(unittest.TestCase):
+    def test_musicbrainz_europe_code_renders_as_eu_not_xe(self):
+        info = {"title": "Arc (Deluxe Edition)", "date": "2013-01-11",
+                "catalog": "88725473752", "physical": True,
+                "country": "XE", "release_type": "Album", "notes": []}
+        self.assertEqual(
+            mlo.release_folder_target(info),
+            "2013-01-11 - Arc (Deluxe Edition) [EU - 88725473752]")
+        self.assertEqual(info["country"], "XE")  # Preserve MusicBrainz provenance.
+        info["country"] = "EU"
+        self.assertEqual(
+            mlo.release_folder_target(info),
+            "2013-01-11 - Arc (Deluxe Edition) [EU - 88725473752]")
+
     def test_arc_two_disc_siblings_become_one_release(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
