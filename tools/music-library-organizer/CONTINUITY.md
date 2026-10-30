@@ -1,9 +1,17 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.20 - Under construction ⚠️** (Arc two-disc grouping and EP naming correction; original releases untouched; native Windows acceptance NOT RUN; PR draft/unmerged)
+Current version: **0.3.21 - Under construction ⚠️** (MusicBrainz Europe region display correction; original releases untouched; native Windows acceptance NOT RUN; PR draft/unmerged)
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Candidate source: [`tools/Music Library Organizer v0.3.20.pyw`](../Music%20Library%20Organizer%20v0.3.20.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Candidate source: [`tools/Music Library Organizer v0.3.21.pyw`](../Music%20Library%20Organizer%20v0.3.21.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Current candidate - v0.3.21 Europe output code (2026-10-31)
+
+**Bug:** User's actual 2-CD Arc Deluxe result was named `2013-01-11 - Arc (Deluxe Edition) [XE - 88725473752]`. MusicBrainz `XE` means Europe, but `PROJECT.md` specifies the human-readable release-territory fallback `EU`. `_release_identity` deliberately retains the raw MusicBrainz country and provenance, while `release_folder_target()` previously emitted the raw country unchanged.
+
+**Fix:** Only when forming the physical-CD output folder name, render `country="XE"` as `EU`. Keep the original MusicBrainz `XE` in the identity metadata so source evidence and comparisons remain accurate. Existing `EU`, `GB` and other codes are unaffected; do not change the original release-group first-date policy or claim pressing/manufacturing country based on release territory. The exact corrected output is `2013-01-11 - Arc (Deluxe Edition) [EU - 88725473752]` under current metadata.
+
+**Validation:** Red-before-green regression reproduced the literal erroneous folder name against v0.3.20. v0.3.21 syntax compilation PASS; all 12 Everything Everything focused tests PASS. Full inherited Linux suite: 134 tests, 11 existing failures, 19 existing errors, 1 skipped, identical failure/error totals to v0.3.20; primarily historical assertions and Windows-specific runtime/private-data assumptions. Real Windows workflow and original physical edition provenance not independently retested. Retain PR #1 as draft and `main` unchanged until native acceptance.
 
 ## Current candidate - v0.3.20 Everything Everything split-disc and EP naming (2026-10-30)
 
