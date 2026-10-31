@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.21 - edition grouping and naming regressions.
+# Music Library Organizer v0.3.22 - edition grouping and naming regressions.
 # Run on Windows: py -3 tools\music-library-organizer\test_organizer.py
 # These tests do not replace Windows GUI/interaction/real-disc acceptance.
 import importlib.machinery
@@ -13,7 +13,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.21.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.22.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -471,6 +471,23 @@ class NamingRules(unittest.TestCase):
         info["edition_date"] = "2011-10-10"
         self.assertEqual(mlo.release_folder_target(info),
                          "2011-09-19 - I Am the Club Rocker [JP - WPCR-14516]")
+
+    def test_digital_reissue_year_suffix_requires_verified_different_edition_year(self):
+        info = {"folder": "Legacy", "title": "Get to Heaven (Expanded 10th Anniversary Edition)",
+                "date": "2015-05-19", "edition_date": "2025-07-04",
+                "catalog": "", "barcode": "196873083926", "physical": False,
+                "country": "", "release_type": "Album", "notes": []}
+        self.assertEqual(
+            mlo.release_folder_target(info),
+            "2015-05-19 - Get to Heaven (Expanded 10th Anniversary Edition) [196873083926 - 2025]")
+        info["edition_date"] = "2015-06-19"
+        self.assertEqual(
+            mlo.release_folder_target(info),
+            "2015-05-19 - Get to Heaven (Expanded 10th Anniversary Edition) [196873083926]")
+        info["edition_date"] = ""
+        self.assertEqual(
+            mlo.release_folder_target(info),
+            "2015-05-19 - Get to Heaven (Expanded 10th Anniversary Edition) [196873083926]")
 
     def test_cd_does_not_export_existing_web_audiochecker_log(self):
         from unittest.mock import patch
