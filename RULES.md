@@ -258,7 +258,7 @@ These rules apply to the dedicated **file-organization stage** of the discograph
 - For **digital/WEB** releases, use a catalog number from **MusicBrainz**, **Beatport**, or **BPTopTracker** (not a store ID). If no authentic catalog number is available, use the **barcode**. Use `none` when a release truly lacks **both** a catalog number and a barcode; `none` does not mean that lookup has merely not been attempted.
 - For CDs, if catalog number is genuinely absent, prefer barcode as the bracket identifier. Use `none` only if both are missing after the metadata/DiscID/Discogs lookup.
 - **Never use store IDs** as folder identifiers.
-- Digital/WEB format: `<Initial Date> - <Release Title> [<Catalog Number or Barcode or none>]`. **No physical pressing-country prefix**: manufacture/pressing is N/A for digital releases.
+- Digital/WEB format: `<Initial Date> - <Release Title> [<Catalog Number or Barcode or none>]`. **No physical pressing-country prefix**: manufacture/pressing is N/A for digital releases. Different-year WEB reissues append the verified edition year inside the same brackets (see below).
 - A bracketed identifier alone such as `[OLE13186]` denotes a WEB/digital release *in the standard*, not an unverified physical CD. Do not silently reclassify ambiguous source material by parsing folder text alone.
 
 ### Release type and remix naming
@@ -270,10 +270,12 @@ These rules apply to the dedicated **file-organization stage** of the discograph
 - **Do not invent a remix label.** If the genuine title has no plural remix-collection descriptor, do not add `(Remixes)` merely because the release has more than three tracks. Retain the authentic title, applying ordinary release-type rules only when the plural collection exception does not apply. For an individual remix/single of up to three tracks, ` - Single` can be used when it is a genuine single; track count alone does not invent the designation.
 - Preserve the meaningful original title/edition wording and avoid duplicate parentheses. These are **folder naming** rules; they do not change audio-track titles or the Duplicate Edition Analyzer's Save Remixes/Live logic.
 
-### Exact separators, CD reissues and worked examples
+### Exact separators, CD/WEB reissues and worked examples
 
 - Square brackets `[` / `]` delimit physical or digital release-identification data. For physical CDs, the literal ` - ` separates country/region and catalog number. Any ` - ` inside an actual catalog number is part of that catalog number and must be preserved.
-- For a **physical CD reissue**, use `<Initial Date> - <Release Title> [<Country/Region> - <Catalog Number or Barcode> - <Reissue Year>]` **only when the year of the reissue differs from the year of the earliest worldwide initial release**. Do not include the reissue year when both years match. Never substitute the reissue date for the initial date at the beginning.
+- For a **physical CD reissue**, use `<Initial Date> - <Release Title> [<Country/Region> - <Catalog Number or Barcode> - <Reissue Year>]` **only when the verified concrete edition year differs from the earliest worldwide initial release year**.
+- For a **digital/WEB reissue**, use `<Initial Date> - <Release Title> [<Catalog Number or Barcode> - <Reissue Year>]` under the same condition, without a country/region prefix. Example with year-only leading precision: `2015 - Get to Heaven (Expanded 10th Anniversary Edition) [196873083926 - 2025]`.
+- Do not include a reissue year when both years match or the concrete edition date is unverified. Never substitute the reissue date for the leading initial worldwide date.
 - `2007-07-09 - Our Love to Admire [JP - TOCP-66683]`: 2007-07-09 = initial worldwide date; Our Love to Admire = title; JP = physical CD pressing country; TOCP-66683 = catalog number.
 - `2002-08-19 - Turn on the Bright Lights (The Tenth Anniversary Edition) [US - OLE 993-2 - 2012]`: 2002-08-19 = initial worldwide date; title includes anniversary edition; US = physical CD pressing country; OLE 993-2 = catalog number; 2012 = different-year reissue.
 - `2018-02-16 - El Pintor Bonus Tracks [OLE13186]`: digital/WEB, no physical pressing country, identifier is catalog number in this example.
