@@ -1,10 +1,14 @@
 # Music Library Organizer
 
-**Candidate: v0.3.19 - Under construction ⚠️** (all artwork directly in Destination; real Windows acceptance pending; PR draft)
+**Candidate: v0.3.22 - Under construction ⚠️** (verified digital reissue-year suffix; real Windows acceptance pending; PR draft)
 
-**[Music Library Organizer v0.3.19.pyw](../Music%20Library%20Organizer%20v0.3.19.pyw)**
+**[Music Library Organizer v0.3.22.pyw](../Music%20Library%20Organizer%20v0.3.22.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.22 - Verified digital reissue-year naming
+
+The formatter adds ` - <Edition Year>` inside the final identifier brackets for both CD and digital/WEB editions when exact MusicBrainz edition metadata proves a different year from the initial worldwide release. Example under current MusicBrainz dating: `2015-05-19 - Get to Heaven (Expanded 10th Anniversary Edition) [196873083926 - 2025]`. The leading 2015-05-19 date is disputed and **has not been corrected or hardcoded**. Existing physical EU mapping (`XE` -> `EU`), source file safety, metadata and Undo remain unchanged. New regression passes; Python compile passes; inherited Linux suite still has 11 failures and 19 errors. Native Windows acceptance pending; test with a new empty destination.
 
 **v0.3.19 additional safety:** When a previous Artwork Undo journal exists (including one created by the incorrect v0.3.18 nested layout), archive that complete journal under the organizer's private `artwork-undo-history/` before starting a new artwork pass. Refuse to replace an unreadable old journal. This preserves recovery evidence without touching the old nested JPGs; the active Undo action still handles the latest run. 122 uniquely named Python regression methods are now defined (not executed on Windows).
 
