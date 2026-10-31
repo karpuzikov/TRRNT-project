@@ -453,6 +453,6 @@ A lightweight build is not parity-complete until all of these pass:
 - Current functional source: `tools/Duplicate Edition Analyzer v0.22.12.pyw`
 
 
-## 2026-10-14 - sorted historical filename migration
+## 2026-10-14 - historical filename migration
 
-Renamed 20 historical application .pyw/.jsx versioned filenames to two-digit minor/patch formatting with identical content blobs and unchanged semantic versions. Current MCC/TRRNT references updated. Other references and Windows checks require validation. Historical commit-pinned files remain available; old unpadded main-branch raw paths change. No GitHub Actions workflows edited.
+The original `main` migration renamed 20 historical application `.pyw`/`.jsx` filenames to two-digit minor/patch formatting without changing the underlying code. The MLO development branch additionally tracked 27 historical naming updates; the merge preserves the current `main` content and existing app versions. Historical commit-pinned files remain available, while raw URLs using former names may change. Native Windows verification of the historical versions was not run; GitHub Actions workflows were not edited.

@@ -45,6 +45,79 @@ Before ANY UI modification, record a control contract for the affected workflows
 - **MusicBrainz/Beatport/Harmony:** no duplicate import actions, responsive edit-relationships controls, ISRC/barcode selection and warnings, keyboard and retry behavior, unchanged stored links.
 - **Browser popups/userscripts:** injected controls in real host DOM, overlay stacking, conflicts with existing site controls, tooltips, focus and responsive behavior. Test real browser + Tampermonkey, not an isolated HTML mock.
 
+### Music Library Organizer v0.3.13 - minimum-click acceptance (2026-10-14)
+
+| Mandatory updated gate | Status | Evidence / outstanding action |
+| --- | --- | --- |
+| Canonical minimal-click rules synchronized from main into development branch | PASS | `SOFTWARE_RULES.md` and `UI_UX_RULES.md` now include radical simplicity requirements |
+| Compact dark WebView2 source and control contract | PASS - source audit | Redundant tutorials/header text removed; source->auto-destination; one-click Organize from saved settings; all distinct stage/checker/worker/results actions preserved |
+| Simulated bridge + keyboard-enabled DOM control state | PASS - mocked state only | Empty path disables Organize; source suggests destination; running/disconnected disables; legacy focus/drag/drop hooks retained |
+| Real Windows UI screenshots at default/minimum/large viewport and DPI | NOT RUN | Run exact v0.3.13 `.pyw` on target machine |
+| Real keyboard/hover/right-click, path browse/drop, settings persistence, real audio workflows | NOT RUN | Follow project UI control contract, verified native checker and disposable output, Undo |
+| Whole-product native Python suite and acceptance | NOT RUN | Run py_compile, unittest and full end-to-end before promoting status |
+
+**v0.3.19 additional safety:** When a previous Artwork Undo journal exists (including one created by the incorrect v0.3.18 nested layout), archive that complete journal under the organizer's private `artwork-undo-history/` before starting a new artwork pass. Refuse to replace an unreadable old journal. This preserves recovery evidence without touching the old nested JPGs; the active Undo action still handles the latest run. 122 uniquely named Python regression methods are now defined (not executed on Windows).
+
+### Music Library Organizer v0.3.19 - flat Destination artwork (2026-10-15)
+
+| Behavior | Status | Required live verification |
+| --- | --- | --- |
+| Existing Destination release folders scanned | NOT RUN | Each release UPC resolved as before; one JPG per release written directly under selected Destination |
+| `À Contrecœur (Pilule Violette)` album example | NOT RUN | `Destination/2016-08-26 - À Contrecœur (Pilule Violette) - EP [886445932034].jpg`, **NOT** `Destination/<release>/<release>.jpg` |
+| Existing root JPG | NOT RUN | Never overwritten; SKIPPED without Apple/Spotify request |
+| Existing old nested JPG v0.3.18 | NOT RUN | Leave old file untouched; corrected root JPEG may still be downloaded |
+| Duplicate release folder names | NOT RUN | BOTH marked PARTIAL before downloading rather than collision/choosing random edition |
+| Undo Artwork v0.3.19 | NOT RUN | SHA-verified root filenames; remove only newly saved root JPEGs, keep album/audio/other covers |
+| Undo Artwork v0.3.18 legacy journal | NOT RUN | Previously nested images can still be hash-verified and undone when old journal is active |
+| WebView2 hover, click, status, Results folder | NOT RUN | Tooltip accurately states Destination root; output folder button opens root; count/status/error states readable |
+| Regression compilation/120 defined tests | NOT RUN | Complete Python suite and full Windows acceptance before stable |
+
+### Music Library Organizer v0.3.18 - Artwork (2026-10-15)
+
+| Workflow/control | Status | Native acceptance criteria |
+| --- | --- | --- |
+| One-click `▣ Artwork` on existing Destination | NOT RUN | Available with existing output path, no Organize side effects, processes each release exactly once, no new required config |
+| Apple UPC `886445932034` high-res artwork | NOT RUN | Correct exact-cover Apple album, maximum available un-upscaled JPEG preferred, actual JPEG decode and dimensions verified, named exactly like release folder with `.jpg` |
+| Spotify fallback after no Apple match | NOT RUN | Correct exact-GTIN MusicBrainz linked Spotify album, official public oEmbed thumbnail, no wrong edition or guessed cover |
+| Catalog-only CD and barcode tagged sources | NOT RUN | Only use verified barcode; reject ambiguous catalogs/no match without modifying audio |
+| Existing JPG, download failure, Cancel and re-run | NOT RUN | Never overwrite artwork, no half-file, correct failure/not-found status, progress and per-run log |
+| Undo Artwork and old Organize Undo | NOT RUN | SHA protects user modifications; remove only newly created JPGs, never release folders/audio; retain old Organize Undo safety |
+| Dark WebView2 UI screenshots/keyboard/focus | NOT RUN | Footer control geometry, hover, selection, ESC/Cancel, error and no-connection, labels on all widths |
+| Python full compilation, 116 regressions, live network/actual files | NOT RUN | Execute on Windows and compare Apple/CDN/Spotify downloads with known release; keep draft pending |
+
+### Music Library Organizer v0.3.17 - title case, CUE and MusicBrainz acceptance (2026-10-15)
+
+| Workflow/control | Status | Native acceptance criteria |
+| --- | --- | --- |
+| GIMS 2021 Best life, 2024 SIN TI, JOE PESCI | NOT RUN (seven additional mock tests defined, full suite unexecuted) | Folder, track filenames, and TITLE tags use Best Life, Sin Ti and Joe Pesci; preserve 3OH!3 and protected names |
+| Actual 88883792232.cue and six cross-file INDEX 00 cases | NOT RUN | Preserve per-file INDEX 00 + next-file INDEX 01 references and original cue bytes; rename FILE mappings, no false FAILED |
+| Invalid single-image INDEX 00 after INDEX 01 | NOT RUN | Refuse unsafe cuts; preserve image and cue with appropriate PARTIAL reason |
+| Arhbo 197089993382 | NOT RUN (mock regression defined) | Exact MusicBrainz release, two Digital Media tracks, Soundtrack + Single -> parenthesized descriptive subtitle with `- Single` |
+| No changed UI controls | NOT RUN | Existing Results selection/Copy, Open log/folder, progress, Undo, keyboard and dark visuals still work |
+| Python compile, 102 regression tests and actual Windows GUI/files | NOT RUN | Execute on exact v0.3.17 source and test real GIMS fixture without modifying originals |
+
+### Music Library Organizer v0.3.16 - per-run isolated logs native acceptance (2026-10-15)
+
+| Workflow/control | Status | Actual Windows acceptance |
+| --- | --- | --- |
+| Multiple Organize runs in one session and after restart | NOT RUN (source checks; tests defined) | Different files in `logs/` with timestamp+unique suffix; earlier logs unchanged, full errors/timings preserved |
+| Undo/cancel/failure | NOT RUN | Separate Undo/run logs, preserved diagnostics, no accidental overwrites or source edits |
+| Legacy log migration | NOT RUN | Old `activity.log`, WebView2 and startup-error files preserved in `logs/legacy/` even on collisions |
+| Open log / adjacent folder icon | NOT RUN | Open current/latest operation log and its dedicated folder with native keyboard/mouse |
+| Startup and permissions | NOT RUN | Separate new startup/crash logs; log allocation failures visible; existing running instance untouched |
+| Full Python compile/95 regression suite and real Windows GUI screenshots | NOT RUN | Run on exact v0.3.16 candidate; mock/static validations are not real acceptance |
+
+### Music Library Organizer v0.3.15 - duplicate launch native acceptance (2026-10-15)
+
+| Required state | Current status | Expected result |
+| --- | --- | --- |
+| Second invocation with main organizer already open | NOT RUN (mock regressions committed) | Existing versioned window focused; second exits without an error dialog or new Undo/profile |
+| Previous window minimized | NOT RUN | Restore original window via `SW_RESTORE`, request focus |
+| Existing organizer processing an album | NOT RUN | No job interruption, no concurrent write, no forced termination |
+| Existing mutex with no discoverable window | NOT RUN | Short native information message, no exception traceback; do not discard live mutex |
+| Original source/webview integrity | PASS (source/static) | Single dark WebView2 and native auCDtect remain; no new visible controls |
+| Full Windows UI/UX and Python suite | NOT RUN | Execute installed candidate and regression suite with real Windows API |
+
 ## Next action
 
 Fill the control contract and real-world screenshot/interaction matrix for every UI surface above. Fix all FAIL and NOT RUN before declaring UI verified. Preserve software behavior and target-platform compatibility.
