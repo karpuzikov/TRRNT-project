@@ -1,9 +1,19 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.21 - Under construction ⚠️** (MusicBrainz Europe region display correction; original releases untouched; native Windows acceptance NOT RUN; PR draft/unmerged)
+Current version: **0.3.22 - Under construction ⚠️** (CD and WEB reissue-year naming consistency; original releases untouched; native Windows acceptance NOT RUN; PR draft/unmerged)
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Candidate source: [`tools/Music Library Organizer v0.3.21.pyw`](../Music%20Library%20Organizer%20v0.3.21.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Candidate source: [`tools/Music Library Organizer v0.3.22.pyw`](../Music%20Library%20Organizer%20v0.3.22.pyw) on the feature branch; v0.3.5 remains the last version on `main` until the PR is merged. v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
+
+## Current candidate - v0.3.22 digital reissue year (2026-10-31)
+
+**User correction:** `Get to Heaven (Expanded 10th Anniversary Edition)` is the verified worldwide digital 2025-07-04 reissue with barcode `196873083926`. The folder from v0.3.21 incorrectly omitted the edition-year suffix because `release_folder_target()` put the `edition_date` handling inside `physical=True` only. `RULES.md` and `PROJECT.md` also limited that syntax to physical CDs.
+
+**Fix:** Apply ` - <Edition Year>` inside the identifier bracket for **both physical CD and WEB/digital** releases when exact concrete MusicBrainz edition metadata supplies an actual edition date with a different year from the earliest worldwide initial release date. WEB never acquires a country prefix. For example, under current MusicBrainz release-group metadata: `2015-05-19 - Get to Heaven (Expanded 10th Anniversary Edition) [196873083926 - 2025]`. No suffix on same-year or unknown edition dates. The old digital output stays unchanged on disk; run against a new empty destination rather than overwriting.
+
+**Important date limitation:** The `2015-05-19` leading date is disputed: MusicBrainz lists one Australian deluxe CD with that date, but other evidence (including contemporary digital listing) supports June 2015; the precise original worldwide date has NOT been independently adjudicated. This build deliberately does not change the global earliest-worldwide-date rule or hardcode a Get to Heaven exception. Confirm original date provenance separately before claiming its YYYY-MM-DD prefix is corrected.
+
+**Validation:** Test-first regression reproduced the absent digital ` - 2025` suffix on v0.3.21; the new v0.3.22 formatter produces it and retains existing CD year / same-year / unknown-date behavior. Python compilation PASS; 2 targeted reissue tests and 12 Everything Everything tests PASS. Full inherited Linux suite: 135 tests; 11 historical failures, 19 historical errors, 1 skipped (same failure/error totals as v0.3.21). Native Windows acceptance remains required; PR draft/unmerged.
 
 ## Current candidate - v0.3.21 Europe output code (2026-10-31)
 
