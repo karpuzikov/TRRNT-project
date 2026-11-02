@@ -1,11 +1,18 @@
 # Music Library Organizer - Continuity
 
-Current version: **0.3.22 - Under construction ⚠️** (CD and WEB reissue-year naming consistency; original releases untouched; native Windows acceptance NOT RUN)
+Current version: **0.3.23 - Under construction ⚠️** (2026-11-02 audit fixes; native Windows acceptance NOT RUN)
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Current source: [`tools/Music Library Organizer v0.03.22.pyw`](../Music%20Library%20Organizer%20v0.03.22.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Current source: [`tools/Music Library Organizer v0.03.23.pyw`](../Music%20Library%20Organizer%20v0.03.23.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
 
 **Publication instruction (2026-10-31):** The user explicitly rejected leaving completed GitHub updates in a draft PR while `main` stays outdated. Publish versioned source to `main` and link it directly. Historical draft-only instructions below record past checkpoints and must not be carried forward as the release workflow. Native Windows QA remains separate; label unverified source **Under construction ⚠️**.
+
+## Current - v0.3.23 audit fixes (2026-11-02)
+
+- **Changed:** qaac pinned (3.07, SHA-256 `1fb3ab4a...cbb3`, verified against the real file); `_qaac_official_url`/`_QAAC_ACTIVE_SHA256` removed. `_fetch_official_archive` now always requires a hash. Undo checks each journal folder's parent equals journal `dest` (all journals since v0.1.0 record `dest`). Title-case segment start/end (`_TITLE_SEGMENT_START/_END`) per RULES.md. `OK` added to `_TITLE_ACRONYMS`. Déjá fix no longer INNA-only. Filenames padded to `v0.03.xx`.
+- **Tests:** first fully green Linux run on a current version: `test_organizer.py` 137 run / 0 failed / 1 skipped, `test_naming_table.py` 3/3. Nine tests already failed on v0.3.22; triage: `OK` -> `Ok` and `(the Remixes)` were real bugs (fixed in code); the rest were stale expectations (UI label `Encode workers`, `download_artwork` bridge method, 8-argument `organize`, `Original auCDtect` wording, test typo `_embedded_aucdetect`, barcode now checked on each DiscID candidate's release record, `by` lowercase and `YO` -> `Yo` per RULES.md title case).
+- **Decision to confirm with the owner:** `YO` is now rendered `Yo` because RULES.md says all-caps styling alone is not an acronym. If the owner wants `YO`, add it to `_PROTECTED_TITLE_NAMES` and revert the two test expectations.
+- **NOT RUN:** Windows GUI/WebView2, refalac64/flac/AudioChecker binaries, real INNA library run. Status stays Under construction ⚠️.
 
 ## Current candidate - v0.3.22 digital reissue year (2026-10-31)
 

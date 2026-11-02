@@ -1,3 +1,13 @@
+## Repository checkpoint - 2026-11-02 audit fixes
+
+Read `AUDIT_2026-11-02.md` first. Current sources: `tools/Music Library Organizer v0.03.23.pyw` (product handoff: `tools/music-library-organizer/CONTINUITY.md`), `tools/Duplicate Edition Analyzer v0.22.13.pyw` (source only; the standalone EXE is still v0.22.12), `tools/ALAC Conversion Automation v0.02.01.pyw`. All three are **Under construction ⚠️**; Windows GUI and native binaries NOT RUN.
+
+Linux unit suites all pass: Organizer 137 run / 0 failed / 1 skipped, naming table 3/3, Analyzer 21/21. Run them with `python tools/music-library-organizer/test_organizer.py`, `python tools/music-library-organizer/test_naming_table.py`, `python tools/duplicate-edition-analyzer/test_dea_core.py`.
+
+Still open (see audit): DEA self-update trusts a checksum from the same release (needs signing); DEA pickle session files; broad `except Exception` blocks; Tkinter in several tools (UI_UX_ACCEPTANCE.md); other tool filenames not yet two-digit padded (`AudioChecker Automation v0.01.pyw`, `Folder Structure Scanner.pyw`).
+
+The section below is the earlier 2026-10-14 checkpoint, kept for history; its file paths are out of date.
+
 ## Mandatory chat handoff closeout - Music Library Organizer v0.3.5 - 2026-10-14
 
 The user issued the exact `this chat is done` global handoff command. Earlier assistant response merely acknowledged closing and **violated the handoff rule**. This closeout records the required GitHub checkpoint. Read product source `tools/Music Library Organizer v0.03.05.pyw`, tests `tools/music-library-organizer/test_organizer.py`, the full authoritative product handoff `tools/music-library-organizer/CONTINUITY.md` (new "Verified closeout and next-chat handoff" section), plus `AUDIT_INNA_2026-10-14.md`. Root/global `SOFTWARE_RULES.md`, project `RULES.md`, `MUSIC_GLOSSARY.md` and UI rules remain mandatory. This is **0.3.5 - Under construction ⚠️**, not stable.
@@ -6,7 +16,7 @@ Baseline remains 94 releases, 0 DONE, 93 PARTIAL, 1 FAILED, checker bundle missi
 
 # Duplicate Edition Analyzer - Continuity Handoff
 
-Last updated: 2026-10-13
+Last updated: 2026-11-02
 Status: Under construction ⚠️
 
 ## Music Library Organizer v0.3.5 - INNA real-log audit and mandatory title/credit repairs - 2026-10-14

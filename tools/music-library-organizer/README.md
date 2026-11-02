@@ -1,10 +1,20 @@
 # Music Library Organizer
 
-**Current: v0.3.22 - Under construction ⚠️** (verified digital reissue-year suffix; real Windows acceptance pending)
+**Current: v0.3.23 - Under construction ⚠️** (audit fixes; real Windows acceptance pending)
 
-**[Download Music Library Organizer v0.03.22.pyw](../Music%20Library%20Organizer%20v0.03.22.pyw)**
+**[Download Music Library Organizer v0.03.23.pyw](../Music%20Library%20Organizer%20v0.03.23.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
+
+## v0.3.23 - Audit fixes (2026-11-02)
+
+- qaac is pinned to 3.07 with a verified SHA-256. The previous "latest release" lookup trusted a checksum from the same GitHub response, so it could not catch a tampered release.
+- Undo refuses any journal entry that is not directly inside the recorded Destination.
+- Title case follows RULES.md segments: the first and last word after `(`, `[`, `{`, quotes, `:` and ` - ` are capitalized (`Title (The Remixes)`, not `(the Remixes)`). `OK` stays `OK`.
+- The `Déjá Vu` -> `Déjà Vu` spelling fix applies to every artist.
+- Filenames v0.3.13-v0.3.22 renamed to padded `v0.03.13`-`v0.03.22` (content unchanged).
+- Linux unit suite: **137 run, 0 failed, 1 skipped** (needs the `flac` CLI). `test_naming_table.py` now targets the current version (it was still loading v0.03.05).
+- **NOT RUN:** Windows WebView2 GUI, refalac64/flac/AudioChecker binaries, real INNA library run.
 
 ## v0.3.22 - Verified digital reissue-year naming
 

@@ -6,10 +6,10 @@ Migrated from `karpuzikov/userscripts/audio-tools/discography-torrent-project/` 
 
 ## Current tools
 
-- **[Music Library Organizer v0.03.22.pyw](tools/Music%20Library%20Organizer%20v0.03.22.pyw)** - standalone Windows music organizer with multi-disc edition matching, verified CD/WEB reissue-year naming, MusicBrainz identity checks, ALAC/FLAC, artwork lookup, audio checking and source-safe Undo. **Under construction ⚠️; native Windows acceptance pending, and the original worldwide date of Get to Heaven remains disputed.** [Guide](tools/music-library-organizer/README.md).
-- `tools/Duplicate Edition Analyzer v0.22.12.pyw` - Groups Suggested Callout Hook, Call Out Hook, and Suggested Call Out Research Hook as one Unusual track pattern choice (`Callout hook`) instead of three separate rows. Includes a release-blocking regression test for alias grouping. [Download standalone EXE](https://github.com/karpuzikov/userscripts/releases/download/duplicate-edition-analyzer-v0.22.12/Duplicate.Edition.Analyzer.0.22.12.exe). Under construction ⚠️
+- **[Music Library Organizer v0.03.23.pyw](tools/Music%20Library%20Organizer%20v0.03.23.pyw)** - standalone Windows music organizer with multi-disc edition matching, verified CD/WEB reissue-year naming, MusicBrainz identity checks, ALAC/FLAC, artwork lookup, audio checking and source-safe Undo. **Under construction ⚠️; native Windows acceptance pending, and the original worldwide date of Get to Heaven remains disputed.** [Guide](tools/music-library-organizer/README.md).
+- `tools/Duplicate Edition Analyzer v0.22.13.pyw` - pinned FFmpeg/Chromaprint downloads (SHA-256), safe ZIP extraction, accent/Cyrillic/remaster-year title matching fixes. The standalone EXE is still v0.22.12 (no v0.22.13 EXE built yet). v0.22.12 groups Suggested Callout Hook, Call Out Hook, and Suggested Call Out Research Hook as one Unusual track pattern choice (`Callout hook`) instead of three separate rows. Includes a release-blocking regression test for alias grouping. [Download standalone EXE](https://github.com/karpuzikov/userscripts/releases/download/duplicate-edition-analyzer-v0.22.12/Duplicate.Edition.Analyzer.0.22.12.exe). Under construction ⚠️
 - `tools/AudioChecker Automation v0.01.pyw` - AudioChecker batch automation.
-- `tools/ALAC Conversion Automation v0.02.pyw` - lossless -> ALAC conversion. Under construction ⚠️
+- `tools/ALAC Conversion Automation v0.02.01.pyw` - lossless -> ALAC conversion **in place**. Single files: the source is **deleted** after its decoded audio matches the ALAC output. CUE releases: the original source is **kept** (delete it yourself after checking). qaac/refalac is pinned to 3.07 with SHA-256. Under construction ⚠️
 - `tools/CUE Corrector - MusicBrainz DiscID 1.03.01.pyw` - MusicBrainz DiscID/CUE workflow.
 - `tools/Folder Structure Scanner.pyw` - recursive folder structure report.
 
@@ -70,4 +70,4 @@ python tools/music-library-organizer/test_naming_table.py
 python tools/duplicate-edition-analyzer/test_dea_core.py
 ```
 
-They do not replace Windows GUI, real-audio or AudioChecker/`refalac64` acceptance runs. See [`AUDIT_2026-10-14.md`](AUDIT_2026-10-14.md) for the latest review and open findings.
+They do not replace Windows GUI, real-audio or AudioChecker/`refalac64` acceptance runs. See [`AUDIT_2026-11-02.md`](AUDIT_2026-11-02.md) for the latest review and open findings.
