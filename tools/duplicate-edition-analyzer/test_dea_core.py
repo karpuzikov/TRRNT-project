@@ -14,7 +14,7 @@ import types
 import unittest
 from pathlib import Path
 
-SOURCE = Path(__file__).resolve().parents[1] / "Duplicate Edition Analyzer v0.22.12.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Duplicate Edition Analyzer v0.22.13.pyw"
 
 
 def _stand_in_module(name):
@@ -194,26 +194,31 @@ class CueParsing(unittest.TestCase):
             self.assertIsNone(dea._resolve_cue_audio_path(cue, "missing.wav", [audio]))
 
 
-class KnownGaps(unittest.TestCase):
-    """Defects found by the 2026-10-14 audit. Marked expectedFailure so CI stays
-    green; remove the decorator when the behavior is fixed (a surprise pass will
-    then fail the run and remind you)."""
+class TitleIdentity(unittest.TestCase):
+    """Fixes for gaps found by the 2026-10-14 audit."""
 
-    @unittest.expectedFailure
     def test_accented_title_matches_unaccented_spelling(self):
-        # identity_title drops accented letters instead of folding them, so the
-        # same song spelled "Déjà Vu" and "Deja Vu" gets different identities.
         self.assertEqual(dea.identity_title("Déjà Vu"), dea.identity_title("Deja Vu"))
 
-    @unittest.expectedFailure
-    def test_non_latin_titles_have_an_identity(self):
-        # Cyrillic/CJK titles normalize to "" and so never match by title.
+    def test_non_latin_titles_have_distinct_identities(self):
         self.assertNotEqual(dea.identity_title("Дискотека"), "")
+        self.assertNotEqual(dea.identity_title("Дискотека"), dea.identity_title("Любовь"))
+        self.assertNotEqual(dea.identity_title("Дискотека (Remix)"), dea.identity_title("Любовь (Remix)"))
 
-    @unittest.expectedFailure
     def test_trailing_remaster_year_is_ignored(self):
-        # "(2011 Remaster)" is ignored but "- Remastered 2009" leaves "2009".
         self.assertEqual(dea.identity_title("Song - Remastered 2009"), dea.identity_title("Song"))
+        self.assertEqual(dea.identity_title("Song (2011 Remaster)"), dea.identity_title("Song"))
+        self.assertEqual(dea.identity_title("Song 2009"), "song2009")  # a bare year stays
+
+    def test_unsafe_zip_entry_is_refused(self):
+        import tempfile, zipfile
+        with tempfile.TemporaryDirectory() as td:
+            archive_path = Path(td) / "evil.zip"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr("../escape.txt", "x")
+            with self.assertRaisesRegex(RuntimeError, "Unsafe ZIP entry"):
+                dea._extract_zip_inside(archive_path, Path(td) / "out")
+            self.assertFalse((Path(td) / "escape.txt").exists())
 
 
 if __name__ == "__main__":
