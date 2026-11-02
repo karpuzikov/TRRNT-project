@@ -15,7 +15,7 @@ import unittest
 import wave
 import zipfile
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.3.22.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.03.23.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_under_test", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -182,7 +182,7 @@ class OriginalCheckerRegression(unittest.TestCase):
         import inspect
         source = inspect.getsource(mlo._native_aucdtect)
         provision = inspect.getsource(mlo._embedded_aucdtect)
-        self.assertIn("return _embedded_aucdetect()", source)
+        self.assertIn("return _embedded_aucdtect()", source)
         self.assertIn("base64.b85decode", provision)
         self.assertIn("sha(stage)", provision)
         self.assertIn("zipfile.ZipFile", provision)
@@ -439,7 +439,8 @@ class NamingRules(unittest.TestCase):
         self.assertEqual(mlo.release_title_normalize("Title - The Remixes EP", "EP"), "Title (The Remixes)")
         self.assertEqual(mlo.release_title_normalize("Plain Jane Remix", "Single"), "Plain Jane (Remix) - Single")
         x = {"folder":"Inna - YO 2019", "title":"YO", "date":"2019-05-01", "catalog":"CAT123", "barcode":"1234", "physical":False, "country":"", "release_type":"Album", "track_count":13, "notes":[]}
-        self.assertEqual(mlo.release_folder_target(x), "2019-05-01 - YO [CAT123]")
+        # RULES.md title case: all-caps styling alone is not an acronym ("YO" -> "Yo").
+        self.assertEqual(mlo.release_folder_target(x), "2019-05-01 - Yo [CAT123]")
 
     def test_yo_physical_edition_folder_and_sidecar_identity(self):
         info = {"folder": "Inna - YO 2019", "title": "YO",
@@ -447,7 +448,7 @@ class NamingRules(unittest.TestCase):
                 "barcode": "", "physical": True, "country": "RO",
                 "release_type": "Album", "track_count": 11, "notes": []}
         self.assertEqual(mlo.release_folder_target(info),
-                         "2019-05-31 - YO [RO - GR18186]")
+                         "2019-05-31 - Yo [RO - GR18186]")
 
     def test_release_type_suffix_relocation(self):
         self.assertEqual(mlo.release_title_normalize("Song (EP) (Extended Mix)", "EP"),
@@ -539,7 +540,7 @@ class NamingRules(unittest.TestCase):
     def test_three_positional_brackets(self):
         original = "C'Mon (Catch 'Em By Surprise) (feat. Busta Rhymes) (Extended Club Mix)"
         self.assertEqual(mlo.normalized_title(original),
-                         "C'Mon (Catch 'Em By Surprise) [ft. Busta Rhymes] {Extended Club Mix}")
+                         "C'Mon (Catch 'Em by Surprise) [ft. Busta Rhymes] {Extended Club Mix}")
 
     def test_original_feature_and_remix_preserved(self):
         self.assertEqual(mlo.normalized_title("Red Lips (ft. Sam Bruno) [Skrillex Remix]"),
@@ -685,11 +686,11 @@ class DesktopStartupRecovery(unittest.TestCase):
         exported = [key for key in dir(bridge) if not key.startswith("_")]
         self.assertEqual(set(exported), {
             "state", "browse", "open_folder", "open_log", "open_log_folder",
-            "organize", "cancel", "undo", "diagnostics"})
+            "organize", "cancel", "undo", "diagnostics", "download_artwork"})
         self.assertEqual(bridge.state(), {"alive": True})
         self.assertEqual(bridge.browse("source"), "source")
         self.assertEqual(bridge.open_folder("C:\\Music"), {"opened":"C:\\Music"})
-        self.assertEqual(bridge.organize("in","out","ALAC",2,4), {"count":5})
+        self.assertEqual(bridge.organize("in","out","ALAC",2,4), {"count":8})  # 5 explicit + 3 processing toggles
         self.assertEqual(bridge.diagnostics("bridge connected"), {"ok":True})
         self.assertIn("bridge connected", engine.last_log)
         self.assertNotIn("window", exported)
@@ -760,11 +761,17 @@ class NativeEncoderCompliance(unittest.TestCase):
         self.assertEqual(mlo._FLAC_VERSION, "1.5.0")
         self.assertTrue(mlo._FLAC_ZIP_URL.startswith(
             "https://ftp.osuosl.org/pub/xiph/releases/flac/"))
-        from unittest.mock import patch
-        from urllib.error import URLError
-        with patch.object(mlo.urllib.request, "urlopen", side_effect=URLError("offline")):
-            self.assertTrue(mlo._qaac_official_url().startswith(
-                "https://github.com/nu774/qaac/releases/download/"))
+        self.assertTrue(mlo._QAAC_ZIP_URL.startswith(
+            "https://github.com/nu774/qaac/releases/download/"))
+        self.assertRegex(mlo._QAAC_ZIP_SHA256, r"^[0-9a-f]{64}$")
+
+    def test_encoder_archive_hash_mismatch_is_rejected(self):
+        from unittest.mock import patch, MagicMock
+        reply = MagicMock()
+        reply.__enter__.return_value.read.return_value = b"tampered archive"
+        with patch.object(mlo.urllib.request, "urlopen", return_value=reply):
+            with self.assertRaisesRegex(RuntimeError, "SHA-256 verification failed"):
+                mlo._fetch_official_archive(mlo._QAAC_ZIP_URL, mlo._QAAC_ZIP_SHA256)
 
     def test_native_encoder_only_no_ffmpeg_encode(self):
         from unittest.mock import patch
@@ -896,7 +903,8 @@ class DiscIDAndWorkers(unittest.TestCase):
             with patch.object(mlo, "mb_json", side_effect=fake_mb):
                 info = mlo.release_identity(folder, mlo.collect_files(folder), default_artist="Artist")
             self.assertTrue(any(x.startswith("discid/") for x in calls))
-            self.assertTrue(any("barcode%3A1234567890123" in x for x in calls))
+            # Barcode agreement is checked on each DiscID candidate's own release record.
+            self.assertTrue(any(x.startswith("release/disc-edition") for x in calls))
             self.assertEqual(info["catalog"], "CAT-12")
             self.assertEqual(info["date"], "2006-11-18")
             self.assertEqual(info["selected_release"], "disc-edition")
@@ -939,7 +947,7 @@ class DiscIDAndWorkers(unittest.TestCase):
                     release_name="Actual Album")
             self.assertEqual(results[0]["workers"], 2)
             self.assertEqual(results[0]["results"], 2)
-            self.assertIn("original auCDtect", results[0]["analyzer"])
+            self.assertIn("Original auCDtect", results[0]["analyzer"])
             log = root / "audiochecker.log"
             self.assertTrue(mlo._verify_original_checker_report(
                 log, tracks, "Actual Album"))
@@ -1076,7 +1084,7 @@ class OptionalProcessingAndDigitalDates(unittest.TestCase):
         for name in ("doEncode", "doChecker", "doSplit"):
             self.assertIn('id="' + name + '"', mlo.HTML)
         self.assertIn("updateTaskControls()", mlo.HTML)
-        self.assertIn("Encoding / split workers", mlo.HTML)
+        self.assertIn("Encode workers", mlo.HTML)
         self.assertIn("!$('doEncode').checked&&!$('doSplit').checked", mlo.HTML)
         self.assertIn("'doEncode').checked", mlo.HTML)
         self.assertIn("'doChecker').checked", mlo.HTML)
@@ -2082,6 +2090,24 @@ class Artwork20261015(unittest.TestCase):
                 self.assertFalse(target.exists())
                 self.assertTrue(folder.is_dir())
                 self.assertFalse((root / "undo.json").exists())
+
+    def test_undo_refuses_folder_outside_recorded_destination(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            destination = root / "Sorted"
+            destination.mkdir()
+            unrelated_folder = root / "Unrelated"
+            unrelated_folder.mkdir()
+            (unrelated_folder / "keep.txt").write_text("user data")
+            manifest = {"dest": str(destination), "pending": None, "created": [
+                {"path": str(unrelated_folder),
+                 "files": {"keep.txt": mlo.sha(unrelated_folder / "keep.txt")}}]}
+            with patch.object(mlo, "UNDO", root / "undo.json"):
+                app = mlo.Organizer()
+                app._undo(manifest)
+            self.assertIn("outside its destination", app.status)
+            self.assertTrue((unrelated_folder / "keep.txt").is_file())
 
     def test_undo_refuses_changed_artwork(self):
         from unittest.mock import patch

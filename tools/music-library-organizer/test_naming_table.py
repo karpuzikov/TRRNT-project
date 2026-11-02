@@ -1,4 +1,4 @@
-# Music Library Organizer v0.3.5 - table-driven naming rules.
+# Music Library Organizer - table-driven naming rules.
 # Every row is a rule or example recorded by the owner in RULES.md,
 # MUSIC_GLOSSARY.md or CONTINUITY.md. To add a rule, add a row; do not write a new test.
 # Run: py -3 tools\music-library-organizer\test_naming_table.py
@@ -9,7 +9,7 @@ import importlib.util
 import unittest
 from pathlib import Path
 
-SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.03.05.pyw"
+SOURCE = Path(__file__).resolve().parents[1] / "Music Library Organizer v0.03.23.pyw"
 loader = importlib.machinery.SourceFileLoader("mlo_naming_table", str(SOURCE))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 mlo = importlib.util.module_from_spec(spec)
@@ -33,7 +33,7 @@ RELEASE_TITLES = [
     ("Sun Is Up (remix)", "Single", "", "Sun Is Up (Remix) - Single"),
     # Owner decision 2026-10-14: edition notes, year and catalog are not kept.
     ("Song (Maxi CD Single) (Promo)", "Single", "", "Song - Single"),
-    ("Inna - Déjá Vu (Maxi CD Single) (Promo)", "Single", "INNA", "Déjá Vu - Single"),
+    ("Inna - Déjá Vu (Maxi CD Single) (Promo)", "Single", "INNA", "Déjà Vu - Single"),
     ("Inna - Party Never Ends (Part 2) (2013) [WPCR-15062]", None, "INNA",
      "Party Never Ends (Part 2)"),
 ]
@@ -44,7 +44,11 @@ TRACK_TITLES = [
     ("Red Lips (feat. Sam Bruno) (Skrillex Remix)",
      "Red Lips (ft. Sam Bruno) [Skrillex Remix]"),
     ("C'Mon (Catch 'Em By Surprise) (feat. Busta Rhymes) (Extended Club Mix)",
-     "C'Mon (Catch 'Em By Surprise) [ft. Busta Rhymes] {Extended Club Mix}"),
+     "C'Mon (Catch 'Em by Surprise) [ft. Busta Rhymes] {Extended Club Mix}"),
+    # RULES.md title case: internal "by"/"in"/"the" lowercase; first and last
+    # word of every segment (after brackets, colons, dashes) capitalized.
+    ("10 Minutes (club mix by play & win)", "10 Minutes (Club Mix by Play & Win)"),
+    ("What You're Looking for", "What You're Looking For"),
     # Feature of the original recording comes before the version.
     ("Diggy Down (Radio Edit) [ft. Marian Hill]",
      "Diggy Down (ft. Marian Hill) [Radio Edit]"),

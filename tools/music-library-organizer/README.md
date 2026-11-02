@@ -2,7 +2,7 @@
 
 **Current: v0.3.22 - Under construction ⚠️** (verified digital reissue-year suffix; real Windows acceptance pending)
 
-**[Download Music Library Organizer v0.3.22.pyw](../Music%20Library%20Organizer%20v0.3.22.pyw)**
+**[Download Music Library Organizer v0.03.22.pyw](../Music%20Library%20Organizer%20v0.03.22.pyw)**
 
 Standalone MCC-style Windows WebView2 organizer. It does **not** modify MCC or other tools and stores its settings, logs, dependencies, cached MusicBrainz records, output reports and Undo journals in `Documents\Karpuzikov Tools\Music Library Organizer\`.
 
