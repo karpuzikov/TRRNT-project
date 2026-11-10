@@ -1,40 +1,41 @@
 # Discography Torrent Project
 
-Canonical repository for the Discography Torrent Project: source code, workflow assets, development rules, and historical versions.
+Tools for cleaning and organizing an artist's discography and preparing it for a torrent release. Windows, Python 3.
 
-Migrated from `karpuzikov/userscripts/audio-tools/discography-torrent-project/` on 2026-10-13. The original standalone DEA EXE releases remain hosted in `karpuzikov/userscripts` until release assets are republished; source files here are canonical.
+**[Download the latest release](https://github.com/karpuzikov/TRRNT-project/releases/latest)** · [Version history](version-history/)
 
 ## Current tools
 
-- **[Music Library Organizer v0.03.23.pyw](tools/Music%20Library%20Organizer%20v0.03.23.pyw)** - standalone Windows music organizer with multi-disc edition matching, verified CD/WEB reissue-year naming, MusicBrainz identity checks, ALAC/FLAC, artwork lookup, audio checking and source-safe Undo. **Under construction ⚠️; native Windows acceptance pending, and the original worldwide date of Get to Heaven remains disputed.** [Guide](tools/music-library-organizer/README.md).
-- `tools/Duplicate Edition Analyzer v0.22.13.pyw` - pinned FFmpeg/Chromaprint downloads (SHA-256), safe ZIP extraction, accent/Cyrillic/remaster-year title matching fixes. The standalone EXE is still v0.22.12 (no v0.22.13 EXE built yet). v0.22.12 groups Suggested Callout Hook, Call Out Hook, and Suggested Call Out Research Hook as one Unusual track pattern choice (`Callout hook`) instead of three separate rows. Includes a release-blocking regression test for alias grouping. [Download standalone EXE](https://github.com/karpuzikov/userscripts/releases/download/duplicate-edition-analyzer-v0.22.12/Duplicate.Edition.Analyzer.0.22.12.exe). Under construction ⚠️
-- `tools/AudioChecker Automation v0.01.pyw` - AudioChecker batch automation.
-- `tools/ALAC Conversion Automation v0.02.01.pyw` - lossless -> ALAC conversion **in place**. Single files: the source is **deleted** after its decoded audio matches the ALAC output. CUE releases: the original source is **kept** (delete it yourself after checking). qaac/refalac is pinned to 3.07 with SHA-256. Under construction ⚠️
-- `tools/CUE Corrector - MusicBrainz DiscID 1.03.01.pyw` - MusicBrainz DiscID/CUE workflow.
-- `tools/Folder Structure Scanner.pyw` - recursive folder structure report.
+| Tool | Version | What it does |
+| --- | --- | --- |
+| [Music Library Organizer](tools/Music%20Library%20Organizer%20v0.03.23.pyw) ([guide](tools/music-library-organizer/README.md)) | 0.3.23 - Under construction ⚠️ | Organizes releases: edition matching, CD/WEB naming, MusicBrainz identity checks, ALAC/FLAC, artwork lookup, audio checking, Undo. Native Windows acceptance pending. |
+| [Duplicate Edition Analyzer](tools/Duplicate%20Edition%20Analyzer%20v0.22.13.pyw) | 0.22.13 - Under construction ⚠️ | Finds duplicate recordings and redundant editions by acoustic fingerprint; interactive Release Map. Source only; the [standalone EXE](https://github.com/karpuzikov/userscripts/releases/download/duplicate-edition-analyzer-v0.22.12/Duplicate.Edition.Analyzer.0.22.12.exe) is still v0.22.12. |
+| [ALAC Conversion Automation](tools/ALAC%20Conversion%20Automation%20v0.02.01.pyw) | 0.2.1 - Under construction ⚠️ | Lossless -> ALAC **in place**. Single files: the source is **deleted** after the decoded audio matches. CUE releases: the source is **kept**. |
+| [AudioChecker Automation](tools/AudioChecker%20Automation%20v0.01.pyw) | 0.1 | AudioChecker batch automation. |
+| [CUE Corrector - MusicBrainz DiscID](tools/CUE%20Corrector%20-%20MusicBrainz%20DiscID%201.03.01.pyw) | 1.3.1 | MusicBrainz DiscID/CUE workflow. |
+| [Folder Structure Scanner](tools/Folder%20Structure%20Scanner.pyw) | - | Recursive folder structure report. |
 
-## Existing workflow assets
+Related: [Music Collection Cleaner (MCC)](https://github.com/karpuzikov/MCC) lives in its own repository.
+
+## Workflow assets
 
 - `workflow/CUE LOG 4.01.pyw`
 - `workflow/Photoshop script 500png 600jpg 1.04.jsx`
 - `workflow/ALAC + header.mte`
-- `workflow/Мой стандарт.mta`
+- `workflow/My standard.mta` (Mp3tag action group)
 
-## Project documentation
+## Repository layout
 
-- `PROJECT.md` - workflow, implementation status, and integration plan.
-- `RULES.md` - canonical duplicate/edition/source-selection rules.
+- `tools/` - only the **latest** version of each tool, plus its tests and guides.
+- `version-history/` - every previous version. Old versions never stay in `tools/` or the repository root.
+- `workflow/` - assets for third-party applications (Mp3tag, Photoshop, CUETools).
+- `PROJECT.md` - workflow, implementation status and integration plan. `RULES.md` - duplicate/edition/source-selection and naming rules. `CONTINUITY.md` - development status. `MIGRATION.md` - 2026-10-13 migration record.
 
-## Repository rule
-
-This repository (`karpuzikov/TRRNT-project`) is the canonical source of truth for the project. Every project-owned script, workflow asset, and documentation change must be committed here when it changes.
-
-Third-party applications and binaries such as AudioChecker, CUETools, refalac, FFmpeg, Picard, Mp3tag, xrecode2, Photoshop, qBittorrent, MediaHuman Lyrics Finder, and the original CueCorrectorNET application are dependencies/reference software and are not vendored into this repository.
+Third-party applications (AudioChecker, CUETools, refalac, FFmpeg, Picard, Mp3tag, xrecode2, Photoshop, qBittorrent and others) are dependencies and are not included.
 
 ## CD rip log scoring
 
 Duplicate Edition Analyzer uses [hey-bro-check-log](https://github.com/ligh7s/hey-bro-check-log) v1.3.2 (Apache-2.0), pinned to commit `d3192ad2764f2682cffce4db2abc419f8ac68c69`, as an auto-installed runtime dependency for supported EAC/XLD logs. Log score is only a quality tie-break between otherwise exact-equivalent CD rips; it never creates duplicate identity or replaces a different edition.
-
 
 ## Release Map
 
@@ -46,20 +47,6 @@ During a live analysis, click a track and use **Skip track** to remove that reco
 
 The Release Map is a normal resizable/maximizable Windows top-level window (no modal/transient grab), so it can be positioned with FancyZones. **Apply plan**, **Analyze again**, and **Close** are always explicit live-analysis actions. The last map snapshot remains available read-only from the main window after the in-memory analysis context is gone.
 
-## Preserved development branches
-
-- [`dea-lightweight-modern`](https://github.com/karpuzikov/TRRNT-project/tree/dea-lightweight-modern): lightweight WebView2 analyzer v0.4.1-v0.4.9, branch README, development rules and continuity.
-- [`dea-lightweight-ascii-ui-test`](https://github.com/karpuzikov/TRRNT-project/tree/dea-lightweight-ascii-ui-test): rejected ASCII prototype v0.4.0, launcher and historical notes.
-- [`dea-native-light-test`](https://github.com/karpuzikov/TRRNT-project/tree/dea-native-light-test): rejected Win32/C++ prototype and its own documentation.
-
-These development branches preserve the original files **byte-for-byte**, but their new commits are reconstructed snapshots, not the original Git ancestry. Original historical branch commits remain accessible in `karpuzikov/userscripts`. None of these branches is the production replacement for regular DEA until separately tested and approved.
-
-## GitHub Actions migration
-
-The two previous Duplicate Edition Analyzer CI workflow definitions are preserved under `archived-workflows/` as **inactive references**, not enabled in `.github/workflows/`. This avoids unexpected builds/notification emails. Re-enable only by explicit request and first update their source paths to the new repository layout.
-
-Independent tools such as the RuTracker Digital Release Linker, qBittorrent backup utility, Picard scripts, and MCC remain in their respective repositories. They are not part of the dedicated project's source tree.
-
 ## Running the tests
 
 The unit tests need no extra packages and no display (the analyzer tests use a stand-in `tkinter`). Run them from the repository root:
@@ -70,4 +57,4 @@ python tools/music-library-organizer/test_naming_table.py
 python tools/duplicate-edition-analyzer/test_dea_core.py
 ```
 
-They do not replace Windows GUI, real-audio or AudioChecker/`refalac64` acceptance runs. See [`AUDIT_2026-11-02.md`](AUDIT_2026-11-02.md) for the latest review and open findings.
+They do not replace Windows GUI, real-audio or AudioChecker/`refalac64` acceptance runs.

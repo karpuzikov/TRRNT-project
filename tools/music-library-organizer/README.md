@@ -157,7 +157,7 @@ The original compact WebView2 UI now has three **independent checkboxes** (defau
 - **AudioChecker:** 93 WEB exports in the supplied log had no reports because the ZIP wasn't found. The app now also searches likely Downloads directories on drive letters and provides an optional **Browse ZIP...** selector to locate the exact user-supplied `Audio_Checker_UTF8_Multicore.zip`; selected location is persisted. The real `aucdtect.exe` bundle generates checker reports; failed/unavailable checks remain PARTIAL.
 - **Results UI:** rows explicitly selectable with mouse/keyboard Ctrl+C; added **Copy results** for visible rows, and **Open log folder** beside **Open log**. The log folder button opens the product's own isolated Documents folder.
 - Earlier hard requirement unchanged: **ALAC exclusively by official `refalac64.exe`; FLAC exclusively by Xiph's official `flac.exe`**; no FFmpeg ALAC/FLAC encoding. Source untouched, staging/Undo retained.
-- **Status:** Code and separate GitHub regression test source committed. Inlined UI JavaScript syntax PASSED. Complete Python AST/regression suite, native Windows WebView2/binaries, DiscID live response, real AudioChecker job, credit-vote/metadata parity and the 94-release batch have **NOT RUN** in the target environment. Do not call fully working/stable. New full audit: [INNA regression (2026-10-14)](AUDIT_INNA_2026-10-14.md). Test using a disposable collection and a new empty destination.
+- **Status:** Code and separate GitHub regression test source committed. Inlined UI JavaScript syntax PASSED. Complete Python AST/regression suite, native Windows WebView2/binaries, DiscID live response, real AudioChecker job, credit-vote/metadata parity and the 94-release batch have **NOT RUN** in the target environment. Do not call fully working/stable. New full audit: INNA regression (2026-10-14) (removed 2026-11-10; see Git history). Test using a disposable collection and a new empty destination.
 
 ## v0.3.4 WebView2 startup and connection recovery
 
@@ -229,4 +229,4 @@ Remaining: automatic Discogs pressing/manufacturing evidence; Beatport/BPTopTrac
 
 **Next test:** One disposable WEB single + one known CD with CUE/LOG + valid AudioChecker ZIP beside `.pyw`, **new empty destination**, then inspect filename, catalog, `audiochecker.log`, workers, Undo and the run log.
 
-See [current continuity](CONTINUITY.md), [UI control contract](UI_UX_CONTROL_CONTRACT.md), [prior INNA audit](AUDIT_INNA_2026-10-13.md), project [rules](../../RULES.md) and [music glossary](../../MUSIC_GLOSSARY.md).
+See [current continuity](CONTINUITY.md), [UI control contract](UI_UX_CONTROL_CONTRACT.md), project [rules](../../RULES.md) and [music glossary](../../MUSIC_GLOSSARY.md).
