@@ -2,7 +2,7 @@
 
 Current version: **0.3.23 - Under construction ⚠️** (2026-11-02 audit fixes; native Windows acceptance NOT RUN)
 Repository: `karpuzikov/TRRNT-project`, default branch `main`.
-Current source: [`tools/Music Library Organizer v0.03.23.pyw`](../Music%20Library%20Organizer%20v0.03.23.pyw). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
+Last standalone source: [`version-history/Music Library Organizer v0.03.23.pyw`](../../version-history/Music%20Library%20Organizer%20v0.03.23.pyw); merged into Music Collection Cleaner v0.5.124 (tests moved there). v0.1.0, v0.1.1 and v0.1.2 are superseded development versions; do not send users back to the 94x REVIEW blocker.
 This product is **independent of MCC** and may later be integrated into Music Collection Cleaner only after separate user approval. Do not modify `karpuzikov/MCC` application files/settings, DEA, or their data. This app's personal state belongs only to `Documents/Karpuzikov Tools/Music Library Organizer/` (settings, logs, journal, dependencies).
 
 **Publication instruction (2026-10-31):** The user explicitly rejected leaving completed GitHub updates in a draft PR while `main` stays outdated. Publish versioned source to `main` and link it directly. Historical draft-only instructions below record past checkpoints and must not be carried forward as the release workflow. Native Windows QA remains separate; label unverified source **Under construction ⚠️**.

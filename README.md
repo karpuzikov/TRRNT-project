@@ -8,7 +8,7 @@ Tools for cleaning and organizing an artist's discography and preparing it for a
 
 | Tool | Version | What it does |
 | --- | --- | --- |
-| [Music Library Organizer](tools/Music%20Library%20Organizer%20v0.03.23.pyw) ([guide](tools/music-library-organizer/README.md)) | 0.3.23 - Under construction ⚠️ | Organizes releases: edition matching, CD/WEB naming, MusicBrainz identity checks, ALAC/FLAC, artwork lookup, audio checking, Undo. Native Windows acceptance pending. |
+| Music Library Organizer | merged into [Music Collection Cleaner](https://github.com/karpuzikov/MCC) v0.5.124 | Last standalone version: [0.3.23](version-history/Music%20Library%20Organizer%20v0.03.23.pyw). Its guide stays in `tools/music-library-organizer/`; tests moved to MCC. |
 | [Duplicate Edition Analyzer](tools/Duplicate%20Edition%20Analyzer%20v0.22.13.pyw) | 0.22.13 - Under construction ⚠️ | Finds duplicate recordings and redundant editions by acoustic fingerprint; interactive Release Map. Source only; the [standalone EXE](https://github.com/karpuzikov/userscripts/releases/download/duplicate-edition-analyzer-v0.22.12/Duplicate.Edition.Analyzer.0.22.12.exe) is still v0.22.12. |
 | [ALAC Conversion Automation](tools/ALAC%20Conversion%20Automation%20v0.02.01.pyw) | 0.2.1 - Under construction ⚠️ | Lossless -> ALAC **in place**. Single files: the source is **deleted** after the decoded audio matches. CUE releases: the source is **kept**. |
 | [AudioChecker Automation](tools/AudioChecker%20Automation%20v0.01.pyw) | 0.1 | AudioChecker batch automation. |

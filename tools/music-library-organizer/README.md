@@ -1,3 +1,5 @@
+> Merged into [Music Collection Cleaner](https://github.com/karpuzikov/MCC) v0.5.124 (Copy/Move). Last standalone version: `version-history/Music Library Organizer v0.03.23.pyw`. Tests now live in the MCC repository.
+
 # Music Library Organizer
 
 **Current: v0.3.23 - Under construction ⚠️** (audit fixes; real Windows acceptance pending)

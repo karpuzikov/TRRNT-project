@@ -4,7 +4,7 @@ User request: clean the repository. `tools/` now holds only the latest version o
 
 ## Repository checkpoint - 2026-11-02 audit fixes
 
-Current sources: `tools/Music Library Organizer v0.03.23.pyw` (product handoff: `tools/music-library-organizer/CONTINUITY.md`), `tools/Duplicate Edition Analyzer v0.22.13.pyw` (source only; the standalone EXE is still v0.22.12), `tools/ALAC Conversion Automation v0.02.01.pyw`. All three are **Under construction ⚠️**; Windows GUI and native binaries NOT RUN.
+Current sources: Music Library Organizer is merged into Music Collection Cleaner v0.5.124 (last standalone: `version-history/Music Library Organizer v0.03.23.pyw`; handoff: `tools/music-library-organizer/CONTINUITY.md`), `tools/Duplicate Edition Analyzer v0.22.13.pyw` (source only; the standalone EXE is still v0.22.12), `tools/ALAC Conversion Automation v0.02.01.pyw`. All three are **Under construction ⚠️**; Windows GUI and native binaries NOT RUN.
 
 Linux unit suites all pass: Organizer 137 run / 0 failed / 1 skipped, naming table 3/3, Analyzer 21/21. Run them with `python tools/music-library-organizer/test_organizer.py`, `python tools/music-library-organizer/test_naming_table.py`, `python tools/duplicate-edition-analyzer/test_dea_core.py`.
 
